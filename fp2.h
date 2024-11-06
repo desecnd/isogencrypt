@@ -5,9 +5,13 @@
 
 typedef mpz_t fp_t;
 
-typedef struct {
-    fp_t a;
-    fp_t b;
+
+typedef union {
+    struct {
+        fp_t a;
+        fp_t b;
+    };
+    fp_t elem[2];
 } fp2_t;
 
 
