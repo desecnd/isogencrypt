@@ -2,10 +2,12 @@
 
 static fp_t fp_char;
 
+// init: allocate memory and set value = 0
 void fp_init(fp_t res) {
     mpz_init(res);
 }
 
+// clear: deallocate memory
 void fp_clear(fp_t res) {
     mpz_clear(res);
 }
@@ -15,11 +17,12 @@ void fp_set_char(fp_t p) {
     mpz_set(fp_char, p);
 }
 
-// set: res = a 
+// set: result <- a
 void fp_set(fp_t res, const fp_t a) {
     mpz_set(res, a);
 }
 
+// set uint: result <- (uint) a
 void fp_set_uint(fp_t res, unsigned long int a) {
     mpz_set_ui(res, a);
 }
@@ -30,7 +33,7 @@ void fp_add(fp_t res, const fp_t a, const fp_t b) {
     mpz_mod(res, res, fp_char);
 } 
 
-// add unsigned int: result = a + (unsigned int) b (mod p)
+// add uint: result = a + (unsigned int) b (mod p)
 void fp_add_uint(fp_t res, const fp_t a, unsigned long int b) {
     mpz_add_ui(res, a, b);
     mpz_mod(res, res, fp_char);
