@@ -65,6 +65,23 @@ void fp_sqrt(fp_t res, const fp_t a);
 
 // --- FP2 Methods
 
+void fp2_init(fp2_t res);
 
+void fp2_clear(fp2_t res);
+
+// fill: set individual fields as FP elements
+void fp2_fill(fp2_t res, fp_t a, fp_t b);
+
+// set: result <- a
+void fp2_set(fp2_t res, const fp2_t arg);
+
+// add: result <- lhs[a + bi] + rhs[a + bi]
+void fp2_add(fp2_t res, const fp2_t lhs, const fp2_t rhs);
+
+// add: result <- lhs[a + bi] + (unsigned int) rhs
+void fp2_add_uint(fp2_t res, const fp2_t lhs, unsigned long int rhs);
+
+// sub: result <- lhs[a + bi] - rhs[a + bi]
+void fp2_sub(fp2_t res, const fp2_t lhs, const fp2_t rhs);
 
 #endif
