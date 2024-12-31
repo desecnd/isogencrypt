@@ -10,7 +10,7 @@ int main() {
     fp_init(r);
 
     fp_set_uint(p, 431);
-    fp_set_char(p);
+    fp_set_global_char(p);
 
     fp_set_uint(r, 16); // r == 16
     assert(!mpz_cmp_ui(r, 16));
