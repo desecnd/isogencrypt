@@ -24,7 +24,7 @@ void fp_init(fp_t res);
 void fp_clear(fp_t res); 
 
 // set the field characteristic to p
-void fp_set_char(fp_t p); 
+void fp_set_global_char(fp_t p); 
 
 // set: res = a 
 void fp_set(fp_t res, const fp_t a); 

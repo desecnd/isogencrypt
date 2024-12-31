@@ -13,7 +13,7 @@ void fp_clear(fp_t res) {
 }
 
 // set the field characteristic to p
-void fp_set_char(fp_t p) {
+void fp_set_global_char(fp_t p) {
     mpz_set(fp_char, p);
 }
 
