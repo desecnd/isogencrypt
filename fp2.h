@@ -5,15 +5,13 @@
 
 typedef mpz_t fp_t;
 
-
 typedef union {
     struct {
         fp_t a;
         fp_t b;
     };
-    fp_t elem[2];
-} fp2_t;
-
+    fp_t poly[2];
+} fp2, *fp2_t;
 
 // ------ FP Methods
 
@@ -65,9 +63,9 @@ void fp_sqrt(fp_t res, const fp_t a);
 
 // --- FP2 Methods
 
-void fp2_init(fp2_t res);
+void fp2_init(fp2_t *res);
 
-void fp2_clear(fp2_t res);
+void fp2_clear(fp2_t *res);
 
 // fill: set individual fields as FP elements
 void fp2_fill(fp2_t res, fp_t a, fp_t b);

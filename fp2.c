@@ -122,6 +122,7 @@ void fp2_clear(fp2_t *res) {
     fp_clear((*res)->b);
     // free memory for res pointer
     free(*res);
+    *res = NULL;
 }
 
 // fill: set individual fields as FP elements
