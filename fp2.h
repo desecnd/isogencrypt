@@ -53,13 +53,13 @@ void fp_mul_int(fp_t res, const fp_t a, long int b);
 // modular inverse: res = a^-1 (mod p)
 void fp_inv(fp_t res, const fp_t a); 
 
-// div: a / b (mod p) = a * b^-1 (mod p)
+// div: res = a / b (mod p) = a * b^-1 (mod p)
 void fp_div(fp_t res, const fp_t a, const fp_t b); 
 
-// neg: a = -a (mod p)
+// neg: res = -a (mod p)
 void fp_neg(fp_t res, const fp_t a); 
 
-// sqrt: 
+// sqrt: res = a^(1/2) (mod p)
 // assumes that prime is in form: p = 3 (mod 4)
 void fp_sqrt(fp_t res, const fp_t a); 
 
@@ -81,7 +81,7 @@ void fp2_add(fp2_t res, const fp2_t lhs, const fp2_t rhs);
 // add: result <- lhs[a + bi] + (unsigned int) rhs
 void fp2_add_uint(fp2_t res, const fp2_t lhs, unsigned long int rhs);
 
-// sub: result <- lhs[a + bi] - rhs[a + bi]
+// sub: result <- lhs[a + bi] - rhs[a + bi] (mod p)
 void fp2_sub(fp2_t res, const fp2_t lhs, const fp2_t rhs);
 
 #endif
