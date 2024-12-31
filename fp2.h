@@ -84,4 +84,10 @@ void fp2_add_uint(fp2_t res, const fp2_t lhs, unsigned long int rhs);
 // sub: result <- lhs[a + bi] - rhs[a + bi] (mod p)
 void fp2_sub(fp2_t res, const fp2_t lhs, const fp2_t rhs);
 
+// mul: result <- lhs[a + bi] * rhs[a + bi] (mod p)
+void fp2_mul(fp2_t res, const fp2_t lhs, const fp2_t rhs);
+
+// sq: result <- arg^2
+void fp2_sq(fp2_t res, fp2_t arg);
+
 #endif
