@@ -1,3 +1,5 @@
 /ext
 test_fp
 test_fp2
+test_mont
+*.sage.py
