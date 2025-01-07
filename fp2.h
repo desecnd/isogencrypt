@@ -70,7 +70,7 @@ void fp2_clear(fp2_t *res);
 // fill: set individual fields as FP elements
 void fp2_fill(fp2_t res, fp_t a, fp_t b);
 
-// set: result <- a
+// set: result <- a + bi
 void fp2_set(fp2_t res, const fp2_t arg);
 
 // add: result <- lhs[a + bi] + rhs[a + bi]

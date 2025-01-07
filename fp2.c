@@ -108,6 +108,7 @@ void fp_sqrt(fp_t res, const fp_t a) {
 // FP2 methods
 // ===========
 
+// init: allocate memory and set value to 0 + 0i
 void fp2_init(fp2_t *res) {
     // allocate memory for the fp2 structure
     *res = (fp2_t) malloc(sizeof(fp2));
@@ -116,6 +117,7 @@ void fp2_init(fp2_t *res) {
     fp_init((*res)->b);
 }
 
+// clear: free memory and set pointer to NULL 
 void fp2_clear(fp2_t *res) {
     // clear both variables
     fp_clear((*res)->a);
@@ -155,7 +157,7 @@ void fp2_sub(fp2_t res, const fp2_t lhs, const fp2_t rhs) {
     fp_sub(res->b, lhs->b, rhs->b);
 }
 
-// sub: result <- lhs[a + bi] - rhs[a + bi]
+// sub: result <- lhs[a + bi] - (unsigned int) rhs 
 void fp2_sub_uint(fp2_t res, const fp2_t lhs, unsigned long int rhs) {
     fp_sub_uint(res->a, lhs->a, rhs);
     fp_set(res->b, lhs->b);
