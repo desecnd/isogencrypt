@@ -133,6 +133,12 @@ void fp2_fill(fp2_t res, fp_t a, fp_t b) {
     fp_set(res->b, b);
 }
 
+// set: result <- (unsigned int) rhs 
+void fp2_set_uint(fp2_t res, unsigned long int rhs) {
+    fp_set_uint(res->a, rhs);
+    fp_set_uint(res->b, 0);
+}
+
 // set: result = a
 void fp2_set(fp2_t res, const fp2_t arg) {
     fp_set(res->a, arg->a);

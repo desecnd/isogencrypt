@@ -73,6 +73,9 @@ void fp2_fill(fp2_t res, fp_t a, fp_t b);
 // set: result <- a + bi
 void fp2_set(fp2_t res, const fp2_t arg);
 
+// set: result <- (unsigned int) rhs 
+void fp2_set_uint(fp2_t res, unsigned long int rhs);
+
 // add: result <- lhs[a + bi] + rhs[a + bi]
 void fp2_add(fp2_t res, const fp2_t lhs, const fp2_t rhs);
 
@@ -81,6 +84,9 @@ void fp2_add_uint(fp2_t res, const fp2_t lhs, unsigned long int rhs);
 
 // sub: result <- lhs[a + bi] - rhs[a + bi] (mod p)
 void fp2_sub(fp2_t res, const fp2_t lhs, const fp2_t rhs);
+
+// sub: result <- lhs[a + bi] - (unsigned int) rhs 
+void fp2_sub_uint(fp2_t res, const fp2_t lhs, unsigned long int rhs);
 
 // mul: result <- lhs[a + bi] * rhs[a + bi] (mod p)
 void fp2_mul(fp2_t res, const fp2_t lhs, const fp2_t rhs);
