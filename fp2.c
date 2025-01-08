@@ -1,7 +1,41 @@
 #include "fp2.h"
 #include <stdlib.h>
+#include <stdio.h>
 
 static fp_t fp_char;
+static int fp_initialized = 0;
+
+int fp_char_setup_uint(unsigned int p) {
+    fp_t pp;
+    fp_init(pp);
+    fp_set_uint(pp, p);
+    int retval = fp_char_setup(pp);
+    fp_clear(pp);
+    return retval;
+}
+
+// set the field characteristic to p
+int fp_char_setup(fp_t p) {
+    if (fp_initialized) {
+        printf("[!] trying to initialize the characteristic second time!\n");
+        return -1;
+    }
+
+    fp_init(fp_char);
+    fp_set(fp_char, p);
+    fp_initialized = 1;
+    return 0;
+}
+
+int fp_char_clear() {
+    if (!fp_initialized) {
+        printf("[!] trying to clear not-initialized characteristic!\n");
+        return -1;
+    }
+    fp_clear(fp_char);
+    fp_initialized = 0;
+    return 0;
+}
 
 // init: allocate memory and set value = 0
 void fp_init(fp_t res) {
@@ -13,10 +47,6 @@ void fp_clear(fp_t res) {
     mpz_clear(res);
 }
 
-// set the field characteristic to p
-void fp_set_global_char(fp_t p) {
-    mpz_set(fp_char, p);
-}
 
 // set: result <- a
 void fp_set(fp_t res, const fp_t a) {
@@ -172,8 +202,8 @@ void fp2_sub_uint(fp2_t res, const fp2_t lhs, unsigned long int rhs) {
 // mul: result <- lhs[a + bi] * rhs[a + bi]
 void fp2_mul(fp2_t res, const fp2_t lhs, const fp2_t rhs) {
     // add temprary field elements for storing values
-    fp_t tmp;
-    fp_init(tmp); // allocate and set to 0
+    fp_t t;
+    fp_init(t); // allocate and set to 0
 
     // (a + bi) * (c + di) = [ac - bd] + [ad + bc]i
 
@@ -181,9 +211,9 @@ void fp2_mul(fp2_t res, const fp2_t lhs, const fp2_t rhs) {
     // res[0] <- a * c
     fp_mul(res->a, lhs->a, rhs->a);
     // temp <- b * d
-    fp_mul(tmp, lhs->b, rhs->b);
+    fp_mul(t, lhs->b, rhs->b);
     // res[0] <- [res0](a * c) - [tmp](b * d)
-    fp_sub(res->a, res->a, tmp);
+    fp_sub(res->a, res->a, t);
 
     // calculate the second variable (real part); ad - bc
     // res[1] <- a * d
@@ -193,10 +223,10 @@ void fp2_mul(fp2_t res, const fp2_t lhs, const fp2_t rhs) {
     // so no need to set value to 0?
 
     // tmp <- b * c
-    fp_mul(tmp, lhs->b, rhs->a);
-    fp_add(res->b, res->b, tmp);
+    fp_mul(t, lhs->b, rhs->a);
+    fp_add(res->b, res->b, t);
 
-    fp_clear(tmp);
+    fp_clear(t);
 }
 
 // sq: result <- arg^2

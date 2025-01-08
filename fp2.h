@@ -15,14 +15,16 @@ typedef union {
 
 // ------ FP Methods
 
+// set the global static field characteristic to p
+int fp_char_setup(fp_t p); 
+int fp_char_setup_uint(unsigned int p); 
+int fp_char_clear();
+
 // init memory for variable
 void fp_init(fp_t res); 
 
 // clear memory for variable 
 void fp_clear(fp_t res); 
-
-// set the field characteristic to p
-void fp_set_global_char(fp_t p); 
 
 // set: res = a 
 void fp_set(fp_t res, const fp_t a); 
