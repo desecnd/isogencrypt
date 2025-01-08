@@ -3,14 +3,51 @@
 
 #include "fp2.h"
 
-int main() {
+
+void failed_once() {
+    printf("[*] Running 'Failed once' test...\n");
+    assert(!fp_char_setup_uint(431));
+
+    fp2_t x, y;
+    fp2_init(&x);
+    fp2_init(&y);
+
+    // x = 291 + 15*i
+    fp_set_uint(x->a, 291);
+    fp_set_uint(x->b, 15);
+    fp2_print_uint(x, "x");
+
+    // y = 293 + 15*i
+    fp_set_uint(y->a, 293);
+    fp_set_uint(y->b, 15);
+    fp2_print_uint(y, "y");
+
+    // Square-ing test that failed
+    {
+        fp2_t r; 
+        fp2_init(&r);
+
+        fp2_sq(x, x);
+        fp2_print_uint(x, "x^2");
+        assert(!mpz_cmp_ui(x->a, 68));
+        assert(!mpz_cmp_ui(x->b, 84));
+
+        fp2_sq(y, y);
+        fp2_print_uint(y, "y^2");
+        assert(!mpz_cmp_ui(y->a, 68));
+        assert(!mpz_cmp_ui(y->b, 84));
+
+        fp2_clear(&r);
+    }
+
+    assert(!fp_char_clear());
+}
+
+int basic_arithmetic() {
     printf("[*] Running Fp^2 arithmetic test for char p = 431\n");
 
     // init characteristic
-    fp_t p;
-    fp_init(p);
-    fp_set_uint(p, 431);
-    fp_set_global_char(p);
+    assert(!fp_char_setup_uint(431));
 
     fp2_t x, y;
     fp2_init(&x);
@@ -70,6 +107,15 @@ int main() {
     fp2_clear(&r);
 
     printf("[+] All tests passed\n");
+
+    assert(!fp_char_clear());
+
+    return 0;
+}
+
+int main() {
+    failed_once();
+    // basic_arithmetic();
 
     return 0;
 }
