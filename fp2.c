@@ -203,3 +203,7 @@ void fp2_mul(fp2_t res, const fp2_t lhs, const fp2_t rhs) {
 void fp2_sq(fp2_t res, const fp2_t arg) {
     fp2_mul(res, arg, arg);
 }
+
+void fp2_print_uint(fp2_t arg, const char* name) {
+    printf("%s = %ld + %ld * i\n", name, mpz_get_ui(arg->a), mpz_get_ui(arg->b));
+}

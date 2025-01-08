@@ -94,4 +94,6 @@ void fp2_mul(fp2_t res, const fp2_t lhs, const fp2_t rhs);
 // sq: result <- arg^2
 void fp2_sq(fp2_t res, fp2_t arg);
 
+void fp2_print_uint(fp2_t arg, const char *name);
+
 #endif
