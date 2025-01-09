@@ -3,38 +3,56 @@
 #include <stdio.h>
 #include <assert.h>
 
-static fp_t fp_char;
-static int fp_initialized = 0;
+static fp_t fpchar;
+static int is_fpchar_set = 0;
 
-int fp_char_setup_uint(unsigned int p) {
+int global_fpchar_setup_uint(unsigned int p) {
     fp_t pp;
     fp_init(pp);
     fp_set_uint(pp, p);
-    int retval = fp_char_setup(pp);
+    int retval = global_fpchar_setup(pp);
     fp_clear(pp);
     return retval;
 }
 
-// set the field characteristic to p
-int fp_char_setup(fp_t p) {
-    if (fp_initialized) {
+// Initialize and set the field characteristic of Fp and Fp^2 arithmetic.
+// For now, only p = 3 (mod 4) is allowed
+int global_fpchar_setup(fp_t p) {
+    if (is_fpchar_set) {
         printf("[!] trying to initialize the characteristic second time!\n");
         return -1;
     }
 
-    fp_init(fp_char);
-    fp_set(fp_char, p);
-    fp_initialized = 1;
+    int invalid_mod4 = 0;
+    
+    // Check for modulo 4 operans
+    {
+        fp_t t; fp_init(t);
+        // TODO: change inconsistent API
+        mpz_mod_ui(t, p, 4);
+        // invalid := p mod 4 is different than 3
+        invalid_mod4 = mpz_cmp_ui(t, 3);
+        fp_clear(t);
+    }
+
+    if (invalid_mod4) {
+        printf("[!] Trying to set prime field characteristic with prime != 3 (mod 4)\n");
+        return -2;
+    }
+
+    fp_init(fpchar);
+    fp_set(fpchar, p);
+    is_fpchar_set = 1;
     return 0;
 }
 
-int fp_char_clear() {
-    if (!fp_initialized) {
+int global_fpchar_clear() {
+    if (!is_fpchar_set) {
         printf("[!] trying to clear not-initialized characteristic!\n");
         return -1;
     }
-    fp_clear(fp_char);
-    fp_initialized = 0;
+    fp_clear(fpchar);
+    is_fpchar_set = 0;
     return 0;
 }
 
@@ -62,55 +80,58 @@ void fp_set_uint(fp_t res, unsigned long int a) {
 // add: result = a + b (mod p)
 void fp_add(fp_t res, const fp_t a, const fp_t b) {
     mpz_add(res, a, b);
-    mpz_mod(res, res, fp_char);
+    mpz_mod(res, res, fpchar);
 } 
 
 // add uint: result = a + (unsigned int) b (mod p)
 void fp_add_uint(fp_t res, const fp_t a, unsigned long int b) {
     mpz_add_ui(res, a, b);
-    mpz_mod(res, res, fp_char);
+    mpz_mod(res, res, fpchar);
 }
 
 // sub: res = a - b (mod p)
 void fp_sub(fp_t res, const fp_t a, const fp_t b) {
     mpz_sub(res, a, b);
-    mpz_mod(res, res, fp_char);
+    mpz_mod(res, res, fpchar);
 }
 
 // sub uint: res = a - (unsigned int) b (mod p)
 void fp_sub_uint(fp_t res, const fp_t a, unsigned long int b) {
     mpz_sub_ui(res, a, b);
-    mpz_mod(res, res, fp_char);
+    mpz_mod(res, res, fpchar);
 }
 
 // mul: res = a * b (mod p)
+// This function is argument-safe and can be called 
+// with: fp_mul(n, n, n), where n is the same variable
 void fp_mul(fp_t res, const fp_t a, const fp_t b) {
     mpz_mul(res, a, b);
-    mpz_mod(res, res, fp_char);
+    mpz_mod(res, res, fpchar);
 }
 
 // mul int: res = a * (int) b (mod p)
 void fp_mul_int(fp_t res, const fp_t a, long int b) {
     mpz_mul_si(res, a, b);
-    mpz_mod(res, res, fp_char);
+    mpz_mod(res, res, fpchar);
 }
 
 // modular inverse: res = a^-1 (mod p)
 void fp_inv(fp_t res, const fp_t a) {
-    mpz_invert(res, a, fp_char);
+    mpz_invert(res, a, fpchar);
 }
 
 // div: a / b (mod p) = a * b^-1 (mod p)
 void fp_div(fp_t res, const fp_t a, const fp_t b) {
-    mpz_invert(res, b, fp_char);
+    mpz_invert(res, b, fpchar);
     mpz_mul(res, res, a);
-    mpz_mod(res, res, fp_char);
+    mpz_mod(res, res, fpchar);
 }
+
 
 // neg: a = -a (mod p)
 void fp_neg(fp_t res, const fp_t a) {
-    mpz_sub(res, fp_char, a);
-    mpz_mod(res, res, fp_char);
+    mpz_sub(res, fpchar, a);
+    mpz_mod(res, res, fpchar);
 }
 
 // sqrt: 
@@ -122,14 +143,14 @@ void fp_sqrt(fp_t res, const fp_t a) {
     // calculate a^((p + 1)/4)
 
     // step 1: e = p + 1
-    mpz_add_ui(exp, fp_char, 1);
+    mpz_add_ui(exp, fpchar, 1);
 
     // step 2: e = (p + 1)/4
     // can use divexact only if we know the divisor: d = 4
     mpz_divexact_ui(exp, exp, 4);
 
     // step 3: res = a ^ e
-    mpz_powm(res, a, exp, fp_char);
+    mpz_powm(res, a, exp, fpchar);
 
     // step 4: clear memory for e variable
     mpz_clear(exp);
