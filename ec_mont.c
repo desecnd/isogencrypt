@@ -1,7 +1,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "mont.h"
+#include "ec_mont.h"
 
 // copy coordinates of point: R <- P
 void point_set(point_t R, const point_t P) {

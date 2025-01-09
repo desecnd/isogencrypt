@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include "mont.h"
+#include "ec_mont.h"
 #include <assert.h>
 
 int main() {

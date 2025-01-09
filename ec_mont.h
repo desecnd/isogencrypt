@@ -1,5 +1,5 @@
-#ifndef MONT_H
-#define MONT_H
+#ifndef EC_MONT_H
+#define EC_MONT_H
 
 #include "fp2.h"
 
