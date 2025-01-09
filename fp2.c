@@ -141,7 +141,7 @@ void fp_sqrt(fp_t res, const fp_t a) {
 // init: allocate memory and set value to 0 + 0i
 void fp2_init(fp2_t *res) {
     // allocate memory for the fp2 structure
-    *res = (fp2_t) malloc(sizeof(fp2));
+    *res = (fp2_t) malloc(sizeof(fp2_elem));
     // initialize both variables
     fp_init((*res)->a);
     fp_init((*res)->b);

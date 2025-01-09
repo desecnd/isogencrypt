@@ -6,12 +6,12 @@
 typedef mpz_t fp_t;
 
 typedef union {
-    struct {
-        fp_t a;
-        fp_t b;
-    };
-    fp_t poly[2];
-} fp2, *fp2_t;
+     struct {
+         fp_t a;
+         fp_t b;
+     };
+     fp_t raw[2];
+} fp2_elem, *fp2_t;
 
 // ------ FP Methods
 
