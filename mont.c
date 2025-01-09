@@ -27,24 +27,26 @@ void point_clear(point_t *P) {
 
 // Calculate the double of the point
 void xDBL(point_t R, const point_t P, const fp2_t A24_plus, const fp2_t C24) {
+    // By X, Z we mean x(P) and z(P)
     fp2_t t0, t1;
     fp2_init(&t0);
     fp2_init(&t1);
 
-    fp2_sub(t0, P->X, P->Z);    // t0 = x(P) - z(P)
-    fp2_add(t1, P->X, P->Z);    // t1 = x(P) + z(P)
+    fp2_sub(t0, P->X, P->Z);    // t0 = X - Z
+    fp2_add(t1, P->X, P->Z);    // t1 = X + Z
 
-    fp2_sq(t0, t0);             // t0 = (x(P) - z(P))^2
-    fp2_sq(t1, t1);             // t1 = (x(P) + z(P))^2
+    // Warning! Must use "safe" function for square-ing
+    fp2_sq_safe(t0, t0);             // t0 = (X - Z)^2 
+    fp2_sq_safe(t1, t1);             // t1 = (X + Z)^2
 
-    fp2_mul(R->Z, t0, C24);     // 
-    fp2_mul(R->X, R->Z, t1);
+    fp2_mul_unsafe(R->Z, t0, C24);     // Z' = (X - Z)^2 * C24
+    fp2_mul_unsafe(R->X, R->Z, t1);    // X' = (X + Z)^2 * (X - Z)^2 * C24
 
-    fp2_sub(t1, t1, t0);
-    fp2_mul(t0, A24_plus, t1);
+    fp2_sub(t1, t1, t0);        // t1 = (X + Z)^2 - (X - Z)^2 
+    fp2_mul_unsafe(t0, A24_plus, t1);  // t0 = A24p * [(X + Z)^2 - (X - Z)^2]
 
-    fp2_add(R->Z, R->Z, t0);
-    fp2_mul(R->Z, R->Z, t1); 
+    fp2_add(R->Z, R->Z, t0);    // Z' = A24p * [(X + Z)^2 - (X - Z)^2] + (X - Z)^2 * C24
+    fp2_mul_safe(R->Z, R->Z, t1);    // Z' = { A24p * [(X + Z)^2 - (X - Z)^2] + C24 (X - Z)^2] } [(X + Z)^2 - (X - Z)^2]
 
     fp2_clear(&t0);
     fp2_clear(&t1);
@@ -66,9 +68,9 @@ void xDBLe(point_t R, const point_t P, const fp2_t A24_plus, const fp2_t C24, co
 // Calculate the codomain (A24+, C24) of the 2-degree isogeny from given kernel K of order 2
 void isog2_codomain(const point_t K, fp2_t A24_plus, fp2_t C24) {
     // A24+ = x(K)^2
-    fp2_sq(A24_plus, K->X);
+    fp2_sq_unsafe(A24_plus, K->X);
     // C24 = z(K)^2
-    fp2_sq(C24, K->Z);
+    fp2_sq_unsafe(C24, K->Z);
     // A24+ = z(K)^2 - x(K)^2
     fp2_sub(A24_plus, C24, A24_plus);
 }

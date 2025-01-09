@@ -1,6 +1,7 @@
 #include "fp2.h"
 #include <stdlib.h>
 #include <stdio.h>
+#include <assert.h>
 
 static fp_t fp_char;
 static int fp_initialized = 0;
@@ -200,7 +201,11 @@ void fp2_sub_uint(fp2_t res, const fp2_t lhs, unsigned long int rhs) {
 }
 
 // mul: result <- lhs[a + bi] * rhs[a + bi]
-void fp2_mul(fp2_t res, const fp2_t lhs, const fp2_t rhs) {
+// This function is **not** argument-safe, i.e.
+// calling fp_mul(a, a, a) will provide incorrect results.
+// Therefore, res != lhs and res != rhs, but calling (a, n, n) is ok.
+void fp2_mul_unsafe(fp2_t res, const fp2_t lhs, const fp2_t rhs) {
+    assert(res != lhs && res != rhs && "fp2_mul cannot be called with res = lhs or res = rhs");
     // add temprary field elements for storing values
     fp_t t;
     fp_init(t); // allocate and set to 0
@@ -229,9 +234,41 @@ void fp2_mul(fp2_t res, const fp2_t lhs, const fp2_t rhs) {
     fp_clear(t);
 }
 
+void fp2_mul_safe(fp2_t res, const fp2_t lhs, const fp2_t rhs) {
+    // x = a + bi, y = c + di
+    // r = (ac - bd) + (ad + bc)i = e + fi
+    // cost: 4m + 2a
+
+    fp_t t0, t1, tc;
+    fp_init(t0); fp_init(t1); fp_init(tc);
+
+    // tc is used for storing value c in case 
+    // it will be overwritten in step: e = ac 
+    // if fp2_mul is called with r = x = y
+    fp_set(tc, rhs->raw[0]);             // tc = c
+    fp_mul(t0, lhs->raw[1], rhs->raw[1]);     // t0 = bd
+    fp_mul(t1, lhs->raw[0], rhs->raw[1]);     // t1 = ad
+
+    fp_mul(res->raw[0], lhs->raw[0], rhs->raw[0]); // e = ac
+    fp_sub(res->raw[0], res->raw[0], t0);     // e = ac - bd
+
+    fp_mul(res->raw[1], lhs->raw[1], tc);     // f = bc 
+    fp_add(res->raw[1], res->raw[1], t1);     // f = bc + ad
+
+    fp_clear(t0); fp_clear(t1); fp_clear(tc);
+}
+
 // sq: result <- arg^2
-void fp2_sq(fp2_t res, const fp2_t arg) {
-    fp2_mul(res, arg, arg);
+// This function cannot be used when res == arg
+void fp2_sq_unsafe(fp2_t res, const fp2_t arg) {
+    assert(res != arg && "fp2_sq cannot be called with res = arg");
+    fp2_mul_unsafe(res, arg, arg);
+}
+
+// sq: result <- arg^2
+// This function can be used safely with res == arg
+void fp2_sq_safe(fp2_t res, const fp2_t arg) {
+    fp2_mul_safe(res, arg, arg);
 }
 
 void fp2_print_uint(fp2_t arg, const char* name) {

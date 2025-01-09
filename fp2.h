@@ -91,10 +91,12 @@ void fp2_sub(fp2_t res, const fp2_t lhs, const fp2_t rhs);
 void fp2_sub_uint(fp2_t res, const fp2_t lhs, unsigned long int rhs);
 
 // mul: result <- lhs[a + bi] * rhs[a + bi] (mod p)
-void fp2_mul(fp2_t res, const fp2_t lhs, const fp2_t rhs);
+void fp2_mul_unsafe(fp2_t res, const fp2_t lhs, const fp2_t rhs);
+void fp2_mul_safe(fp2_t res, const fp2_t lhs, const fp2_t rhs);
 
 // sq: result <- arg^2
-void fp2_sq(fp2_t res, fp2_t arg);
+void fp2_sq_unsafe(fp2_t res, fp2_t arg);
+void fp2_sq_safe(fp2_t res, fp2_t arg);
 
 void fp2_print_uint(fp2_t arg, const char *name);
 
