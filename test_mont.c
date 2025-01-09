@@ -1,13 +1,11 @@
 #include <stdio.h>
 #include "mont.h"
+#include <assert.h>
 
 int main() {
 
     // Set field characteristic
-    fp_t p;
-    fp_init(p);
-    fp_set_uint(p, 431);
-    fp_set_global_char(p);
+    assert(!global_fpchar_setup_uint(431));
 
     // Initialize the Elliptic Curve E: y^2 = x^3 + 6x^2 + x
     // (A : C) are projective coordinates of (a : 1) = (6 : 1)
@@ -22,9 +20,11 @@ int main() {
     fp2_t A, C;
     fp2_init(&A);
     fp2_init(&C);
-    printf("All works!\n");
     fp2_set_uint(A, 6);
     fp2_set_uint(C, 1);
+
+    fp2_print_uint(A, "A");
+    fp2_print_uint(C, "C");
 
     // (A24+ : C24) ~ (A + 2C : 4C)
     // This projective pair is the representant of the variable (a + 2)/4
@@ -37,6 +37,9 @@ int main() {
     fp2_add(C24, C, C);   // C24 = 2C
     fp2_add(A24_plus, A24_plus, C24); // A24p = A + 2C
     fp2_add(C24, C24, C24); // C24 = 4C
+
+    fp2_print_uint(A24_plus, "A24p");
+    fp2_print_uint(C24, "C24");
 
     // x-coordinate for P: x(P)
 
@@ -53,18 +56,27 @@ int main() {
     // Pz = 1
     fp_set_uint(P->Z->a, 1);
 
-    printf("Px: %ld + %ldi\n", mpz_get_ui(P->X->a), mpz_get_ui(P->X->b));
-    printf("Pz: %ld + %ldi\n", mpz_get_ui(P->Z->a), mpz_get_ui(P->Z->b));
-
+    fp2_print_uint(P->X, "xP");
+    fp2_print_uint(P->Z, "zP");
 
     // Q = [2]P
     { 
         point_t Q;
         point_init(&Q);
-        xDBL(Q, P, A24_plus, C24);
 
-        printf("Qx: %ld + %ldi\n", mpz_get_ui(Q->X->a), mpz_get_ui(Q->X->b));
-        printf("Qz: %ld + %ldi\n", mpz_get_ui(Q->Z->a), mpz_get_ui(Q->Z->b));
+        xDBL(Q, P, A24_plus, C24);
+        
+        fp2_print_uint(Q->X, "xQ");
+        fp2_print_uint(Q->Z, "zQ");
+
+        // Answer in affine coordinates: x(Q) = 61 + 184 * i
+        // Which is equal to projective coordinates (this implementation)
+        // X(Q) = 157 + 180 * i
+        // Z(Q) = 65 + 358 * i
+        // X(Q)/Z(Q) = 61 + 184 * i = x(Q)
+
+        assert(!mpz_cmp_ui(Q->X->a, 157) && !mpz_cmp_ui(Q->X->b, 180));
+        assert(!mpz_cmp_ui(Q->Z->a, 65) && !mpz_cmp_ui(Q->Z->b, 358));
 
         point_clear(&Q);
     }
@@ -74,7 +86,8 @@ int main() {
     fp2_clear(&A24_plus);
     fp2_clear(&C24);
     point_clear(&P);
-    fp_clear(p);
+
+    assert(!global_fpchar_clear());
 
     return 0;
 }

@@ -4,7 +4,7 @@
 #include "fp2.h"
 
 int test_simple() {
-    fp_char_setup_uint(431);
+    global_fpchar_setup_uint(431);
 
     fp_t r;
     fp_init(r);
@@ -27,13 +27,13 @@ int test_simple() {
 
     fp_clear(r);
 
-    assert(!fp_char_clear());
+    assert(!global_fpchar_clear());
 
     return 0;
 }
 
 void test_modulo() {
-    assert(!fp_char_setup_uint(431));
+    assert(!global_fpchar_setup_uint(431));
 
     fp_t a, b;
     fp_init(a);
@@ -69,7 +69,7 @@ void test_modulo() {
     fp_clear(a);
     fp_clear(b);
 
-    assert(!fp_char_clear());
+    assert(!global_fpchar_clear());
 }
 
 int main() {
