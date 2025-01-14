@@ -84,6 +84,11 @@ void fp2_set(fp2_t res, const fp2_t arg);
 // set: result <- (unsigned int) rhs 
 void fp2_set_uint(fp2_t res, unsigned long int rhs);
 
+// set: set value of res to a + bi
+// if string are given with prefix (0x, 0, 0b) 
+// corresponding base will be detected and applied to conversion
+void fp2_set_str(fp2_t res, const char *a, const char *b);
+
 // add: result <- lhs[a + bi] + rhs[a + bi]
 void fp2_add(fp2_t res, const fp2_t lhs, const fp2_t rhs);
 

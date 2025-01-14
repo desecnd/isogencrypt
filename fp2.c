@@ -3,6 +3,8 @@
 #include <stdio.h>
 #include <assert.h>
 
+#include "fp2.h"
+
 static fp_t fpchar;
 static int is_fpchar_set = 0;
 
@@ -189,6 +191,13 @@ void fp2_fill(fp2_t res, fp_t a, fp_t b) {
 void fp2_set_uint(fp2_t res, unsigned long int rhs) {
     fp_set_uint(res->a, rhs);
     fp_set_uint(res->b, 0);
+}
+
+
+void fp2_set_str(fp2_t res, const char *a, const char *b) {
+    // TODO: change inconsistent API
+    mpz_set_str(res->a, a, 0);
+    mpz_set_str(res->b, b, 0);
 }
 
 // set: result = a
