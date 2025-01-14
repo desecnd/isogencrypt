@@ -255,7 +255,7 @@ void fp2_mul_unsafe(fp2_t res, const fp2_t lhs, const fp2_t rhs) {
     fp_clear(t);
 }
 
-void fp2_mul_safe(fp2_t res, const fp2_t lhs, const fp2_t rhs) {
+void fp2_mul_safe(fp2_t res, const fp2_t rhs) {
     // x = a + bi, y = c + di
     // r = (ac - bd) + (ad + bc)i = e + fi
     // cost: 4m + 2a
@@ -267,29 +267,70 @@ void fp2_mul_safe(fp2_t res, const fp2_t lhs, const fp2_t rhs) {
     // it will be overwritten in step: e = ac 
     // if fp2_mul is called with r = x = y
     fp_set(tc, rhs->raw[0]);             // tc = c
-    fp_mul(t0, lhs->raw[1], rhs->raw[1]);     // t0 = bd
-    fp_mul(t1, lhs->raw[0], rhs->raw[1]);     // t1 = ad
+    fp_mul(t0, res->raw[1], rhs->raw[1]);     // t0 = bd
+    fp_mul(t1, res->raw[0], rhs->raw[1]);     // t1 = ad
 
-    fp_mul(res->raw[0], lhs->raw[0], rhs->raw[0]); // e = ac
+    fp_mul(res->raw[0], res->raw[0], rhs->raw[0]); // e = ac
     fp_sub(res->raw[0], res->raw[0], t0);     // e = ac - bd
 
-    fp_mul(res->raw[1], lhs->raw[1], tc);     // f = bc 
+    fp_mul(res->raw[1], res->raw[1], tc);     // f = bc 
     fp_add(res->raw[1], res->raw[1], t1);     // f = bc + ad
 
     fp_clear(t0); fp_clear(t1); fp_clear(tc);
 }
 
-// sq: result <- arg^2
-// This function cannot be used when res == arg
-void fp2_sq_unsafe(fp2_t res, const fp2_t arg) {
-    assert(res != arg && "fp2_sq cannot be called with res = arg");
-    fp2_mul_unsafe(res, arg, arg);
+
+// Calculate inverse of element in Fp^2
+// Cannot be used with r = arg
+void fp2_inv_unsafe(fp2_t r, const fp2_t x) {
+    assert(r != x && "Fp^2 inversion is not argument safe, cannot be called with r = arg");
+    assert(!fp2_is_zero(x) && "Fp^2 inversion does not accept x = 0");
+
+    fp_mul(r->a, x->a, x->a); // r.a = a^2
+    fp_mul(r->b, x->b, x->b); // r.b = b^2
+    
+    fp_add(r->a, r->a, r->b); // r.a = a^2 + b^2
+    fp_inv(r->a, r->a);         // r.a = (a^2 + b^2)^-1
+
+    fp_mul(r->b, x->b, r->a);         // r.b = b * (a^2 + b^2)^-1
+    fp_neg(r->b, r->b);         // r.b = -b * (a^2 + b^2)^-1
+
+    fp_mul(r->a, r->a, x->a); // r.a = a * (a^2 + b^2)^-1
+
+    // r = a(a^2 + b^2)^-1 + b(a^2 + b^2)^-1 * i
 }
 
-// sq: result <- arg^2
-// This function can be used safely with res == arg
-void fp2_sq_safe(fp2_t res, const fp2_t arg) {
-    fp2_mul_safe(res, arg, arg);
+void fp2_inv_safe(fp2_t x) {
+    // Calculates the inverse of fp^2 element in a argument-safe manner (i.e. valid when r = x)
+    // input: x = a + bi
+    // output: r = [a * (a^2 + b^2)^-1] + [b * (a^2 + b^2)^-1]i
+    // cost: 
+
+    assert(!fp2_is_zero(x) && "Fp^2 inversion does not accept x = 0");
+
+    fp_t t0, t1;
+    fp_init(t0); fp_init(t1);
+
+    fp_mul(t0, x->a, x->a); // t0 = a^2
+    fp_mul(t1, x->b, x->b); // t1 = b^2
+    
+    fp_add(t0, t0, t1); // t0 = a^2 + b^2
+    fp_inv(t0, t0);     // t0 = (a^2 + b^2)^-1
+
+    fp_mul(x->b, x->b, t0);     // x.b = b * (a^2 + b^2)^-1
+    fp_neg(x->b, x->b);         // x.b = -b * (a^2 + b^2)^-1
+
+    fp_mul(x->a, x->a, t0);     // x.a = a * (a^2 + b^2)^-1
+
+    // Clear the allocations
+    fp_clear(t0); fp_clear(t1);
+}
+
+// Calculate res: lhs / rhs
+void fp2_div_unsafe(fp2_t res, const fp2_t lhs, const fp2_t rhs) {
+    fp2_inv_unsafe(res, rhs);
+    // Uses safe in order to not allocate additional memory
+    fp2_mul_safe(res, lhs);
 }
 
 void fp2_print_uint(fp2_t arg, const char* name) {
