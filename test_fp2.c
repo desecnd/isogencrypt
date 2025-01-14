@@ -1,16 +1,16 @@
 #include <stdio.h>
-#include <assert.h>
 
 #include "fp2.h"
+#include "testing.h"
 
-
-int test_failed_once() {
-    printf("[*] Running 'Failed once' test...\n");
-    assert(!global_fpchar_setup_uint(431));
+void test_failed_once() {
+    CHECK(!global_fpchar_setup_uint(431));
 
     fp2_t x, y;
     fp2_init(&x);
     fp2_init(&y);
+
+    CHECK(fp2_is_zero(x) && fp2_is_zero(y));
 
     // x = 291 + 15*i
     fp_set_uint(x->a, 291);
@@ -29,26 +29,25 @@ int test_failed_once() {
 
         fp2_sq_unsafe(r, x);
         fp2_print_uint(r, "x^2");
-        assert(!mpz_cmp_ui(r->a, 411));
-        assert(!mpz_cmp_ui(r->b, 110));
+        CHECK(!mpz_cmp_ui(r->a, 411));
+        CHECK(!mpz_cmp_ui(r->b, 110));
 
         fp2_sq_unsafe(r, y);
         fp2_print_uint(r, "y^2");
-        assert(!mpz_cmp_ui(r->a, 286));
-        assert(!mpz_cmp_ui(r->b, 170));
+        CHECK(!mpz_cmp_ui(r->a, 286));
+        CHECK(!mpz_cmp_ui(r->b, 170));
 
         fp2_clear(&r);
     }
 
-    assert(!global_fpchar_clear());
-    return 0;
+    CHECK(!global_fpchar_clear());
 }
 
-int test_basic_arithmetic() {
+void test_basic_arithmetic() {
     printf("[*] Running Fp^2 arithmetic test for char p = 431...\n");
 
     // init characteristic
-    assert(!global_fpchar_setup_uint(431));
+    CHECK(!global_fpchar_setup_uint(431));
 
     fp2_t x, y;
     fp2_init(&x);
@@ -73,8 +72,8 @@ int test_basic_arithmetic() {
     // r = 68 + 84i (mod 431)
     fp2_add(r, x, y);
     printf("x + y: %ld, %ldi\n", mpz_get_ui(r->a), mpz_get_ui(r->b));
-    assert(!mpz_cmp_ui(r->a, 68));
-    assert(!mpz_cmp_ui(r->b, 84));
+    CHECK(!mpz_cmp_ui(r->a, 68));
+    CHECK(!mpz_cmp_ui(r->b, 84));
 
     // r <- x - y
     // r = (27 + 59i) - (47 + 25i)
@@ -82,8 +81,8 @@ int test_basic_arithmetic() {
     // r = 405 + 34i (mod 431)
     fp2_sub(r, x, y);
     printf("x - y: %ld, %ldi\n", mpz_get_ui(r->a), mpz_get_ui(r->b));
-    assert(!mpz_cmp_ui(r->a, 405));
-    assert(!mpz_cmp_ui(r->b, 34));
+    CHECK(!mpz_cmp_ui(r->a, 405));
+    CHECK(!mpz_cmp_ui(r->b, 34));
 
     // r <- x * y
     // r = (27 + 59i) * (47 + 25i)
@@ -91,8 +90,8 @@ int test_basic_arithmetic() {
     // r = 374 + 281i (mod 431)
     fp2_mul_unsafe(r, x, y);
     printf("x * y: %ld, %ldi\n", mpz_get_ui(r->a), mpz_get_ui(r->b));
-    assert(!mpz_cmp_ui(r->a, 374));
-    assert(!mpz_cmp_ui(r->b, 281));
+    CHECK(!mpz_cmp_ui(r->a, 374));
+    CHECK(!mpz_cmp_ui(r->b, 281));
 
     // r <- x^2
     // r = (27 + 59i) * (27 + 59i)
@@ -100,24 +99,20 @@ int test_basic_arithmetic() {
     // r = 408 + 323i (mod 431)
     fp2_sq_unsafe(r, x);
     printf("x ^ 2: %ld, %ldi\n", mpz_get_ui(r->a), mpz_get_ui(r->b));
-    assert(!mpz_cmp_ui(r->a, 408));
-    assert(!mpz_cmp_ui(r->b, 323));
+    CHECK(!mpz_cmp_ui(r->a, 408));
+    CHECK(!mpz_cmp_ui(r->b, 323));
 
     fp2_clear(&x);
     fp2_clear(&y);
     fp2_clear(&r);
 
-
-    assert(!global_fpchar_clear());
-
-    return 0;
+    CHECK(!global_fpchar_clear());
 }
 
-int test_safe_mul() {
-    printf("[*] Running 'Test Safe Multiplication'...\n");
+void test_safe_unsafe_mul_sq() {
 
     // init characteristic
-    assert(!global_fpchar_setup_uint(431));
+    CHECK(!global_fpchar_setup_uint(431));
 
     fp2_t r, x;
     fp2_init(&r); fp2_init(&x);
@@ -132,42 +127,97 @@ int test_safe_mul() {
 
     fp2_mul_unsafe(r, x, x);
     fp2_print_uint(r, "(unsafe) r := x * x");
-    assert(!mpz_cmp_ui(r->a, 408) && !mpz_cmp_ui(r->b, 323));
+    CHECK(!mpz_cmp_ui(r->a, 408) && !mpz_cmp_ui(r->b, 323));
 
     fp2_set(r, x);
-    fp2_mul_safe(r, r, x);
-    fp2_print_uint(r, "(safe) r := r * x");
-    assert(!mpz_cmp_ui(r->a, 408) && !mpz_cmp_ui(r->b, 323));
+    fp2_mul_safe(r, x);
+    fp2_print_uint(r, "(safe) r *= x");
+    CHECK(!mpz_cmp_ui(r->a, 408) && !mpz_cmp_ui(r->b, 323));
 
     fp2_set(r, x);
-    fp2_mul_safe(r, r, r);
-    fp2_print_uint(r, "(safe) r := r * r");
-    assert(!mpz_cmp_ui(r->a, 408) && !mpz_cmp_ui(r->b, 323));
+    fp2_mul_safe(r,  r);
+    fp2_print_uint(r, "(safe) r *= r");
+    CHECK(!mpz_cmp_ui(r->a, 408) && !mpz_cmp_ui(r->b, 323));
+
+    fp2_set(r, x);
+    fp2_sq_unsafe(r, x);
+    fp2_print_uint(r, "(unsafe-sq) r := x^2");
+    CHECK(!mpz_cmp_ui(r->a, 408) && !mpz_cmp_ui(r->b, 323));
+
+    fp2_set(r, x);
+    fp2_sq_safe(r);
+    fp2_print_uint(r, "(safe-sq) r ^= 2");
+    CHECK(!mpz_cmp_ui(r->a, 408) && !mpz_cmp_ui(r->b, 323));
 
     // Make sure that unsafe is wrong when called wrong?
-    // Currently mul contains assertion that prevents this check
+    // Currently mul contains CHECKion that prevents this check
     // fp2_set(r, x);
     // fp2_mul_unsafe(r, r, r);
     // fp2_print_uint(r, "(unsafe) r := r * r");
-    // assert(mpz_cmp_ui(r->a, 408) || mpz_cmp_ui(r->b, 323));
+    // CHECK(mpz_cmp_ui(r->a, 408) || mpz_cmp_ui(r->b, 323));
 
     fp2_clear(&x);
     fp2_clear(&r);
 
-    assert(!global_fpchar_clear());
-    return 0;
+    CHECK(!global_fpchar_clear());
+}
+
+void test_inv_div() {
+    CHECK(!global_fpchar_setup_uint(431));
+
+    fp2_t x, r;
+    fp2_init(&x);
+    fp2_init(&r);
+
+    {
+        // x = 27 + 59i
+        fp_set_uint(x->a, 21);
+        fp_set_uint(x->b, 59);
+        fp2_print_uint(x, "x");
+
+        // r = ~x = 221 + 159i
+        fp2_inv_unsafe(r, x);
+        fp2_print_uint(r, "~x");
+        CHECK(!mpz_cmp_ui(r->a, 221) && !mpz_cmp_ui(r->b, 159));
+
+        // r * x == 1
+        fp2_mul_safe(r, x);
+        fp2_print_uint(r, "~x * x");
+        CHECK(!mpz_cmp_ui(r->a, 1) && !mpz_cmp_ui(r->b, 0));
+
+    }
+
+    {
+        // x = 27 + 59i
+        fp_set_uint(x->a, 270);
+        fp_set_uint(x->b, 240);
+        fp2_print_uint(x, "x");
+
+        // r = ~x = 221 + 159i
+        fp2_inv_unsafe(r, x);
+        fp2_print_uint(r, "~x");
+        CHECK(!mpz_cmp_ui(r->a, 11) && !mpz_cmp_ui(r->b, 86));
+
+        // r * x == 1
+        fp2_mul_safe(r, x);
+        fp2_print_uint(r, "~x * x");
+        CHECK(!mpz_cmp_ui(r->a, 1) && !mpz_cmp_ui(r->b, 0));
+
+    }
+
+    fp2_clear(&x);
+    fp2_clear(&r);
+
+    CHECK(!global_fpchar_clear());
 }
 
 int main() {
-    int all_valid = 1;
 
-    if (test_failed_once()) all_valid = 0;
-    if (test_basic_arithmetic()) all_valid = 0;
-    if (test_safe_mul()) all_valid = 0;
-
-    if (all_valid) {
-        printf("[+] All tests passed\n");
-    }
+    TEST_RUN(test_failed_once());
+    TEST_RUN(test_basic_arithmetic());
+    TEST_RUN(test_safe_unsafe_mul_sq());
+    TEST_RUN(test_inv_div());
+    TEST_RUNS_END;
 
     return 0;
 }
