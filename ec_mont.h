@@ -17,14 +17,27 @@ void point_init(point_t *P);
 
 void point_clear(point_t *P);
 
+// Initialize the point with zP = 1 and xP = xa + xb * i
+void point_set_str(point_t P, const char *xa, const char *xb);
+
+// Set A24p := A + 2C and C24 := 4C
+static void calc_curve_proj_coeffs(fp2_t A24_plus, fp2_t C24, const fp2_t A, const fp2_t C) {
+    fp2_set(A24_plus, A);               // A24p = A
+    fp2_add(C24, C, C);                 // C24 = 2C
+    fp2_add(A24_plus, A24_plus, C24);   // A24p = A + 2C
+    fp2_add(C24, C24, C24);             // C24 = 4C
+}
+
 // Calculate the double of the point
 void xDBL(point_t R, const point_t P, const fp2_t A24_plus, const fp2_t C24);
 
 // Calculate R: multiple [2^e]P of point P
 void xDBLe(point_t R, const point_t P, const fp2_t A24_plus, const fp2_t C24, const int e);
 
+// Calculate P + Q given P, Q, P - Q
+void xADD(point_t PQsum, const point_t P, const point_t Q, const point_t PQdiff);
+
 // Calculate the codomain (A24+, C24) of the 2-degree isogeny from given kernel K of order 2
 void isog2_codomain(const point_t K, fp2_t A24_plus, fp2_t C24);
-
 
 #endif

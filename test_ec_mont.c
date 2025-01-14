@@ -1,11 +1,75 @@
 #include <stdio.h>
-#include "ec_mont.h"
-#include <assert.h>
 
-int main() {
+#include "ec_mont.h"
+#include "testing.h"
+
+fp2_t A, C;
+fp2_t A24_plus, C24;
+point_t P, Q;
+
+void init_test_variables() {
+    fp2_init(&A);
+    fp2_init(&C);
+    fp2_init(&A24_plus);
+    fp2_init(&C24);
+    point_init(&P);
+    point_init(&Q);
+}
+
+void clear_test_variables() {
+    fp2_clear(&A);
+    fp2_clear(&C);
+    fp2_clear(&A24_plus);
+    fp2_clear(&C24);
+    point_clear(&P);
+    point_clear(&Q);
+}
+
+void test_small_xADD() {
+    CHECK(!global_fpchar_setup_uint(431));
+
+    // Initialize the Elliptic Curve E: y^2 = x^3 + 6x^2 + x
+    fp2_set_uint(A, 6);
+    fp2_set_uint(C, 1);
+
+    calc_curve_proj_coeffs(A24_plus, C24, A, C);
+
+    // x(P) = PX = 259 + 271i, PZ = 1
+    point_set_str(P, "259", "271");
+
+    // x(Q) = QX = 262 + 335i, QZ = 1
+    point_set_str(Q, "262", "335");
+
+    point_t PQdiff, PQsum;
+    point_init(&PQdiff);
+    point_init(&PQsum);
+
+    // x(P - Q) = PQdiffX = 143 + 411i, PQdiffZ = 1
+    point_set_str(PQdiff, "143", "411");
+    xADD(PQsum, P, Q, PQdiff);
+
+    fp2_print_uint(PQsum->X, "xQ");
+    fp2_print_uint(PQsum->Z, "zQ");
+
+    fp2_t xPQsum;
+    fp2_init(&xPQsum);
+
+    // X(PQ+)/Z(PQ+) = 61 + 184 * i = x(PQ+)
+    fp2_div_unsafe(xPQsum, PQsum->X, PQsum->Z);
+    CHECK(!mpz_cmp_ui(xPQsum->a, 416) && !mpz_cmp_ui(xPQsum->b, 106));
+
+    fp2_clear(&xPQsum);
+
+    point_clear(&PQdiff);
+    point_clear(&PQsum);
+
+    CHECK(!global_fpchar_clear());
+}
+
+void test_small_xDBL() {
 
     // Set field characteristic
-    assert(!global_fpchar_setup_uint(431));
+    CHECK(!global_fpchar_setup_uint(431));
 
     // Initialize the Elliptic Curve E: y^2 = x^3 + 6x^2 + x
     // (A : C) are projective coordinates of (a : 1) = (6 : 1)
@@ -15,55 +79,25 @@ int main() {
     // A24-: A - 2C
     // This constants are used to speed up the calculations inside 
     // certain functions e.g. xDBL algorithm
-
-    // (A, C) = (6, 1)
-    fp2_t A, C;
-    fp2_init(&A);
-    fp2_init(&C);
     fp2_set_uint(A, 6);
     fp2_set_uint(C, 1);
 
-    fp2_print_uint(A, "A");
-    fp2_print_uint(C, "C");
-
+    // (A, C) = (6, 1)
     // (A24+ : C24) ~ (A + 2C : 4C)
     // This projective pair is the representant of the variable (a + 2)/4
-    fp2_t A24_plus, C24;
-    fp2_init(&A24_plus);
-    fp2_init(&C24);
-
-    // Set A24p := A + 2C and C24 := 4C
-    fp2_set(A24_plus, A); // A24p = A
-    fp2_add(C24, C, C);   // C24 = 2C
-    fp2_add(A24_plus, A24_plus, C24); // A24p = A + 2C
-    fp2_add(C24, C24, C24); // C24 = 4C
+    calc_curve_proj_coeffs(A24_plus, C24, A, C);
 
     fp2_print_uint(A24_plus, "A24p");
     fp2_print_uint(C24, "C24");
 
-    // x-coordinate for P: x(P)
-
-    // fp2_t xP;
-    // fp2_init(&xP);
-
-    // P = (15*i + 292 : 235*i + 281 : 1)
-    point_t P;
-    point_init(&P);
-
-    // Px = 292 + 15i
-    fp_set_uint(P->X->a, 292);
-    fp_set_uint(P->X->b, 15);
-    // Pz = 1
-    fp_set_uint(P->Z->a, 1);
+    // PX = 292 + 15i, zP = 1
+    point_set_str(P, "292", "15");
 
     fp2_print_uint(P->X, "xP");
     fp2_print_uint(P->Z, "zP");
 
     // Q = [2]P
     { 
-        point_t Q;
-        point_init(&Q);
-
         xDBL(Q, P, A24_plus, C24);
         
         fp2_print_uint(Q->X, "xQ");
@@ -73,21 +107,30 @@ int main() {
         // Which is equal to projective coordinates (this implementation)
         // X(Q) = 157 + 180 * i
         // Z(Q) = 65 + 358 * i
+
+        CHECK(!mpz_cmp_ui(Q->X->a, 157) && !mpz_cmp_ui(Q->X->b, 180));
+        CHECK(!mpz_cmp_ui(Q->Z->a, 65) && !mpz_cmp_ui(Q->Z->b, 358));
+
+        fp2_t xQ;
+        fp2_init(&xQ);
+
         // X(Q)/Z(Q) = 61 + 184 * i = x(Q)
+        fp2_div_unsafe(xQ, Q->X, Q->Z);
+        CHECK(!mpz_cmp_ui(xQ->a, 61) && !mpz_cmp_ui(xQ->b, 184));
 
-        assert(!mpz_cmp_ui(Q->X->a, 157) && !mpz_cmp_ui(Q->X->b, 180));
-        assert(!mpz_cmp_ui(Q->Z->a, 65) && !mpz_cmp_ui(Q->Z->b, 358));
-
-        point_clear(&Q);
+        fp2_clear(&xQ);
     }
 
-    fp2_clear(&A);
-    fp2_clear(&C);
-    fp2_clear(&A24_plus);
-    fp2_clear(&C24);
-    point_clear(&P);
+    CHECK(!global_fpchar_clear());
+}
 
-    assert(!global_fpchar_clear());
+int main() {
+    init_test_variables();
 
+    TEST_RUN(test_small_xDBL());
+    TEST_RUN(test_small_xADD());
+    TEST_RUNS_END;
+
+    clear_test_variables();
     return 0;
 }
