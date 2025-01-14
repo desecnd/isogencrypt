@@ -334,12 +334,6 @@ void fp2_inv_safe(fp2_t x) {
     fp_clear(t0); fp_clear(t1);
 }
 
-// Calculate res: lhs / rhs
-void fp2_div_unsafe(fp2_t res, const fp2_t lhs, const fp2_t rhs) {
-    fp2_inv_unsafe(res, rhs);
-    // Uses safe in order to not allocate additional memory
-    fp2_mul_safe(res, lhs);
-}
 
 void fp2_print_uint(fp2_t arg, const char* name) {
     printf("%s = %ld + %ld * i\n", name, mpz_get_ui(arg->a), mpz_get_ui(arg->b));

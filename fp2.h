@@ -126,6 +126,13 @@ static int fp2_is_zero(const fp2_t arg) {
     return (int) (fp_is_zero(arg->a) && fp_is_zero(arg->b));
 }
 
+// Calculate res: lhs / rhs
+static void fp2_div_unsafe(fp2_t res, const fp2_t lhs, const fp2_t rhs) {
+    fp2_inv_unsafe(res, rhs);
+    // Uses safe in order to not allocate additional memory
+    fp2_mul_safe(res, lhs);
+}
+
 void fp2_print_uint(fp2_t arg, const char *name);
 
 
