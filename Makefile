@@ -9,5 +9,8 @@ test_fp: test_fp.c fp2.c fp2.h
 test_ec_mont: test_ec_mont.c fp2.c fp2.h ec_mont.c ec_mont.h
 	gcc fp2.c ec_mont.c test_ec_mont.c -g -o test_ec_mont -Wextra -Wall -lgmp
 
+test_msidh: test_msidh.c proto_msidh.c proto_msidh.h
+	gcc fp2.c test_msidh.c proto_msidh.c -g -o test_msidh -Wextra -Wall -lgmp
+
 clean: 
 	rm -f test_fp test_fp2 test_ec_mont
