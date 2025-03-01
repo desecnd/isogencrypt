@@ -110,24 +110,25 @@ void fp2_inv_safe(fp2_t x);
 
 // sq: result <- arg^2
 // This function cannot be used when res == arg
-static void fp2_sq_unsafe(fp2_t res, const fp2_t arg) {
+static inline void fp2_sq_unsafe(fp2_t res, const fp2_t arg) {
     assert(res != arg && "fp2_sq cannot be called with res = arg");
     fp2_mul_unsafe(res, arg, arg);
 }
 
 // sq: result <- arg^2
 // This function can be used safely with res == arg
-static void fp2_sq_safe(fp2_t x) {
+static inline void fp2_sq_safe(fp2_t x) {
     fp2_mul_safe(x, x);
 }
 
 // Return true if fp2 is zero
-static int fp2_is_zero(const fp2_t arg) {
+static inline int fp2_is_zero(const fp2_t arg) {
     return (int) (fp_is_zero(arg->a) && fp_is_zero(arg->b));
 }
 
 // Calculate res: lhs / rhs
-static void fp2_div_unsafe(fp2_t res, const fp2_t lhs, const fp2_t rhs) {
+// This function can be used safely with res == arg
+static inline void fp2_div_unsafe(fp2_t res, const fp2_t lhs, const fp2_t rhs) {
     fp2_inv_unsafe(res, rhs);
     // Uses safe in order to not allocate additional memory
     fp2_mul_safe(res, lhs);
