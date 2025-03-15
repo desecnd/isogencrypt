@@ -25,40 +25,43 @@ void clear_test_variables() {
     point_clear(&Q);
 }
 
-void test_small_xADD() {
+void test_xADD_small() {
     CHECK(!global_fpchar_setup_uint(431));
 
     // Initialize the Elliptic Curve E: y^2 = x^3 + 6x^2 + x
     fp2_set_uint(A, 6);
     fp2_set_uint(C, 1);
-
     calc_curve_proj_coeffs(A24_plus, C24, A, C);
 
-    // x(P) = PX = 259 + 271i, PZ = 1
+    // x(P) = XP/1 = 259 + 271i
     point_set_str(P, "259", "271");
+    fp2_print_uint(P->X, "xP");
 
-    // x(Q) = QX = 262 + 335i, QZ = 1
+    // x(Q) = XQ/1 = 262 + 335i
     point_set_str(Q, "262", "335");
+    fp2_print_uint(Q->X, "xQ");
 
     point_t PQdiff, PQsum;
     point_init(&PQdiff);
     point_init(&PQsum);
 
-    // x(P - Q) = PQdiffX = 143 + 411i, PQdiffZ = 1
+    // x(P - Q) = xPQdiff = 143 + 411i
     point_set_str(PQdiff, "143", "411");
+    fp2_print_uint(PQdiff->X, "xP-Q");
+
+    // Perform the addition:
     xADD(PQsum, P, Q, PQdiff);
 
-    fp2_print_uint(PQsum->X, "xQ");
-    fp2_print_uint(PQsum->Z, "zQ");
+    fp2_t x;
+    fp2_init(&x);
 
-    fp2_t xPQsum;
-    fp2_init(&xPQsum);
+    // x = X(P+Q)/Z(P+Q) = 61 + 184 * i = x(PQ+)
+    fp2_div_unsafe(x, PQsum->X, PQsum->Z);
+    fp2_print_uint(x, "xP+Q");
 
-    // X(PQ+)/Z(PQ+) = 61 + 184 * i = x(PQ+)
-    fp2_div_unsafe(xPQsum, PQsum->X, PQsum->Z);
-    CHECK(!mpz_cmp_ui(xPQsum->a, 416) && !mpz_cmp_ui(xPQsum->b, 106));
+    CHECK(!mpz_cmp_ui(x->a, 416) && !mpz_cmp_ui(x->b, 106));
 
-    fp2_clear(&xPQsum);
+    fp2_clear(&x);
 
     point_clear(&PQdiff);
     point_clear(&PQsum);
@@ -128,7 +131,8 @@ int main() {
     init_test_variables();
 
     TEST_RUN(test_small_xDBL());
-    TEST_RUN(test_small_xADD());
+    // xADD function
+    TEST_RUN(test_xADD_small());
     TEST_RUNS_END;
 
     clear_test_variables();

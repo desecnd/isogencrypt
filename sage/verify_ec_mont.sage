@@ -15,15 +15,25 @@ def verify_test_small_xDBL():
     assert 2 * P == Q
     assert Q.x() == 61 + 184 * i
 
-def verify_test_small_xADD():
+# Function for testing xADD:
+def verify_test_xADD_small():
+    print("Verfiy: test_xADD_small")
 
     P = E(271*i + 259, 422*i + 97)
+    print(f"xP: {P.x()}")
+
     Q = E(335*i + 262, 69*i + 198)
+    print(f"xQ: {Q.x()}")
+
     PQdiff = E(411*i + 143, 245*i + 213)
     assert PQdiff == P - Q
+
+    print(f"xP-Q: {PQdiff.x()}")
     PQsum = P + Q
 
     assert PQsum == E(106*i + 416 , 111*i + 405)
+    print(f"xP+Q: {PQsum.x()}")
+
     assert PQsum.x() == 416 + 106 * i
 
 def verify_test_small_xLADDER3PT():
@@ -34,6 +44,8 @@ def verify_test_small_xLADDER3PT():
     R = P + n * Q
     assert R == E(45*i + 360, 249*i + 429)
     assert R.x() == 360 + 45 * i
+
+
 
 
 if __name__ == '__main__':

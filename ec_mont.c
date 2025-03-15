@@ -72,31 +72,51 @@ void xDBLe(point_t R, const point_t P, const fp2_t A24_plus, const fp2_t C24, co
 }
 
 void xADD(point_t PQsum, const point_t P, const point_t Q, const point_t PQdiff) {
-    // Function is argument safe for calling PQSum = Q or P
-    // Given P, Q and P-Q output P+Q
-    // Cost: 4M + 2S + 6a
+    // Function is argument safe for calling PQSum = Q or P or PQdiff
+    // Given P, Q and PQdiff = P-Q output P+Q
 
-    fp2_t t0, t1;
-    fp2_init(&t0); fp2_init(&t1);
+    // xADD formula in projective coordinates: P + Q = (X' : Z')
+    // X' = ZR * (XP * XQ - ZP * ZQ)^2 
+    // Z' = XR * (XP * ZQ - XQ * ZP)^2
+    // 
+    // Optimised version:
+    // X' = ZR * [(XP - ZP)(XQ + ZQ) + (XP + ZP)(XQ - ZQ)]^2 
+    // Z' = XR * [(XP - ZP)(XQ + ZQ) - (XP + ZP)(XQ - ZQ)]^2 
 
-    fp2_add(t0, P->X, P->Z); // t0 = xP + zP
-    fp2_sub(t1, P->X, P->Z); // t1 = xP - zP
-    fp2_sub(PQsum->X, Q->X, Q->Z); // xP = xQ - zQ
-    fp2_add(PQsum->Z, Q->X, Q->Z); // zP = xQ + zQ
+    fp2_t t0, t1, t2, t3;
+    fp2_init(&t0); fp2_init(&t1); fp2_init(&t2); fp2_init(&t3); 
 
-    fp2_mul_safe(t0, PQsum->X); // t0 *= xP
-    fp2_mul_safe(t1, PQsum->Z); // t1 *= zP
+    // Defining additional variables:
+    // a: XP + ZP
+    // b: XP - ZP
+    // c: XQ + ZQ
+    // d: XQ - ZQ
+    //
+    // X' = ZR * (b * c + a * d)^2 
+    // Z' = XR * (b * c - a * d)^2 
+    fp2_add(t0, P->X, P->Z);        // t0 = a: XP + ZP
+    fp2_sub(t1, P->X, P->Z);        // t1 = b: XP - ZP
+    fp2_add(t2, Q->X, Q->Z);        // t2 = c: xQ + zQ
+    fp2_sub(t3, Q->X, Q->Z);        // t3 = d: xQ - zQ
 
-    fp2_sub(PQsum->Z, t0, t1); // zP = t0 - t1
-    fp2_add(PQsum->X, t0, t1); // xP = t0 + t1
+    fp2_mul_safe(t0, t3);           // t0 = t0 * t3: a * d
+    fp2_mul_safe(t1, t2);           // t1 = t1 * t2: b * c
 
-    fp2_sq_unsafe(PQsum->Z, P->Z);
-    fp2_sq_unsafe(PQsum->X, P->X);// XQP = XP * XP
+    fp2_add(t2, t0, t1);            // t2 = t0 + t1: ad + bc
+    fp2_sub(t3, t0, t1);            // t3 = t0 - t1: ad - bc
 
-    fp2_mul_safe(PQsum->Z, PQdiff->X); // ZQP = xPQ * ZP
-    fp2_mul_safe(PQsum->X, PQdiff->Z); // XQP = XQP * zPQ
+    fp2_sq_unsafe(t0, t2);          // t0 = t2^2: (ad + bc)^2
+    fp2_sq_unsafe(t1, t3);          // t1 = t3^2: (ad - bc)^2
 
-    fp2_clear(&t0); fp2_clear(&t1);
+    // We must use t2 to not override the used later PQdiff->X in scenario when PQsum = PQdiff 
+    // t2 = t0 * Z(P-Q): (ad + bc)^2 * Z(P-Q)
+    fp2_mul_unsafe(t2, t0, PQdiff->Z);          
+    // Z' = t1 * X(P-Q): (ad - bc)^2 * Z(P-Q)
+    fp2_mul_unsafe(PQsum->Z, t1, PQdiff->X);   
+    // X' = t2
+    fp2_set(PQsum->X, t2);
+
+    fp2_clear(&t0); fp2_clear(&t1); fp2_clear(&t2); fp2_clear(&t3);
 }
 
 // TODO: check argument-safeness
