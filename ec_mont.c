@@ -27,7 +27,7 @@ void point_clear(point_t *P) {
 
 // Initialize the point with zP = 1 and xP = xa + xb * i
 void point_set_str(point_t P, const char *xa, const char *xb) {
-    fp2_set_str(P->X, xa, xb);
+    fp2_fill_str(P->X, xa, xb);
     fp2_set_uint(P->Z, 1);
 }
 

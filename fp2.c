@@ -193,7 +193,7 @@ void fp2_set_uint(fp2_t res, unsigned long int rhs) {
 }
 
 
-void fp2_set_str(fp2_t res, const char *a, const char *b) {
+void fp2_fill_str(fp2_t res, const char *a, const char *b) {
     // TODO: change inconsistent API
     mpz_set_str(res->a, a, 0);
     mpz_set_str(res->b, b, 0);
