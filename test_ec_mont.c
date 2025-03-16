@@ -5,7 +5,7 @@
 
 fp2_t A, C;
 fp2_t A24_plus, C24;
-point_t P, Q;
+point_t P, Q, PQd;
 
 void init_test_variables() {
     fp2_init(&A);
@@ -14,6 +14,7 @@ void init_test_variables() {
     fp2_init(&C24);
     point_init(&P);
     point_init(&Q);
+    point_init(&PQd);
 }
 
 void clear_test_variables() {
@@ -23,6 +24,7 @@ void clear_test_variables() {
     fp2_clear(&C24);
     point_clear(&P);
     point_clear(&Q);
+    point_clear(&PQd);
 }
 
 void test_xADD_small() {
@@ -34,11 +36,11 @@ void test_xADD_small() {
     calc_curve_proj_coeffs(A24_plus, C24, A, C);
 
     // x(P) = XP/1 = 259 + 271i
-    point_set_str(P, "259", "271");
+    point_set_str_x(P, "271*i + 259");
     fp2_print_uint(P->X, "xP");
 
     // x(Q) = XQ/1 = 262 + 335i
-    point_set_str(Q, "262", "335");
+    point_set_str_x(Q, "335*i + 262");
     fp2_print_uint(Q->X, "xQ");
 
     point_t PQdiff, PQsum;
@@ -46,7 +48,7 @@ void test_xADD_small() {
     point_init(&PQsum);
 
     // x(P - Q) = xPQdiff = 143 + 411i
-    point_set_str(PQdiff, "143", "411");
+    point_set_str_x(PQdiff, "411*i + 143");
     fp2_print_uint(PQdiff->X, "xP-Q");
 
     // Perform the addition:
@@ -94,7 +96,7 @@ void test_small_xDBL() {
     fp2_print_uint(C24, "C24");
 
     // PX = 292 + 15i, zP = 1
-    point_set_str(P, "292", "15");
+    point_set_str_x(P, "15*i + 292");
 
     fp2_print_uint(P->X, "xP");
     fp2_print_uint(P->Z, "zP");
@@ -196,16 +198,70 @@ void test_criss_cross_argsafe() {
     CHECK(!global_fpchar_clear());
 }
 
+void test_xLADDER3PT_small() {
+    CHECK(!global_fpchar_setup_uint(431));
+
+    fp2_set_uint(A, 6);
+    fp2_set_uint(C, 1);
+    calc_curve_proj_coeffs(A24_plus, C24, A, C);
+
+    point_set_str_x(P, "271*i + 259");
+    point_set_str_x(Q, "335*i + 262");
+    point_set_str_x(PQd, "411*i + 143");
+    long int n = 87;
+
+    // P contains the result, other points modified
+    xLADDER3PT_int(P, Q, PQd, n, A24_plus, C24);
+    point_normalize_coords(P);
+    
+    fp2_print_uint(P->X, "xP");
+    CHECK(!mpz_cmp_ui(P->X->a, 360) && !mpz_cmp_ui(P->X->b, 45));
+
+    point_set_str_x(P, "271*i + 259");
+    point_set_str_x(Q, "335*i + 262");
+    point_set_str_x(PQd, "411*i + 143");
+
+    // Negative multiplication: [-n]
+    mpz_t m;
+    mpz_init_set_ui(m, n);
+    xLADDER3PT(P, Q, PQd, m, A24_plus, C24);
+    point_normalize_coords(P);
+
+    fp2_print_uint(P->X, "xP");
+    CHECK(!mpz_cmp_ui(P->X->a, 360) && !mpz_cmp_ui(P->X->b, 45));
+
+    mpz_clear(m);
+    CHECK(!global_fpchar_clear());
+}
+
+void test_point_normalize_coords() {
+    CHECK(!global_fpchar_setup_uint(431));
+
+    fp2_set_str(P->X, "395*i + 201");
+    fp2_set_str(P->Z, "272*i + 286");
+
+    // XP = XP / ZP; ZP = 1
+    point_normalize_coords(P);
+    fp2_print_uint(P->X, "XP");
+    fp2_print_uint(P->Z, "ZP");
+
+    CHECK(!mpz_cmp_ui(P->X->a, 95) && !mpz_cmp_ui(P->X->b, 12));
+
+    CHECK(!global_fpchar_clear());
+}
 
 int main() {
     init_test_variables();
 
+    TEST_RUN(test_point_normalize_coords());
     TEST_RUN(test_small_xDBL());
     // xADD function
     TEST_RUN(test_xADD_small());
 
     TEST_RUN(test_criss_cross_small());
     TEST_RUN(test_criss_cross_argsafe());
+
+    TEST_RUN(test_xLADDER3PT_small());
     TEST_RUNS_END;
 
     clear_test_variables();

@@ -134,8 +134,8 @@ static inline int fp2_is_zero(const fp2_t arg) {
 }
 
 // Calculate res: lhs / rhs
-// This function can be used safely with res == arg
 static inline void fp2_div_unsafe(fp2_t res, const fp2_t lhs, const fp2_t rhs) {
+    assert(res != rhs && res != lhs && "Fp^2 division is not arg-safe, cannot be called with r = rhs or r = lhs");
     fp2_inv_unsafe(res, rhs);
     // Uses safe in order to not allocate additional memory
     fp2_mul_safe(res, lhs);

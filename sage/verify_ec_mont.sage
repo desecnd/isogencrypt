@@ -58,16 +58,35 @@ def verify_test_criss_cross_small():
     print(f"xw-yz: {f}")
 
     
-def verify_test_small_xLADDER3PT():
+def verify_test_xLADDER3PT_small():
+    print("---: test_xLADDER3PT_small")
     P = E(271*i + 259, 422*i + 97)
+    print(f"xP: {P.x()}")
     Q = E(335*i + 262, 69*i + 198)
+    print(f"xQ: {Q.x()}")
+    PQd = P - Q
+    print(f"xP-Q: {PQd.x()}")
     n = 87
+    print(f"n: {n}")
 
     R = P + n * Q
+    print(f"x(P+nQ): {R.x()}")
     assert R == E(45*i + 360, 249*i + 429)
-    assert R.x() == 360 + 45 * i
 
+    T = P - n * Q
+    print(f"x(P-nQ): {T.x()}")
 
+def verify_point_normalize_coords():
+    print("---: point_normalize_coords()")
+
+    X = 395*i + 201
+    print(f"X: {X}")
+    Y = 272*i + 286
+    print(f"Y: {Y}")
+
+    X_ = X / Y
+    print(f"X': {X_}")
+    assert X_ == 12*i + 95
 
 
 if __name__ == '__main__':
@@ -75,6 +94,7 @@ if __name__ == '__main__':
     verify_test_small_xDBL()
     verify_test_xADD_small()
     verify_test_criss_cross_small()
-    verify_test_small_xLADDER3PT()
+    verify_test_xLADDER3PT_small()
+    verify_point_normalize_coords()
 
 

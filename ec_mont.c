@@ -6,6 +6,8 @@
 // copy coordinates of point: R <- P
 void point_set(point_t R, const point_t P) {
     // R.X = P.X, R.Y = P.Y
+
+    // TODO: Not a deepcopy -> only copies the pointers
     memcpy(R, P, sizeof(struct point_xz));
 }
 
@@ -25,20 +27,32 @@ void point_clear(point_t *P) {
     }
 }
 
-// Initialize the point with zP = 1 and xP = xa + xb * i
-void point_set_str(point_t P, const char *xa, const char *xb) {
-    fp2_fill_str(P->X, xa, xb);
+// Set: x(P) = x, and z(P) = 1
+void point_set_str_x(point_t P, const char *x) {
+    fp2_set_str(P->X, x);
     fp2_set_uint(P->Z, 1);
 }
 
+// Normalize: P = (X : Z) -> (X' : 1) with X' = X/Z
+void point_normalize_coords(point_t P) {
+    // Registers: 1
 
-// Calculate the double of the point
+    fp2_t t; fp2_init(&t);
+
+    fp2_div_unsafe(t, P->X, P->Z);
+    fp2_set(P->X, t);
+    fp2_set_uint(P->Z, 1);
+
+    fp2_clear(&t);
+}
+
+// Calculate the double of the point R = [2]P
 void xDBL(point_t R, const point_t P, const fp2_t A24_plus, const fp2_t C24) {
-    // By X, Z we mean x(P) and z(P)
     fp2_t t0, t1;
     fp2_init(&t0);
     fp2_init(&t1);
 
+    // P = (X : Z)
     fp2_sub(t0, P->X, P->Z);    // t0 = X - Z
     fp2_add(t1, P->X, P->Z);    // t1 = X + Z
 
@@ -152,15 +166,36 @@ void criss_cross(fp2_t lsum, fp2_t rdiff, const fp2_t x, const fp2_t y, const fp
 }
 
 // calculate P = P + [m]Q
-void LADDER3PT_uint(point_t P, point_t Q, point_t PQdiff, long int m, const fp2_t A24p, const fp2_t C24) {
-
-    // For X-only Montgomery arithmetic [-m]P = [m]P
-    // as -P only influences y-coordinate
-    m = (m < 0) ? -m : m;
+void xLADDER3PT_int(point_t P, point_t Q, point_t PQdiff, long int m, const fp2_t A24p, const fp2_t C24) {
+    assert(m > 0 && "Given scalar m must be nonnegative");
 
     while (m > 0) {
-        if (m & 1) xDBLADD(Q, P, PQdiff, A24p, C24);
-        else xDBLADD(Q, PQdiff, P, A24p, C24);
+        if (m & 1) 
+            xDBLADD(Q, P, PQdiff, A24p, C24);
+        else       
+            xDBLADD(Q, PQdiff, P, A24p, C24);
+        m /= 2;
+    }
+}
+
+// calculate P = P + [m]Q
+void xLADDER3PT(point_t P, point_t Q, point_t PQdiff, mpz_t m, const fp2_t A24p, const fp2_t C24) {
+    assert(mpz_sgn(m) > 0 && "Given scalar m must be nonnegative");
+
+    mpz_t r;
+    mpz_init(r);
+
+    while (mpz_sgn(m) > 0) {
+        // m = m//2; r = m % 2
+        mpz_fdiv_qr_ui(m, r, m, 2);
+
+        if (mpz_sgn(r) > 0)
+            xDBLADD(Q, P, PQdiff, A24p, C24);
+        else 
+            xDBLADD(Q, PQdiff, P, A24p, C24);
     }
 
+    mpz_clear(r);
 }
+
+
