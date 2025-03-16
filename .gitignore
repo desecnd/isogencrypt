@@ -1,5 +1,6 @@
-/ext
+__pycache__
 test_fp
 test_fp2
 test_ec_mont
 *.sage.py
+/old
