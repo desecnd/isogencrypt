@@ -211,8 +211,32 @@ void test_inv_div() {
     CHECK(!global_fpchar_clear());
 }
 
+void test_set_str() {
+    CHECK(!global_fpchar_setup_uint(431));
+
+    fp2_t x;
+    fp2_init(&x);
+
+    fp2_set_str(x, "416*i + 175");
+    fp2_print_uint(x, "x: ");
+    CHECK(!mpz_cmp_ui(x->a, 175) && !mpz_cmp_ui(x->b, 416));
+
+    fp2_set_str(x, "416 + 175 * i");
+    CHECK(!mpz_cmp_ui(x->a, 416) && !mpz_cmp_ui(x->b, 175));
+
+    fp2_set_str(x, "0xff + 23 * i");
+    CHECK(!mpz_cmp_ui(x->a, 255) && !mpz_cmp_ui(x->b, 23));
+
+    CHECK(0 != fp2_set_str(x, "10"));
+    CHECK(0 != fp2_set_str(x, "10 * i"));
+
+    fp2_clear(&x);
+    CHECK(!global_fpchar_clear());
+}
+
 int main() {
 
+    TEST_RUN(test_set_str());
     TEST_RUN(test_failed_once());
     TEST_RUN(test_basic_arithmetic());
     TEST_RUN(test_safe_unsafe_mul_sq());

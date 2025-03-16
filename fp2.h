@@ -75,8 +75,6 @@ void fp2_init(fp2_t *res);
 
 void fp2_clear(fp2_t *res);
 
-// fill: set individual fields as FP elements
-void fp2_fill(fp2_t res, fp_t a, fp_t b);
 
 // set: result <- a + bi
 void fp2_set(fp2_t res, const fp2_t arg);
@@ -84,7 +82,16 @@ void fp2_set(fp2_t res, const fp2_t arg);
 // set: result <- (unsigned int) rhs 
 void fp2_set_uint(fp2_t res, unsigned long int rhs);
 
-// set: set value of res to a + bi
+// set: result <- x[a + bi]
+int fp2_set_str(fp2_t res, const char *x);
+
+// fill: set individual fields as FP elements
+void fp2_fill(fp2_t res, fp_t a, fp_t b);
+
+// fill: res = (a, b)
+void fp2_fill_uint(fp2_t res, unsigned long int a, unsigned long int b);
+
+// fill: res = (a, b)
 // if string are given with prefix (0x, 0, 0b) 
 // corresponding base will be detected and applied to conversion
 void fp2_fill_str(fp2_t res, const char *a, const char *b);
