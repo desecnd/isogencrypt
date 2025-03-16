@@ -17,7 +17,7 @@ def verify_test_small_xDBL():
 
 # Function for testing xADD:
 def verify_test_xADD_small():
-    print("Verfiy: test_xADD_small")
+    print("---: test_xADD_small")
 
     P = E(271*i + 259, 422*i + 97)
     print(f"xP: {P.x()}")
@@ -36,6 +36,28 @@ def verify_test_xADD_small():
 
     assert PQsum.x() == 416 + 106 * i
 
+def verify_test_criss_cross_small():
+    print("---: test_criss_cross_small")
+    x = F(416*i + 175)
+    y = F(112*i + 179)
+    z = F(235*i + 107)
+    w = F(183*i + 197)
+
+    e = x * w + y * z
+    f = x * w - y * z
+    # assert e == 206*i + 256
+    # assert f == 180*i + 52 
+    print(x * w)
+    print(y * z)
+
+    print(f"x: {x}")
+    print(f"y: {y}")
+    print(f"z: {z}")
+    print(f"w: {w}")
+    print(f"xw+yz: {e}")
+    print(f"xw-yz: {f}")
+
+    
 def verify_test_small_xLADDER3PT():
     P = E(271*i + 259, 422*i + 97)
     Q = E(335*i + 262, 69*i + 198)
@@ -51,7 +73,8 @@ def verify_test_small_xLADDER3PT():
 if __name__ == '__main__':
 
     verify_test_small_xDBL()
-    verify_test_small_xADD()
+    verify_test_xADD_small()
+    verify_test_criss_cross_small()
     verify_test_small_xLADDER3PT()
 
 

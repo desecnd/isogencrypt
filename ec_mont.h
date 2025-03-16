@@ -34,6 +34,8 @@ void xDBL(point_t R, const point_t P, const fp2_t A24_plus, const fp2_t C24);
 // Calculate R: multiple [2^e]P of point P
 void xDBLe(point_t R, const point_t P, const fp2_t A24_plus, const fp2_t C24, const int e);
 
+void criss_cross(fp2_t lsum, fp2_t rdiff, const fp2_t x, const fp2_t y, const fp2_t z, const fp2_t w);
+
 // Calculate P + Q given P, Q, P - Q
 void xADD(point_t PQsum, const point_t P, const point_t Q, const point_t PQdiff);
 

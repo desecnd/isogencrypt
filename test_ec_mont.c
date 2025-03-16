@@ -127,12 +127,85 @@ void test_small_xDBL() {
     CHECK(!global_fpchar_clear());
 }
 
+void test_criss_cross_small() {
+    CHECK(!global_fpchar_setup_uint(431));
+    fp2_t x, y, z, w, sum, diff;
+    fp2_init(&x); fp2_init(&y); fp2_init(&z); fp2_init(&w); fp2_init(&sum); fp2_init(&diff); 
+
+    fp2_set_str(x, "416*i + 175");
+    fp2_set_str(y, "112*i + 179");
+    fp2_set_str(z, "235*i + 107");
+    fp2_set_str(w, "183*i + 197");
+
+    fp2_print_uint(x, "x");
+    fp2_print_uint(y, "y");
+    fp2_print_uint(z, "z");
+    fp2_print_uint(w, "w");
+    
+    criss_cross(sum, diff, x, y, z, w);
+
+    fp2_print_uint(sum, "sum");
+    fp2_print_uint(diff, "diff");
+
+
+    // ad+bc: 367*i + 314
+    CHECK(!mpz_cmp_ui(sum->a, 314) && !mpz_cmp_ui(sum->b, 367));
+    // ad-bc: 19*i + 425
+    CHECK(!mpz_cmp_ui(diff->a, 425) && !mpz_cmp_ui(diff->b, 19));
+
+    fp2_clear(&x); fp2_init(&y); fp2_init(&z); fp2_init(&w); fp2_init(&sum); fp2_init(&diff); 
+    CHECK(!global_fpchar_clear());
+}
+
+void test_criss_cross_argsafe() {
+    CHECK(!global_fpchar_setup_uint(431));
+    fp2_t x, y, z, w;
+    fp2_init(&x); fp2_init(&y); fp2_init(&z); fp2_init(&w);
+
+    fp2_set_str(x, "416*i + 175");
+    fp2_set_str(y, "112*i + 179");
+    fp2_set_str(z, "235*i + 107");
+    fp2_set_str(w, "183*i + 197");
+
+    criss_cross(x, y, x, y, z, w);
+    CHECK(!mpz_cmp_ui(x->a, 314) && !mpz_cmp_ui(x->b, 367));
+    CHECK(!mpz_cmp_ui(y->a, 425) && !mpz_cmp_ui(y->b, 19));
+
+    fp2_set_str(x, "416*i + 175");
+    fp2_set_str(y, "112*i + 179");
+
+    criss_cross(z, w, x, y, z, w);
+    CHECK(!mpz_cmp_ui(z->a, 314) && !mpz_cmp_ui(z->b, 367));
+    CHECK(!mpz_cmp_ui(w->a, 425) && !mpz_cmp_ui(w->b, 19));
+
+    fp2_set_str(z, "235*i + 107");
+    fp2_set_str(w, "183*i + 197");
+
+    criss_cross(x, w, x, y, z, w);
+    CHECK(!mpz_cmp_ui(x->a, 314) && !mpz_cmp_ui(x->b, 367));
+    CHECK(!mpz_cmp_ui(w->a, 425) && !mpz_cmp_ui(w->b, 19));
+
+    fp2_set_str(x, "416*i + 175");
+    fp2_set_str(w, "183*i + 197");
+
+    criss_cross(z, y, x, y, z, w);
+    CHECK(!mpz_cmp_ui(z->a, 314) && !mpz_cmp_ui(z->b, 367));
+    CHECK(!mpz_cmp_ui(y->a, 425) && !mpz_cmp_ui(y->b, 19));
+
+    fp2_clear(&x); fp2_init(&y); fp2_init(&z); fp2_init(&w);
+    CHECK(!global_fpchar_clear());
+}
+
+
 int main() {
     init_test_variables();
 
     TEST_RUN(test_small_xDBL());
     // xADD function
     TEST_RUN(test_xADD_small());
+
+    TEST_RUN(test_criss_cross_small());
+    TEST_RUN(test_criss_cross_argsafe());
     TEST_RUNS_END;
 
     clear_test_variables();

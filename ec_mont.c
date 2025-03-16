@@ -129,7 +129,28 @@ void xDBLADD(point_t P, point_t Q, const point_t PQdiff, const fp2_t A24p, const
     xDBL(P, P, A24p, C24);
 }
 
-// TODO: substitute with unlimited integer later
+void criss_cross(fp2_t lsum, fp2_t rdiff, const fp2_t x, const fp2_t y, const fp2_t z, const fp2_t w) {
+    // Calculate (xw + yz, xw - yz) given (x, y, z, w)
+    // Argument-safe: Yes
+    // Registers: 2
+    // Cost: 2M + 2a
+
+    fp2_t t0, t1;
+    fp2_init(&t0); fp2_init(&t1);
+
+    // t0 = x * w
+    fp2_mul_unsafe(t0, x, w);
+    // t1 = y * z
+    fp2_mul_unsafe(t1, y, z);
+    
+    // rdiff = t0 - t1: xw - yz
+    fp2_sub(rdiff, t0, t1);
+    // lsum = t0 + t1: xw + yz
+    fp2_add(lsum, t0, t1);
+    
+    fp2_clear(&t0); fp2_clear(&t1);
+}
+
 // calculate P = P + [m]Q
 void LADDER3PT_uint(point_t P, point_t Q, point_t PQdiff, long int m, const fp2_t A24p, const fp2_t C24) {
 
