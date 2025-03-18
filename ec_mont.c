@@ -3,13 +3,6 @@
 
 #include "ec_mont.h"
 
-// copy coordinates of point: R <- P
-void point_set(point_t R, const point_t P) {
-    // R.X = P.X, R.Y = P.Y
-
-    // TODO: Not a deepcopy -> only copies the pointers
-    memcpy(R, P, sizeof(struct point_xz));
-}
 
 void point_init(point_t *P) {
     *P = (point_t) malloc(sizeof(struct point_xz));
@@ -25,6 +18,14 @@ void point_clear(point_t *P) {
         free(*P);
         P = NULL;
     }
+}
+
+// copy coordinates of point: R <- P
+void point_set(point_t R, const point_t P) {
+    // TODO: Not a deepcopy -> only copies the pointers
+    // memcpy(R, P, sizeof(struct point_xz));
+    fp2_set(R->X, P->X);
+    fp2_set(R->Z, P->Z);
 }
 
 // Set: x(P) = x, and z(P) = 1
