@@ -199,4 +199,67 @@ void xLADDER3PT(point_t P, point_t Q, point_t PQdiff, mpz_t m, const fp2_t A24p,
     mpz_clear(r);
 }
 
+void KPS(point_t * kpts, size_t n, const point_t K, const fp2_t A24p, const fp2_t C24) {
+    // "deepcopy" generator point as the first [1]K point
+    point_set(kpts[0], K);
 
+    // Calculate the second as simple [2]K
+    if (n >= 2) {
+        xDBL(kpts[1], K, A24p, C24);
+    }
+
+    // Calculate next using: [i]K = [i - 1]K + K
+    // To get difference: [i - 1]K - K = [i - 2]K 
+    for (size_t i = 2; i < n; i++) {
+        xADD(kpts[i], kpts[i - 1], kpts[0], kpts[i - 2]);
+    }
+}
+
+void prepare_kernel_points(point_t *kpoints, size_t n) {
+    fp2_t temp; fp2_init(&temp);
+    for (size_t i = 0; i < n; i++) {
+        // (X : Z) -> (X + Z, X - Z)
+        fp2_add(temp, kpoints[i]->X, kpoints[i]->Z);
+        fp2_sub(kpoints[i]->Z, kpoints[i]->X, kpoints[i]->Z);
+        fp2_set(kpoints[i]->X, temp);
+    }
+    fp2_clear(&temp);
+}
+
+void xISOG_point(point_t Q, const point_t *prep_kpts, size_t n, const point_t P) {
+    assert(n > 0 && prep_kpts != NULL && "List of kernel points cannot be empty");
+
+    fp2_t t0, t1; 
+    fp2_init(&t0);
+    fp2_init(&t1);
+
+    // Prepare point P = (X : Z) => P^ = (X + Z : X - Z)
+    fp2_add(t0, P->X, P->Z);
+    fp2_sub(P->Z, P->X, P->Z);
+    fp2_set(P->X, t0);
+
+    // By XP^ we represent the "prepared" variant
+    // X' = [(XK + ZK)(XP - ZP) + (XK - ZK)(XP + ZP)] = [XK^ * ZP^ + ZK^ * XP^]
+    // Z' = [(XK + ZK)(XP - ZP) - (XK - ZK)(XP + ZP)] = [XK^ * ZP^ - ZK^ * XP^]
+    criss_cross(Q->X, Q->Z, prep_kpts[0]->X, prep_kpts[0]->Z, P->X, P->Z);
+
+    // Multiply X' and Z' by same formula for Ki
+    for (size_t i = 1; i < n; i++) {
+        criss_cross(t0, t1, prep_kpts[i]->X, prep_kpts[i]->Z, P->X, P->Z);
+        fp2_mul_safe(Q->X, t0);
+        fp2_mul_safe(Q->Z, t1);
+    }
+
+    // t0 = XQ^2: prod(i: XKi_ * ZP_ + ZKi_ * XP_)^2
+    fp2_sq_unsafe(t0, Q->X);
+    // t1 = ZQ^2: prod(i: XKi_ * ZP_ - ZKi_ * XP_)^2
+    fp2_sq_unsafe(t1, Q->Z);
+
+    // XQ = XP * t0: XP * prod(i: XKi_ * ZP_ - ZKi_ * XP_)^2
+    fp2_mul_unsafe(Q->X, t0, P->X);
+    // ZQ = ZP * t1: ZP * prod(i: XKi_ * ZP_ - ZKi_ * XP_)^2
+    fp2_mul_unsafe(Q->Z, t1, P->Z);
+
+    fp2_clear(&t0);
+    fp2_clear(&t1);
+}
