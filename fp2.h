@@ -6,6 +6,10 @@
 
 typedef mpz_t fp_t;
 
+
+// TODO: Maybe use a typedef to 1-dim array?
+// https://stackoverflow.com/a/69731101
+
 typedef union {
      struct {
          fp_t a;
@@ -17,6 +21,8 @@ typedef union {
 // ------ FP Methods
 
 // set the global static field characteristic to p
+// TODO: add check for valid modulus x^2 + 1 == 0
+// prime should be select such that x^2 + 1 is irreducible over Fp^2
 int global_fpchar_setup(fp_t p); 
 int global_fpchar_setup_uint(unsigned int p); 
 int global_fpchar_clear();
