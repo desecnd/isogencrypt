@@ -1,12 +1,27 @@
 #!/usr/bin/sage 
 
-# p + 1 = 2^4 * 3^3
-p = 431
-F.<i> = GF(p^2, modulus=[1,0,1])
-# Montgomery Starting Curve E: y^2 = x^3 + 6x^2 + x
-E = EllipticCurve(F, [0, 6, 0, 1, 0])
+# Sage-friendly definition in global scope 
+# otherwise i is bound to the class and defining 
+# numbers "x + y*i" with cls.i or self.i gets tedious
+p = None
+F = None 
+i = None 
+E = None
 
 class TestcaseP431:
+
+    def setup_params():
+        """Prepare global variables for running tests"""
+        global p, F, i, E
+
+        # p + 1 = 2^4 * 3^3
+        p = 431
+        F.<i> = GF(p^2, modulus=[1,0,1])
+        # Montgomery Starting Curve E: y^2 = x^3 + 6x^2 + x
+        E = EllipticCurve(F, [0, 6, 0, 1, 0])
+
+        if not E.is_supersingular():
+            raise ValueError("E is not a supersingular curve")
 
     def verify_test_xDBL_small():
         print("VERIFY ---: test_xDBL_small")
@@ -80,7 +95,7 @@ class TestcaseP431:
         print(f"x(P-nQ): {T.x()}")
 
     def verify_test_point_normalize_coords():
-        print("VERIFY ---: point_normalize_coords()")
+        print("VERIFY ---: test_point_normalize_coords()")
 
         X = 395*i + 201
         print(f"X: {X}")
@@ -91,16 +106,85 @@ class TestcaseP431:
         print(f"X': {X_}")
         assert X_ == 12*i + 95
 
+class TestcaseP139:
+
+    def setup_params():
+        """Prepare global variables for running tests"""
+        global p, F, i, E
+
+        # p + 1 = 2^2 * 5 * 7 
+        p = 139
+        F.<i> = GF(p^2, modulus=[1,0,1])
+        # E = EllipticCurve(F, [1, 0])
+        E = EllipticCurve(F, [0, 6, 0, 1, 0])
+
+        if not E.is_supersingular():
+            raise ValueError("E is not a supersingular curve")
+
+    def verify_test_KPS():
+        print("VERIFY ---: test_KPS()")
+        # Define isogeny kernel of order 7
+        K = E(101*i + 20, 102*i + 21)
+        print(f"xK: {K.x()}")
+        assert K.order() == 7
+
+        d = (7 - 1)//2
+
+        # Multiplies of the kernel point
+        x_coords = [ (K * j).x() for j in range(1, d + 1) ]
+        print(f"xK1: {x_coords[0]}")
+        print(f"xK2: {x_coords[1]}")
+        print(f"xK3: {x_coords[2]}")
+        assert x_coords == [101*i + 20, 82*i + 16, 106*i + 124]
+
+    def verify_test_xISOG_point(): 
+        print("VERIFY ---: test_xISOG_point()")
+        # Define isogeny kernel of order 5
+        K = E(77*i + 38, 87*i + 133)
+        print(f"xK: {K.x()}")
+        assert K.order() == 5
+
+        P = E(32*i + 42, 97*i + 88)
+        # Full-order point
+        assert P.order() == 140
+        print(f"xP: {P.x()}")
+
+        # d = (5 - 1)/2 = 2
+        d = 2
+        kpts = [ K * j for j in range(1, d + 1) ]
+
+        # A' is the coefficient of the codomain
+        A = E.a2()
+        sigma = sum([KP.x() for KP in kpts])
+        sigma_hat = sum([1/KP.x() for KP in kpts])
+        pi = prod(KP.x() for KP in kpts)
+        A_ = (6 * sigma_hat - 6 * sigma + A) * pi^2
+        # Montgomery Curve with A_ coefficient
+
+        E_ = EllipticCurve(F, [0, A_, 0, 1, 0])
+        assert E_.j_invariant() == 100
+
+        phi = E.isogeny(K, codomain=E_, algorithm='traditional')
+        phi_P = phi(P)
+        print(f"xφ(P): {phi_P.x()}")
+
+        # Order of the point did not change
+        # assert phi_P.order() == 140
 
 if __name__ == '__main__':
 
     # SIDH-like prime: 
-    TestcaseP431.verify_test_xDBL_small()
-    TestcaseP431.verify_test_xADD_small()
-    TestcaseP431.verify_test_criss_cross_small()
-    TestcaseP431.verify_test_xLADDER3PT_small()
-    TestcaseP431.verify_test_point_normalize_coords()
+    # TestcaseP431.setup_params()
+    # TestcaseP431.verify_test_xDBL_small()
+    # TestcaseP431.verify_test_xADD_small()
+    # TestcaseP431.verify_test_criss_cross_small()
+    # TestcaseP431.verify_test_xLADDER3PT_small()
+    # TestcaseP431.verify_test_point_normalize_coords()
 
+    # Odd-degree prime:
+    TestcaseP139.setup_params()
+    TestcaseP139.verify_test_KPS()
+    TestcaseP139.verify_test_xISOG_point()
 
 
 
