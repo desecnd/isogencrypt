@@ -7,8 +7,12 @@ void test_pprod_init() {
     // product: 223'092'870 < 2^32
     unsigned int primes[9] = {2, 3, 5, 7, 11, 13, 17, 19, 23};
     pprod_t M;
-    pprod_init(&M, primes, 9);
+    pprod_init(&M);
+
+    pprod_set(M, primes, 9);
     CHECK_MSG(!mpz_cmp_ui(M->value, 223092870), "Incorrect product of primes value");
+
+    pprod_clear(&M);
 }
 
 void test_random_unit_sampling_large() {
@@ -23,7 +27,8 @@ void test_random_unit_sampling_large() {
     };
 
     pprod_t M;
-    pprod_init(&M, primes_large, sizeof(primes_large)/sizeof(unsigned int));
+    pprod_init(&M);
+    pprod_set(M, primes_large, sizeof(primes_large)/sizeof(unsigned int));
 
     mpz_t result;
     mpz_init(result);
@@ -52,7 +57,8 @@ void test_random_unit_sampling_small() {
 
     unsigned int primes_small[5] = {2, 3, 5, 7, 11};
     pprod_t M;
-    pprod_init(&M, primes_small, sizeof(primes_small)/sizeof(unsigned int));
+    pprod_init(&M);
+    pprod_set(M, primes_small, sizeof(primes_small)/sizeof(unsigned int));
 
     mpz_t result;
     mpz_init(result);
@@ -74,11 +80,28 @@ void test_random_unit_sampling_small() {
     pprod_clear(&M);
 }
 
+void test_params_generation() {
+    mpz_t p;
+    mpz_init(p);
+    pprod_t A, B;
+    pprod_init(&A);
+    pprod_init(&B);
+
+    msidh_gen_params(2, p, A, B);
+    CHECK_MSG(!mpz_cmp_ui(p, 2309), "Incorrect cofactor and prime number for given msidh params");
+    printf("p: %u\n", mpz_get_ui(p));
+
+    pprod_clear(&A);
+    pprod_clear(&B);
+    mpz_clear(p);
+}
+
 int main() {
 
     TEST_RUN(test_pprod_init());
     TEST_RUN(test_random_unit_sampling_small());
     TEST_RUN(test_random_unit_sampling_large());
+    TEST_RUN(test_params_generation());
     TEST_RUNS_END;
 
     return 0;

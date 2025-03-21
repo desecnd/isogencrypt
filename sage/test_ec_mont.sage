@@ -18,15 +18,15 @@ def find_ell_prime_number(factors: list[int]) -> int:
     else:
         raise ValueError(f"Cannot find valid prime number in {ITERS} iterations.")
 
-def test_formula_xADD():
+def test_xADD_formula():
     """Test that the formula used for xADD works correctly"""
 
+    print("TEST ---: xADD")
     p = 431
     F.<i> = GF(p^2, modulus=[1,0,1])
     # Montgomery starting curve E: y^2 = x^3 + 6x^2 + x
     E = EllipticCurve(F, [0, 6, 0, 1, 0])
 
-    print("TEST ---: xADD")
     P = E(107*i + 11, 301*i + 428)
     Q = E(71*i + 243, 61*i + 18)
 
@@ -71,6 +71,70 @@ def test_formula_xADD():
     print(f"> X/Z = {x = }")
     assert x == T.x()
 
+def test_xISOG_fromula():
+    print("TEST ---: xISOG")
+    # Test if we obtain the exact same formula for f(x) polynomial 
+    # given isogeny of degree 5
+
+    # Define the parameters
+    # p + 1 = 4 * 5 * 7
+    p = 139
+    F.<i> = GF(p^2, modulus=[1,0,1])
+    A = 6
+    B = 1
+    # E: y^2 = x^3 + Ax^2 + x 
+    E = EllipticCurve(F, [0, A, 0, 1, 0])
+    assert E.is_supersingular()
+
+    # K is the kernel of the 5-degree isogeny
+    K = E(77*i + 38, 87*i + 133)
+    assert K.order() == 5
+
+    # Formulas from: https://eprint.iacr.org/2017/504.pdf
+    # Equation (5):
+    sigma = sum([ (K * j).x() for j in range(1, 3) ])
+    sigma_inv = sum([ 1/(K * j).x() for j in range(1, 3) ])
+    pi = prod([ (K * j).x() for j in range(1, 3) ])
+
+    # A' is the coefficient of the codomain
+    A_ = (6 * sigma_inv - 6 * sigma + A) * pi^2
+    # B' does not matter when only x-arithmetic is used
+    B_ = B * pi^2
+
+    # Codomain elliptic curve E' calculated from formulas above
+    E_ = EllipticCurve(F, [0, A_, 0, 1, 0])
+
+    # Define polynomial ring with cooeficients in Fp^2
+    # Equation (6):
+    R.<x> = F[]
+    x_map = x * prod([ ((x * (K * j).x() - 1)/(x - (K * j).x()))^2 for j in range(1, 3) ])
+    print(f"x_map: {x_map}")
+
+    # Use Velu formulas to obtain isogeny of degree 5
+    phi = E.isogeny(K, algorithm='traditional')
+
+    # We arrrive at the same curve under j-inv but different coefficients
+    assert phi.codomain().j_invariant() == E_.j_invariant()
+    assert phi.codomain().a_invariants() != E_.a_invariants()
+
+    # Isogeny as a rational map has the same denominator as <K> is the same
+    assert phi.x_rational_map().denominator() == x_map.denominator()
+    assert phi.x_rational_map().numerator() != x_map.numerator()
+
+    # We must create isogeny
+    psi = phi.codomain().isomorphism_to(E_)
+
+    # FInal isogeny to E' is equal to Montgomery-form formulas
+    iso = psi * phi
+    assert iso.codomain() == E_
+    assert iso.x_rational_map() == x_map
+
+    # We can tell Sage to calculate isogeny explicitly to E'
+    # Velu formula, but joined with isomorphism to E'
+    assert iso == E.isogeny(K, codomain=E_)
+
+
 
 if __name__ == '__main__':
-    test_formula_xADD()
+    # test_xADD_formula()
+    test_xISOG_formula()

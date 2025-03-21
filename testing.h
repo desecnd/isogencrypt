@@ -21,7 +21,7 @@ int g_curr_test_error = 0;
 #define __TEST_RUN(__func, __test_name) \
     do { \
         g_curr_test_error = 0; \
-        printf("\x1b[33m[*] Running\x1b[0m: %s\n", __test_name); \
+        printf("\x1b[33m[*] Go\x1b[0m: %s\n", __test_name); \
         __func; \
         if (g_curr_test_error) { \
             g_any_test_failed |= 1; \
