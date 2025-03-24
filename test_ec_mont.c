@@ -306,17 +306,17 @@ int main() {
     init_test_variables();
 
     // integrity tests
-    // TEST_RUN(test_point_set_is_immutable());
+    TEST_RUN(test_point_set_is_immutable());
 
     // p = 431 tests
-    // set_params_testp431();
+    set_params_testp431();
 
-    // TEST_RUN(test_point_normalize_coords());
-    // TEST_RUN(test_xDBL_small());
-    // TEST_RUN(test_xADD_small());
-    // TEST_RUN(test_criss_cross_small());
-    // TEST_RUN(test_criss_cross_argsafe());
-    // TEST_RUN(test_xLADDER3PT_small());
+    TEST_RUN(test_point_normalize_coords());
+    TEST_RUN(test_xDBL_small());
+    TEST_RUN(test_xADD_small());
+    TEST_RUN(test_criss_cross_small());
+    TEST_RUN(test_criss_cross_argsafe());
+    TEST_RUN(test_xLADDER3PT_small());
 
     // p = 139
     set_params_testp139();
