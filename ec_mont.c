@@ -34,6 +34,28 @@ void point_set_str_x(point_t P, const char *x) {
     fp2_set_uint(P->Z, 1);
 }
 
+void A24p_from_A(fp2_t A24_plus, fp2_t C24, const fp2_t A, const fp2_t C) {
+    // Set A24p := A + 2C and C24 := 4C
+    fp2_set(A24_plus, A);               // A24p = A
+    fp2_add(C24, C, C);                 // C24 = 2C
+    fp2_add(A24_plus, A24_plus, C24);   // A24p = A + 2C
+    fp2_add(C24, C24, C24);             // C24 = 4C
+}
+
+void A_from_A24p(fp2_t A, fp2_t C, const fp2_t A24_plus, const fp2_t C24) {
+    // Set A := 4A - 2C24 and C24 := 4C
+
+    // A = 4A'
+    fp_mul_int(A->a, A24_plus->a, 4);
+    fp_mul_int(A->b, A24_plus->b, 4);
+
+    // A = 4A' - 2C'
+    fp2_sub(A, C24, C24);
+
+    // C = C'
+    fp2_set(C, C24)
+}
+
 // Normalize: P = (X : Z) -> (X' : 1) with X' = X/Z
 void point_normalize_coords(point_t P) {
     // Registers: 1

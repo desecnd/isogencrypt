@@ -49,7 +49,7 @@ void set_params_testp431() {
     // (A, C) = (6, 1)
     // (A24+ : C24) ~ (A + 2C : 4C)
     // This projective pair is the representant of the variable (a + 2)/4
-    calc_curve_proj_coeffs(A24_plus, C24, A, C);
+    A24p_from_A(A24_plus, C24, A, C);
 }
 
 void set_params_testp139() {
@@ -62,7 +62,7 @@ void set_params_testp139() {
     fp2_set_uint(A, 6);
     fp2_set_uint(C, 1);
 
-    calc_curve_proj_coeffs(A24_plus, C24, A, C);
+    A24p_from_A(A24_plus, C24, A, C);
 }
 
 void test_point_set_is_immutable() {

@@ -23,13 +23,15 @@ void point_set_str_x(point_t P, const char *x);
 // Normalize: P = (X : Z) -> (X' : 1) with X' = X/Z
 void point_normalize_coords(point_t P);
 
-// Set A24p := A + 2C and C24 := 4C
-static inline void calc_curve_proj_coeffs(fp2_t A24_plus, fp2_t C24, const fp2_t A, const fp2_t C) {
-    fp2_set(A24_plus, A);               // A24p = A
-    fp2_add(C24, C, C);                 // C24 = 2C
-    fp2_add(A24_plus, A24_plus, C24);   // A24p = A + 2C
-    fp2_add(C24, C24, C24);             // C24 = 4C
-}
+/* 
+ * @brief Transform (A : C) = (a : 1) into (A' : C') = ((a+ 2)/4 : 1) = (a + 2 : 4) suitable for xDBL
+ */
+void A24p_from_A(fp2_t A24_plus, fp2_t C24, const fp2_t A, const fp2_t C);
+
+/* 
+ * @brief Transform (A' : C') = (a + 2 : 4) into (A : C) = (a : 1) 
+ */
+void A_from_A24p(fp2_t A, fp2_t C, const fp2_t A24_plus, const fp2_t C24);
 
 // Calculate the double of the point
 void xDBL(point_t R, const point_t P, const fp2_t A24_plus, const fp2_t C24);
