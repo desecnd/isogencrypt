@@ -252,24 +252,27 @@ void prepare_kernel_points(point_t *kpoints, size_t n) {
 
 void xISOG_point(point_t Q, const point_t *prep_kpts, size_t n, const point_t P) {
     assert(n > 0 && prep_kpts != NULL && "List of kernel points cannot be empty");
+    // Registers: 4
 
-    fp2_t t0, t1; 
-    fp2_init(&t0);
-    fp2_init(&t1);
+    fp2_t t0, t1, t2, t3;
+    fp2_init(&t0); fp2_init(&t1);
+    fp2_init(&t2); fp2_init(&t3);
 
     // Prepare point P = (X : Z) => P^ = (X + Z : X - Z)
-    fp2_add(t0, P->X, P->Z);
-    fp2_sub(P->Z, P->X, P->Z);
-    fp2_set(P->X, t0);
+    // Unfortunately we cannot modify P - so it requires additional 2 registers
+    // t2 = XP + ZP: XP^ (hat)
+    fp2_add(t2, P->X, P->Z);
+    // t3 = XP - ZP: ZP^ (hat)
+    fp2_sub(t3, P->X, P->Z);
 
     // By XP^ we represent the "prepared" variant
     // X' = [(XK + ZK)(XP - ZP) + (XK - ZK)(XP + ZP)] = [XK^ * ZP^ + ZK^ * XP^]
     // Z' = [(XK + ZK)(XP - ZP) - (XK - ZK)(XP + ZP)] = [XK^ * ZP^ - ZK^ * XP^]
-    criss_cross(Q->X, Q->Z, prep_kpts[0]->X, prep_kpts[0]->Z, P->X, P->Z);
+    criss_cross(Q->X, Q->Z, prep_kpts[0]->X, prep_kpts[0]->Z, t2, t3);
 
     // Multiply X' and Z' by same formula for Ki
     for (size_t i = 1; i < n; i++) {
-        criss_cross(t0, t1, prep_kpts[i]->X, prep_kpts[i]->Z, P->X, P->Z);
+        criss_cross(t0, t1, prep_kpts[i]->X, prep_kpts[i]->Z, t2, t3);
         fp2_mul_safe(Q->X, t0);
         fp2_mul_safe(Q->Z, t1);
     }
@@ -278,7 +281,7 @@ void xISOG_point(point_t Q, const point_t *prep_kpts, size_t n, const point_t P)
     fp2_sq_unsafe(t0, Q->X);
     // t1 = ZQ^2: prod(i: XKi_ * ZP_ - ZKi_ * XP_)^2
     fp2_sq_unsafe(t1, Q->Z);
-
+    
     // XQ = XP * t0: XP * prod(i: XKi_ * ZP_ - ZKi_ * XP_)^2
     fp2_mul_unsafe(Q->X, t0, P->X);
     // ZQ = ZP * t1: ZP * prod(i: XKi_ * ZP_ - ZKi_ * XP_)^2
@@ -286,6 +289,8 @@ void xISOG_point(point_t Q, const point_t *prep_kpts, size_t n, const point_t P)
 
     fp2_clear(&t0);
     fp2_clear(&t1);
+    fp2_clear(&t2);
+    fp2_clear(&t3);
 }
 
 void aISOG_from_kps(fp2_t A_, fp2_t C_, const fp2_t A24p, const fp2_t C24, const point_t K, int degree) {
