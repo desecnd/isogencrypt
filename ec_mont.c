@@ -293,7 +293,63 @@ void xISOG_point(point_t Q, const point_t *prep_kpts, size_t n, const point_t P)
     fp2_clear(&t3);
 }
 
-void aISOG_from_kps(fp2_t A_, fp2_t C_, const fp2_t A24p, const fp2_t C24, const point_t K, int degree) {
+void aISOG_curve_KPS(fp2_t A_, fp2_t C_, const fp2_t A24p, const fp2_t C24, const point_t * kpts, size_t n) {
+
+    fp2_t sigma, sigma_inv, pi;
+    fp2_init(&sigma); fp2_init(&sigma_inv); fp2_init(&pi);
+
+    // pi is equal to product of points x-coordinates, therefore it must be initialized with 1
+    fp2_set_uint(pi, 1);
+
+    fp2_t t0, t1;
+    fp2_init(&t0); fp2_init(&t1);
+
+    for (size_t i = 0; i < n; i++) {
+        // x(P) = X/Z
+        fp2_div_unsafe(t0, kpts[i]->X, kpts[i]->Z);
+        // x(P)^-1 = (X/Z)^-1 = (Z/X)
+        fp2_div_unsafe(t1, kpts[i]->Z, kpts[i]->X);
+        
+        // sigma += x([i]K)
+        fp2_add(sigma, sigma, t0);
+        // pi *= x([i]K)
+        fp2_mul_safe(pi, t0);
+
+        // sigma_inv += x([i]K)^-1
+        fp2_add(sigma_inv, sigma_inv, t1);
+    }
+
+    // Obtain original coordinates (A:C) from (A24:C24)
+    // use (t0 : t1) as registers
+    A_from_A24p(t0, t1, A24p, C24);
+
+    // Use "C_" as register to hold "a" = (a:1) = (A:C) value
+    // C_ = t0 / t1: A / C = a
+    fp2_div_unsafe(C_, t0, t1);
+
+    // t0 = sigma_inv - sigma
+    fp2_sub(t0, sigma_inv, sigma);
+
+    // t0 = t0 * 6: A_ = 6(sigma_inv - sigma) = 6sigma_inv - 6sigma
+    fp2_mul_int(t0, t0, 6);
+
+    // t0:: t0 + C_: 6sigma_inv - 6sigma + A/C
+    // use value stored in C_ register := A/C = a
+    fp2_add(t0, t0, C_);
+
+    // t1 = pi^2
+    fp2_sq_unsafe(t1, pi);
+
+    // A_ = t0 * t1: (6sigma_inv - 6sigma + A/C) * pi^2
+    fp2_mul_unsafe(A_, t0, t1);
+    // C_ = 1
+    fp2_set_uint(C_, 1);
+
+    fp2_clear(&sigma); fp2_clear(&sigma_inv); fp2_clear(&pi);
+    fp2_clear(&t0); fp2_clear(&t1);
+}
+
+void aISOG_curve(fp2_t A_, fp2_t C_, const fp2_t A24p, const fp2_t C24, const point_t K, int degree) {
 
     size_t n = KPS_DEG2SIZE(degree);
     point_t * kpts = calloc(sizeof(point_t), n);
@@ -306,55 +362,8 @@ void aISOG_from_kps(fp2_t A_, fp2_t C_, const fp2_t A24p, const fp2_t C24, const
     // Calculate [1]K, [2]K, [3]K, ...
     KPS(kpts, n, K, A24p, C24);
 
-    fp2_t sigma, sigma_inv, pi;
-    fp2_init(&sigma); fp2_init(&sigma_inv); fp2_init(&pi);
+    aISOG_curve_KPS(A_, C_, A24p, C24, kpts, n);
 
-    fp2_t inv;
-    fp2_init(&inv);
-
-    for (size_t i = 0; i < n; i++) {
-        // x(P)^-1 = (X/Z)^-1 = (Z/X)
-        fp2_div_unsafe(inv, kpts[i]->Z, kpts[i]->X);
-        // X <- X/Z, Z <- 1
-        point_normalize_coords(kpts[i]);
-        
-        // sigma += x([i]K)
-        fp2_add(sigma, sigma, kpts[i]->X);
-        // sigma_inv += x([i]K)^-1
-        fp2_add(sigma_inv, sigma_inv, inv);
-
-        // pi *= x([i]K)
-        fp2_mul_safe(pi, kpts[i]->X);
-    }
-
-    fp2_t A, C;
-    fp2_init(&A); fp2_init(&C);
-
-    // Obtain original coordinates (A:C) from (A24:C24)
-    A_from_A24p(A, C, A24p, C24);
-    // Use "C_" as register to hold "a/1" = (A:C) value
-    fp2_div_unsafe(C_, A, C);
-
-    // A_ = sigma_inv - sigma
-    fp2_sub(A_, sigma_inv, sigma);
-    // A_ = 6sigma_inv - 6sigma
-    fp2_mul_int(A_, A_, 6);
-    // A_ = 6sigma_inv - 6sigma + A
-    // use value stored in C_ register := A/C
-    fp2_add(A_, A_, C_);
-
-    // use "C_" as register to hold pi^2
-    fp2_sq_unsafe(C_, pi);
-    // use "inv" as temporary register for holding the result:
-    // inv = (6sigma_inv - 6sigma + A) pi^2
-    fp2_mul_unsafe(inv, A_, C_);
-
-    // A_ = (6*sig_inv - 6*sigma + A) * pi^2 
-    fp2_set(A_, inv);
-    fp2_set_uint(C_, 1);
-
-    fp2_clear(&A); fp2_clear(&C); fp2_clear(&inv);
-    fp2_clear(&sigma); fp2_clear(&sigma_inv); fp2_clear(&pi);
     for (size_t i = 0; i < n; i++) {
         point_clear(&kpts[i]);
     }

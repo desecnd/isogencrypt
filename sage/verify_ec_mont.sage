@@ -137,8 +137,8 @@ class TestcaseP139:
         print(f"xK3: {x_coords[2]}")
         assert x_coords == [101*i + 20, 82*i + 16, 106*i + 124]
 
-    def verify_test_xISOG_point(): 
-        print("VERIFY ---: test_xISOG_point()")
+    def verify_test_xISOG_and_aISOG(): 
+        print("VERIFY ---: test_xISOG_and_aISOG()")
         # Define isogeny kernel of order 5
         K = E(77*i + 38, 87*i + 133)
         print(f"xK: {K.x()}")
@@ -160,6 +160,7 @@ class TestcaseP139:
         pi = prod(KP.x() for KP in kpts)
         A_ = (6 * sigma_hat - 6 * sigma + A) * pi^2
         # Montgomery Curve with A_ coefficient
+        print(f"aφ(E): {A_}")
 
         E_ = EllipticCurve(F, [0, A_, 0, 1, 0])
         assert E_.j_invariant() == 100
@@ -170,6 +171,8 @@ class TestcaseP139:
 
         # Order of the point did not change
         # assert phi_P.order() == 140
+
+
 
 if __name__ == '__main__':
 
@@ -184,7 +187,7 @@ if __name__ == '__main__':
     # Odd-degree prime:
     TestcaseP139.setup_params()
     TestcaseP139.verify_test_KPS()
-    TestcaseP139.verify_test_xISOG_point()
+    TestcaseP139.verify_test_xISOG_and_aISOG()
 
 
 

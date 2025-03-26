@@ -71,4 +71,18 @@ void prepare_kernel_points(point_t *kpts, size_t n);
  */
 void xISOG_point(point_t Q, const point_t *prep_kpts, size_t n, const point_t P);
 
+
+/*
+ * @brief Calculate a coefficient of the odd-degree isogeny curve codomain E' = φ(E) given kernel points list
+ */
+void aISOG_curve_KPS(fp2_t A_, fp2_t C_, const fp2_t A24p, const fp2_t C24, const point_t * kpts, size_t n);
+
+/*
+ * @brief Calculate a coefficient of the odd-degree isogeny curve codomain E' = φ(E) given kernel point
+ * @details
+ *  This function allocates space and generates KPS list, later calling `aISOG_curve_KPS` to obtain the result.
+ *  If KPS is calulated beforehand use `aISOG_curve_KPS` istead to avoid unnecessary computations.
+ */
+void aISOG_curve(fp2_t A_, fp2_t C_, const fp2_t A24p, const fp2_t C24, const point_t K, int degree);
+
 #endif

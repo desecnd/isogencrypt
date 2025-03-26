@@ -303,8 +303,11 @@ void test_KPS() {
     }
 
     // [ (j+1)*K for j in range(3) ] == [101*i + 20, 82*i + 16, 106*i + 124]
+    fp2_print_uint(kpt[0]->X, "xK1");
     CHECK(!mpz_cmp_ui(kpt[0]->X->a, 20) && !mpz_cmp_ui(kpt[0]->X->b, 101));
+    fp2_print_uint(kpt[1]->X, "xK2");
     CHECK(!mpz_cmp_ui(kpt[1]->X->a, 16) && !mpz_cmp_ui(kpt[1]->X->b, 82));
+    fp2_print_uint(kpt[2]->X, "xK3");
     CHECK(!mpz_cmp_ui(kpt[2]->X->a, 124) && !mpz_cmp_ui(kpt[2]->X->b, 106));
 
     for (size_t i = 0; i < n; i++) {
@@ -312,13 +315,13 @@ void test_KPS() {
     }
 }
 
-void test_xISOG_point() {
+void test_xISOG_and_aISOG() {
     // K is the kernel generator of the isogeny
-    point_set_str_x(K, "92*i + 97");
+    point_set_str_x(K, "77*i + 38");
     fp2_print_uint(K->X, "xK");
 
     // P is the point sent through the isogeny
-    point_set_str_x(P, "6*i + 114");
+    point_set_str_x(P, "32*i + 42");
     fp2_print_uint(P->X, "xP");
 
     // isogeny of degree 5 for kernel <K>
@@ -326,20 +329,37 @@ void test_xISOG_point() {
     const size_t n = KPS_DEG2SIZE(degree);
     point_t kpts[n];
     for (size_t i = 0; i < n; i++) point_init(&kpts[i]);
-    printf("Size; %lu\n", n);
+    printf("deg: %d\n", degree);
+    printf("n: %lu\n", n);
 
     KPS(kpts, n, K, A24_plus, C24);
-    prepare_kernel_points(kpts, n);
 
+    fp2_t phiA, phiC, phi_a;
+    fp2_init(&phiA); fp2_init(&phiC); fp2_init(&phi_a);
+
+    // Check codomain Curve value
+    aISOG_curve_KPS(phiA, phiC, A24_plus, C24, kpts, n);
+    fp2_div_unsafe(phi_a, phiA, phiC);
+    fp2_print_uint(phi_a, "aφ(E)");
+    CHECK(!mpz_cmp_ui(phi_a->a, 85) && !mpz_cmp_ui(phi_a->b, 76));
+
+    // Run the same computation, make sure the result is equal
+    aISOG_curve(phiA, phiC, A24_plus, C24, K, degree);
+    fp2_div_unsafe(phi_a, phiA, phiC);
+    fp2_print_uint(phi_a, "aφ(E)");
+    CHECK(!mpz_cmp_ui(phi_a->a, 85) && !mpz_cmp_ui(phi_a->b, 76));
+
+    fp2_clear(&phiA); fp2_clear(&phiC); fp2_clear(&phi_a);
+
+    prepare_kernel_points(kpts, n);
     xISOG_point(Q, kpts, n, P);
     point_normalize_coords(Q);
     fp2_print_uint(Q->X, "xφ(P)");
 
+    CHECK(!mpz_cmp_ui(Q->X->a, 46) && !mpz_cmp_ui(Q->X->b, 88));
+
+
     for (size_t i = 0; i < n; i++) point_clear(&kpts[i]);
-}
-
-
-void test_xISOG_chain(pprod_t) {
 }
 
 
@@ -363,7 +383,7 @@ int main() {
     // p = 139
     set_params_testp139();
     TEST_RUN(test_KPS());
-    TEST_RUN(test_xISOG_point());
+    TEST_RUN(test_xISOG_and_aISOG());
 
     TEST_RUNS_END;
 
