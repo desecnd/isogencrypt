@@ -311,6 +311,13 @@ void fp2_mul_unsafe(fp2_t res, const fp2_t lhs, const fp2_t rhs) {
     fp_clear(t);
 }
 
+void fp2_mul_int(fp2_t r, const fp2_t x, long int y) {
+    // Multiply each of the "coordinates"
+    // xy = (a + bi)y = ay + byi 
+    fp_mul_int(r->a, x->a, y);
+    fp_mul_int(r->b, x->b, y);
+}
+
 void fp2_mul_safe(fp2_t res, const fp2_t rhs) {
     // x = a + bi, y = c + di
     // r = (ac - bd) + (ad + bc)i = e + fi

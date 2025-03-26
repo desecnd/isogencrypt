@@ -114,6 +114,14 @@ void fp2_sub(fp2_t res, const fp2_t lhs, const fp2_t rhs);
 // sub: result <- lhs[a + bi] - (unsigned int) rhs 
 void fp2_sub_uint(fp2_t res, const fp2_t lhs, unsigned long int rhs);
 
+/*
+ * @brief Multiply fp2_t by a fp-rational long int number
+ * @param[out]  r   result of the operation x * y
+ * @param[in]   x   fp2 element to multiply, can safely point to `r`
+ * @param[in]   y   long int element to multiply
+ */
+void fp2_mul_int(fp2_t r, const fp2_t x, long int y);
+
 // mul: result <- lhs[a + bi] * rhs[a + bi] (mod p)
 void fp2_mul_unsafe(fp2_t res, const fp2_t lhs, const fp2_t rhs);
 void fp2_mul_safe(fp2_t x, const fp2_t y);

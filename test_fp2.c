@@ -234,6 +234,33 @@ void test_set_str() {
     CHECK(!global_fpchar_clear());
 }
 
+void test_fp2_mul_int() {
+    CHECK(!global_fpchar_setup_uint(431));
+
+    fp2_t r, x;
+    fp2_init(&r); fp2_init(&x);
+    fp2_set_str(x, "224*i + 192");
+    fp2_print_uint(x, "x");
+
+    // [224i + 192] * 365 == 301*i + 258 (mod 431)
+    fp2_mul_int(r, x, 365);
+    fp2_print_uint(r, "365x");
+    CHECK(!mpz_cmp_ui(r->a, 258) && !mpz_cmp_ui(r->b, 301));
+
+    // [224i + 192] * -5 == 173*i + 333 (mod 431)
+    fp2_mul_int(r, x, -5);
+    fp2_print_uint(r, "-5x");
+    CHECK(!mpz_cmp_ui(r->a, 333) && !mpz_cmp_ui(r->b, 173));
+
+    // [145*i + 309] * 1234 == 145*i + 309  (mod 431)
+    fp2_mul_int(r, x, 1234);
+    fp2_print_uint(r, "1234x");
+    CHECK(!mpz_cmp_ui(r->a, 309) && !mpz_cmp_ui(r->b, 145));
+
+    fp2_clear(&r); fp2_clear(&x);
+    CHECK(!global_fpchar_clear());
+}
+
 int main() {
 
     TEST_RUN(test_set_str());
@@ -241,6 +268,7 @@ int main() {
     TEST_RUN(test_basic_arithmetic());
     TEST_RUN(test_safe_unsafe_mul_sq());
     TEST_RUN(test_inv_div());
+    TEST_RUN(test_fp2_mul_int());
     TEST_RUNS_END;
 
     return 0;
