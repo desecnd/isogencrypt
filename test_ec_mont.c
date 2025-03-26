@@ -65,12 +65,49 @@ void set_params_testp139() {
     A24p_from_A(A24_plus, C24, A, C);
 }
 
+void test_A_A24p_conversion() {
+    // Clear just to be sure
+    global_fpchar_clear();
+    // p + 1 = 432 = 2^4 * 3^3
+    global_fpchar_setup_uint(431);
+
+    fp2_t a;
+    fp2_init(&a);
+
+    // (A: C) = (a : 1) = 6
+    fp2_set_uint(A, 6);
+    fp2_set_uint(C, 1);
+
+    // Multiply by random scalar
+    fp2_mul_int(A, A, 259);
+    fp2_mul_int(C, C, 259);
+
+    A24p_from_A(A24_plus, C24, A, C);
+
+    // normalize to affine: a = A24p / C24
+    fp2_div_unsafe(a, A24_plus, C24);
+    fp2_print_uint(a, "A24/C24");
+
+    // (A24p : C24) = (a + 2 : 4) = 2
+    CHECK(!mpz_cmp_ui(a->a, 2) && !mpz_cmp_ui(a->b, 0));
+
+    // Retrieve back (A : C) given (A24p : C24)
+    A_from_A24p(A, C, A24_plus, C24);
+
+    fp2_div_unsafe(a, A, C);
+    fp2_print_uint(a, "A/C");
+
+    CHECK(!mpz_cmp_ui(a->a, 6) && !mpz_cmp_ui(a->b, 0));
+
+    fp2_clear(&a);
+}
+
 void test_point_set_is_immutable() {
-    fp2_set_str(P->X, "2 + 5*i");
+    fp2_set_str(P->X, "5*i + 2");
     // Q = P
     point_set(Q, P);
     // Modify Q, but not P
-    fp2_set_str(Q->X, "3 + 6*i");
+    fp2_set_str(Q->X, "6*i + 3");
 
     // Check if point P was modified
     // if yes, then point_set is a shallow copy and not a deepcopy
@@ -302,11 +339,16 @@ void test_xISOG_point() {
 }
 
 
+void test_xISOG_chain(pprod_t) {
+}
+
+
 int main() {
     init_test_variables();
 
     // integrity tests
     TEST_RUN(test_point_set_is_immutable());
+    TEST_RUN(test_A_A24p_conversion());
 
     // p = 431 tests
     set_params_testp431();
