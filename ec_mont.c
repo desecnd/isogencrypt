@@ -43,17 +43,19 @@ void A24p_from_A(fp2_t A24_plus, fp2_t C24, const fp2_t A, const fp2_t C) {
 }
 
 void A_from_A24p(fp2_t A, fp2_t C, const fp2_t A24_plus, const fp2_t C24) {
-    // Set A := 4A - 2C24 and C24 := 4C
+    // Set A := 4*A24p - 2*C24 and C := C24
 
     // A = 4A'
     fp_mul_int(A->a, A24_plus->a, 4);
     fp_mul_int(A->b, A24_plus->b, 4);
 
+    // C = C' (use C as register)
+    fp2_add(C, C24, C24);
     // A = 4A' - 2C'
-    fp2_sub(A, C24, C24);
+    fp2_sub(A, A, C);
 
     // C = C'
-    fp2_set(C, C24)
+    fp2_set(C, C24);
 }
 
 // Normalize: P = (X : Z) -> (X' : 1) with X' = X/Z
