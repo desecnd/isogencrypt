@@ -287,3 +287,71 @@ void xISOG_point(point_t Q, const point_t *prep_kpts, size_t n, const point_t P)
     fp2_clear(&t0);
     fp2_clear(&t1);
 }
+
+void aISOG_from_kps(fp2_t A_, fp2_t C_, const fp2_t A24p, const fp2_t C24, const point_t K, int degree) {
+
+    size_t n = KPS_DEG2SIZE(degree);
+    point_t * kpts = calloc(sizeof(point_t), n);
+
+    // Initialize kernel points
+    for (size_t i = 0; i < n; i++) {
+        point_init(&kpts[i]);
+    }
+
+    // Calculate [1]K, [2]K, [3]K, ...
+    KPS(kpts, n, K, A24p, C24);
+
+    fp2_t sigma, sigma_inv, pi;
+    fp2_init(&sigma); fp2_init(&sigma_inv); fp2_init(&pi);
+
+    fp2_t inv;
+    fp2_init(&inv);
+
+    for (size_t i = 0; i < n; i++) {
+        // x(P)^-1 = (X/Z)^-1 = (Z/X)
+        fp2_div_unsafe(inv, kpts[i]->Z, kpts[i]->X);
+        // X <- X/Z, Z <- 1
+        point_normalize_coords(kpts[i]);
+        
+        // sigma += x([i]K)
+        fp2_add(sigma, sigma, kpts[i]->X);
+        // sigma_inv += x([i]K)^-1
+        fp2_add(sigma_inv, sigma_inv, inv);
+
+        // pi *= x([i]K)
+        fp2_mul_safe(pi, kpts[i]->X);
+    }
+
+    fp2_t A, C;
+    fp2_init(&A); fp2_init(&C);
+
+    // Obtain original coordinates (A:C) from (A24:C24)
+    A_from_A24p(A, C, A24p, C24);
+    // Use "C_" as register to hold "a/1" = (A:C) value
+    fp2_div_unsafe(C_, A, C);
+
+    // A_ = sigma_inv - sigma
+    fp2_sub(A_, sigma_inv, sigma);
+    // A_ = 6sigma_inv - 6sigma
+    fp2_mul_int(A_, A_, 6);
+    // A_ = 6sigma_inv - 6sigma + A
+    // use value stored in C_ register := A/C
+    fp2_add(A_, A_, C_);
+
+    // use "C_" as register to hold pi^2
+    fp2_sq_unsafe(C_, pi);
+    // use "inv" as temporary register for holding the result:
+    // inv = (6sigma_inv - 6sigma + A) pi^2
+    fp2_mul_unsafe(inv, A_, C_);
+
+    // A_ = (6*sig_inv - 6*sigma + A) * pi^2 
+    fp2_set(A_, inv);
+    fp2_set_uint(C_, 1);
+
+    fp2_clear(&A); fp2_clear(&C); fp2_clear(&inv);
+    fp2_clear(&sigma); fp2_clear(&sigma_inv); fp2_clear(&pi);
+    for (size_t i = 0; i < n; i++) {
+        point_clear(&kpts[i]);
+    }
+    free(kpts);
+}
