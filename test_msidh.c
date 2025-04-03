@@ -88,8 +88,8 @@ void test_params_generation() {
     pprod_init(&B);
 
     msidh_gen_params(2, p, A, B);
-    CHECK_MSG(!mpz_cmp_ui(p, 2309), "Incorrect cofactor and prime number for given msidh params");
-    printf("p: %u\n", mpz_get_ui(p));
+    // 839 is only when 4 is falsely included in Alice primes, otherwise 419 should be used
+    CHECK_MSG(!mpz_cmp_ui(p, 839), "Incorrect cofactor and prime number for given msidh params");
 
     pprod_clear(&A);
     pprod_clear(&B);
