@@ -172,6 +172,20 @@ class TestcaseP139:
         # Order of the point did not change
         # assert phi_P.order() == 140
 
+    def verify_test_xLADDER(): 
+        print("VERIFY ---: test_xLADDER()")
+
+        P = E(108*i + 136, 68*i + 134)
+        print(f"xP: {P.x()}")
+
+        muls = [ (P * j).x() for j in range(1, 5)] 
+        assert muls == [108*i + 136, 113*i + 131, 42*i + 83, 47*i + 107]
+
+        for m, mulx in enumerate(muls):
+            print(f"x[{m + 1}]P = {mulx}")
+
+
+
 
 
 if __name__ == '__main__':
@@ -188,6 +202,7 @@ if __name__ == '__main__':
     TestcaseP139.setup_params()
     TestcaseP139.verify_test_KPS()
     TestcaseP139.verify_test_xISOG_and_aISOG()
+    TestcaseP139.verify_test_xLADDER()
 
 
 

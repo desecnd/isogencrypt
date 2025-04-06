@@ -158,12 +158,12 @@ void xADD(point_t PQsum, const point_t P, const point_t Q, const point_t PQdiff)
     fp2_clear(&t0); fp2_clear(&t1); fp2_clear(&t2); fp2_clear(&t3);
 }
 
+// Out: P = 2P, Q = P + Q
 // TODO: check argument-safeness
 // TODO: think about expressing function 
 // as set of arithmetic instructions 
 // instead of combinatin of 2 function calls
 void xDBLADD(point_t P, point_t Q, const point_t PQdiff, const fp2_t A24p, const fp2_t C24) {
-    // Out: Q = P + C, Q = 2P
     xADD(Q, P, Q, PQdiff);
     xDBL(P, P, A24p, C24);
 }
@@ -188,6 +188,37 @@ void criss_cross(fp2_t lsum, fp2_t rdiff, const fp2_t x, const fp2_t y, const fp
     fp2_add(lsum, t0, t1);
     
     fp2_clear(&t0); fp2_clear(&t1);
+}
+
+void xLADDER_int(point_t R0, const point_t P, long int m, const fp2_t A24p, const fp2_t C24) {
+    assert(m > 0 && "Given scalar m must be nonnegative");
+
+    point_t R1;
+    point_init(&R1);
+
+    // R0 = P, R1 = [2]R
+    point_set(R0, P);
+    xDBL(R1, P, A24p, C24);
+
+    // Get number of "active" bits (count until leading bit is found)
+    int bits = 0;
+    for (long int x = m; x > 0; x /= 2) bits++;
+
+    // Iterate over bits downwards (leading bit not included).
+    // Invariant of the algorithm R1 - R0 = P
+    for (int bit = bits - 2; bit >= 0; bit--) {
+
+        // bit = 1
+        if (m & (1 << bit)) {
+            // R1 = [2]R1; R0 = R0 + R1
+            xDBLADD(R1, R0, P, A24p, C24);
+        } else {
+            // R0 = [2]R0; R1 = R0 + R1
+            xDBLADD(R0, R1, P, A24p, C24);
+        }
+    }
+
+    point_clear(&R1);
 }
 
 // calculate P = P + [m]Q

@@ -44,6 +44,12 @@ void criss_cross(fp2_t lsum, fp2_t rdiff, const fp2_t x, const fp2_t y, const fp
 // Calculate P + Q given P, Q, P - Q
 void xADD(point_t PQsum, const point_t P, const point_t Q, const point_t PQdiff);
 
+/* 
+ * @brief Calculate x coordinate of R = [m]P using Montgomery Ladder algorithm
+ * @ref https://eprint.iacr.org/2017/212.pdf
+ */
+void xLADDER_int(point_t R0, const point_t P, long int m, const fp2_t A24p, const fp2_t C24);
+
 void xLADDER3PT_int(point_t P, point_t Q, point_t PQdiff, long int m, const fp2_t A24p, const fp2_t C24);
 
 void xLADDER3PT(point_t P, point_t Q, point_t PQdiff, mpz_t m, const fp2_t A24p, const fp2_t C24);

@@ -280,7 +280,6 @@ void test_point_normalize_coords() {
     CHECK(!mpz_cmp_ui(P->X->a, 95) && !mpz_cmp_ui(P->X->b, 12));
 }
 
-
 void test_KPS() {
     point_set_str_x(K, "101*i + 20");
     fp2_print_uint(K->X, "xK");
@@ -363,6 +362,32 @@ void test_xISOG_and_aISOG() {
 }
 
 
+void test_xLADDER() {
+
+    point_set_str_x(P, "108*i + 136");
+
+    // x[1]P = 108*i + 136
+    xLADDER_int(Q, P, 1, A24_plus, C24);
+    point_normalize_coords(Q);
+    CHECK(!mpz_cmp_ui(Q->X->a, 136) && !mpz_cmp_ui(Q->X->b, 108));
+
+    // x[2]P = 113*i + 131
+    xLADDER_int(Q, P, 2, A24_plus, C24);
+    point_normalize_coords(Q);
+    CHECK(!mpz_cmp_ui(Q->X->a, 131) && !mpz_cmp_ui(Q->X->b, 113));
+
+    // x[3]P = 42*i + 83 
+    xLADDER_int(Q, P, 3, A24_plus, C24);
+    point_normalize_coords(Q);
+    CHECK(!mpz_cmp_ui(Q->X->a, 83) && !mpz_cmp_ui(Q->X->b, 42));
+
+    // x[4]P = 47*i + 107 
+    xLADDER_int(Q, P, 4, A24_plus, C24);
+    point_normalize_coords(Q);
+    CHECK(!mpz_cmp_ui(Q->X->a, 107) && !mpz_cmp_ui(Q->X->b, 47));
+}
+
+
 int main() {
     init_test_variables();
 
@@ -382,8 +407,10 @@ int main() {
 
     // p = 139
     set_params_testp139();
+
     TEST_RUN(test_KPS());
     TEST_RUN(test_xISOG_and_aISOG());
+    TEST_RUN(test_xLADDER());
 
     TEST_RUNS_END;
 
