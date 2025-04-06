@@ -400,3 +400,90 @@ void aISOG_curve(fp2_t A_, fp2_t C_, const fp2_t A24p, const fp2_t C24, const po
     }
     free(kpts);
 }
+
+
+/*
+ * @brief Calculate isogenous curve
+ */
+void ISOG_chain(fp2_t A_, fp2_t C_, const fp2_t A24p, const fp2_t C24, const point_t K, pprod_t degree) { 
+
+    fp2_t A24p_last, C24_last;
+    fp2_init(&A24p_last); fp2_init(&C24_last);
+    fp2_set(A24p_last, A24p);
+    fp2_set(C24_last, C24);
+
+    point_t K0, Ki, T;
+    point_init(&K0); point_init(&Ki); point_init(&T);
+
+    point_set(K0, K);
+
+    // TODO: optimize: calculate MAX out of degree->div and allocate space
+    // maybe store it inside pprod structure? 
+    unsigned int max_div = 0;
+    for (unsigned int i = 0; i < degree->n_primes; i++) {
+        max_div = degree->primes[i] > max_div ? degree->primes[i] : max_div;
+    }
+
+    size_t max_n = KPS_DEG2SIZE(max_div);
+    point_t * kpts = calloc(sizeof(point_t), max_n);
+
+    // Initialize kernel points
+    for (size_t i = 0; i < max_n; i++) {
+        point_init(&kpts[i]);
+    }
+
+    // Iterate over all distinct degrees that produce final isogeny
+    for (unsigned int i = 0; i < degree->n_primes; i++) {
+
+        // divisor
+        unsigned int div = degree->primes[i];
+        
+        if (div % 2 == 0) { 
+            // TODO
+            assert(0 && "Not implemented");
+            continue;
+        }
+        // Odd degree Isogeny calculation
+
+        // Calculate the kernel of ith-degree isogeny
+        // Ki = [deg/div]K0 
+        point_set(Ki, K0);
+        for (unsigned int j = i + 1; j < degree->n_primes; j++) {
+            // Ki = [m]Ki;  Ki *= m
+            xLADDER_int(T, Ki, degree->primes[j], A24p_last, C24_last);
+            point_set(Ki, T);
+        }
+        
+        
+        point_normalize_coords(Ki);
+        fp2_print_uint(Ki->X, "xKi");
+
+        // Calculate [1]Ki, [2]Ki, [3]Ki, ... [n]Ki
+        size_t n = KPS_DEG2SIZE(div);
+        KPS(kpts, n, Ki, A24p_last, C24_last);
+
+        // Calculate coefficients of the next curve in the isogeny chain
+        aISOG_curve_KPS(A_, C_, A24p_last, C24_last, kpts, n);
+
+        fp2_div_unsafe(T->X, A_, C_);
+        fp2_print_uint(T->X, "ai");
+
+        // Push original kernel K0 through the isogeny, if not the last in the chain
+        if (i + 1 < degree->n_primes) {
+            prepare_kernel_points(kpts, n);
+            xISOG_point(T, kpts, n, K0);
+
+            // Overwride variables for next iteration of the loop
+            point_set(K0, T);
+            A24p_from_A(A24p_last, C24_last, A_, C_);
+        }
+    }
+
+    for (size_t i = 0; i < max_n; i++) {
+        point_clear(&kpts[i]);
+    }
+    free(kpts);
+
+    fp2_clear(&A24p_last); fp2_clear(&C24_last);
+    point_clear(&K0); point_clear(&Ki); point_clear(&T);
+}

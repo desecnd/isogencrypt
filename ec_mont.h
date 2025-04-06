@@ -2,6 +2,7 @@
 #define EC_MONT_H
 
 #include "fp2.h"
+#include "pprod.h"
 
 // Point in projective coordinates X-Z
 struct point_xz { 
@@ -90,5 +91,7 @@ void aISOG_curve_KPS(fp2_t A_, fp2_t C_, const fp2_t A24p, const fp2_t C24, cons
  *  If KPS is calulated beforehand use `aISOG_curve_KPS` istead to avoid unnecessary computations.
  */
 void aISOG_curve(fp2_t A_, fp2_t C_, const fp2_t A24p, const fp2_t C24, const point_t K, int degree);
+
+void ISOG_chain(fp2_t A_, fp2_t C_, const fp2_t A24p, const fp2_t C24, const point_t K, pprod_t degree);
 
 #endif

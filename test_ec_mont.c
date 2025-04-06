@@ -387,6 +387,31 @@ void test_xLADDER() {
     CHECK(!mpz_cmp_ui(Q->X->a, 107) && !mpz_cmp_ui(Q->X->b, 47));
 }
 
+void test_ISOG_chain() {
+    // Point of order 35 on the curve E
+    point_set_str_x(K, "108*i + 136");
+    fp2_print_uint(K->X, "xK");
+
+    fp2_t A_, C_, a_;
+    fp2_init(&A_); fp2_init(&C_), fp2_init(&a_);
+
+    pprod_t deg;
+    pprod_init(&deg);
+
+    unsigned int primes[2] = {5, 7};
+    pprod_set(deg, primes, 2);
+
+    ISOG_chain(A_, C_, A24_plus, C24, K, deg); 
+
+    // A(E') = 110*i + 51
+    fp2_div_unsafe(a_, A_, C_);
+    fp2_print_uint(a_, "Aφ(K)");
+    CHECK(!mpz_cmp_ui(a_->a, 73) && !mpz_cmp_ui(a_->b, 102));
+
+    fp2_clear(&A_); fp2_clear(&C_); fp2_clear(&a_);
+    pprod_clear(&deg);
+}
+
 
 int main() {
     init_test_variables();
@@ -411,6 +436,7 @@ int main() {
     TEST_RUN(test_KPS());
     TEST_RUN(test_xISOG_and_aISOG());
     TEST_RUN(test_xLADDER());
+    TEST_RUN(test_ISOG_chain());
 
     TEST_RUNS_END;
 

@@ -8,6 +8,22 @@ F = None
 i = None 
 E = None
 
+def _montgomery_coef(K):
+    """Return Montgomery A coefficient of the odd-degree isogenous codomain curve given kernel K"""
+    assert K.order() % 2 == 1
+
+    d = (K.order() - 1)//2
+    kpts = [ K * j for j in range(1, d + 1) ]
+
+    # A' is the coefficient of the codomain
+    A = K.curve().a2()
+    sigma = sum([KP.x() for KP in kpts])
+    sigma_hat = sum([1/KP.x() for KP in kpts])
+    pi = prod(KP.x() for KP in kpts)
+    A_ = (6 * sigma_hat - 6 * sigma + A) * pi^2
+
+    return A_
+
 class TestcaseP431:
 
     def setup_params():
@@ -137,6 +153,7 @@ class TestcaseP139:
         print(f"xK3: {x_coords[2]}")
         assert x_coords == [101*i + 20, 82*i + 16, 106*i + 124]
 
+
     def verify_test_xISOG_and_aISOG(): 
         print("VERIFY ---: test_xISOG_and_aISOG()")
         # Define isogeny kernel of order 5
@@ -149,17 +166,8 @@ class TestcaseP139:
         assert P.order() == 140
         print(f"xP: {P.x()}")
 
-        # d = (5 - 1)/2 = 2
-        d = 2
-        kpts = [ K * j for j in range(1, d + 1) ]
-
-        # A' is the coefficient of the codomain
-        A = E.a2()
-        sigma = sum([KP.x() for KP in kpts])
-        sigma_hat = sum([1/KP.x() for KP in kpts])
-        pi = prod(KP.x() for KP in kpts)
-        A_ = (6 * sigma_hat - 6 * sigma + A) * pi^2
         # Montgomery Curve with A_ coefficient
+        A_ = _montgomery_coef(K)
         print(f"aφ(E): {A_}")
 
         E_ = EllipticCurve(F, [0, A_, 0, 1, 0])
@@ -186,7 +194,34 @@ class TestcaseP139:
 
 
 
+    def verify_test_ISOG_chain():
+        print("VERIFY ---: test_ISOG_chain()")
+        K = E(108*i + 136, 68*i + 134)
+        assert K.order() == 35
+        print(f"xK: {K.x()}")
 
+        K5 = E(96*i + 71, 15*i + 87) 
+        assert K5.order() == 5
+        assert K5 == K * 7
+        print(f"xK5: {K5.x()}")
+
+        # K5.isogeny()
+        A5 = _montgomery_coef(K5)
+        E5 = EllipticCurve(F, [0, A5, 0, 1, 0])
+        print(f"aE5: {A5}")
+
+        phi5 = E.isogeny(K5, codomain=E5)
+        K7 = phi5(K)
+        print(f"xφ(K): {K7.x()}")
+
+        assert K7.order() == 7
+
+        A7 = _montgomery_coef(K7)
+        E7 = EllipticCurve(F, [0, A7, 0, 1, 0])
+        phi7 = E5.isogeny(K7, codomain=E7)
+
+        assert phi7(K7).is_zero()
+        print(f"aE7: {A7}")
 
 if __name__ == '__main__':
 
@@ -203,6 +238,7 @@ if __name__ == '__main__':
     TestcaseP139.verify_test_KPS()
     TestcaseP139.verify_test_xISOG_and_aISOG()
     TestcaseP139.verify_test_xLADDER()
+    TestcaseP139.verify_test_ISOG_chain()
 
 
 
