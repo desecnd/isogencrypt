@@ -223,6 +223,26 @@ class TestcaseP139:
         assert phi7(K7).is_zero()
         print(f"aE7: {A7}")
 
+    def verify_test_xISOG2_and_aISOG2():
+        print("VERIFY ---: test_xISOG2_and_aISOG2()")
+
+        K2 = E(100*i + 136, 0)
+        assert K2.order() == 2
+        print(f"xK2: {K2.x()}")
+
+        P = E(70*i + 36, 129*i + 11)
+        assert P.order() == 140
+        print(f"xP: {P.x()}")
+
+        # Formula for obtaining the A' for 2-isogeny
+        A2 = 2 * (1 - 2 * K2.x() ** 2)
+        print(f"aE2: {A2}")
+        E2 = EllipticCurve(F, [0, A2, 0, 1, 0])
+        phi2 = E.isogeny(K2, codomain=E2)
+        
+        P_ = phi2(P)
+        print(f"xφ(P): {P_.x()}")
+
 if __name__ == '__main__':
 
     # SIDH-like prime: 
@@ -239,6 +259,10 @@ if __name__ == '__main__':
     TestcaseP139.verify_test_xISOG_and_aISOG()
     TestcaseP139.verify_test_xLADDER()
     TestcaseP139.verify_test_ISOG_chain()
+    TestcaseP139.verify_test_xISOG2_and_aISOG2()
+
+    # TestcaseP139.verify_test_xISOG4()
+    # TestcaseP139.verify_test_aISOG4()
 
 
 
