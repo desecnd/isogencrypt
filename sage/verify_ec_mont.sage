@@ -194,8 +194,8 @@ class TestcaseP139:
 
 
 
-    def verify_test_ISOG_chain():
-        print("VERIFY ---: test_ISOG_chain()")
+    def verify_test_ISOG_chain_odd():
+        print("VERIFY ---: test_ISOG_chain_odd()")
         K = E(108*i + 136, 68*i + 134)
         assert K.order() == 35
         print(f"xK: {K.x()}")
@@ -237,11 +237,30 @@ class TestcaseP139:
         # Formula for obtaining the A' for 2-isogeny
         A2 = 2 * (1 - 2 * K2.x() ** 2)
         print(f"aE2: {A2}")
+        A2_24p = (A2 + 2) / 4
+        print(f"aE2(24p): {A2_24p}")
+
         E2 = EllipticCurve(F, [0, A2, 0, 1, 0])
         phi2 = E.isogeny(K2, codomain=E2)
         
         P_ = phi2(P)
         print(f"xφ(P): {P_.x()}")
+
+    def verify_test_ISOG2_bad_point_error():
+        print("VERIFY ---: test_ISOG2_bad_point_error()")
+        K2 = E(0, 0)
+        assert K2.order() == 2
+        print(f"xP: {P.x()}")
+
+        # Formula for obtaining the A' for 2-isogeny
+        # This will give value 2 which is incorrect (singular curve)
+        A2 = 2 * (1 - 2 * K2.x() ** 2)
+        print(f"aE2: {A2}")
+        try:
+            E2 = EllipticCurve(F, [0, A2, 0, 1, 0])
+            assert True and "Constructed curve should be singular"
+        except ArithmeticError as e:
+            pass
 
 if __name__ == '__main__':
 
@@ -258,8 +277,9 @@ if __name__ == '__main__':
     TestcaseP139.verify_test_KPS()
     TestcaseP139.verify_test_xISOG_and_aISOG()
     TestcaseP139.verify_test_xLADDER()
-    TestcaseP139.verify_test_ISOG_chain()
+    TestcaseP139.verify_test_ISOG_chain_odd()
     TestcaseP139.verify_test_xISOG2_and_aISOG2()
+    TestcaseP139.verify_test_ISOG2_bad_point_error()
 
     # TestcaseP139.verify_test_xISOG4()
     # TestcaseP139.verify_test_aISOG4()

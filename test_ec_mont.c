@@ -351,7 +351,7 @@ void test_xISOG_and_aISOG() {
     fp2_clear(&phiA); fp2_clear(&phiC); fp2_clear(&phi_a);
 
     prepare_kernel_points(kpts, n);
-    xISOG_point(Q, kpts, n, P);
+    xISOG_odd(Q, kpts, n, P);
     point_normalize_coords(Q);
     fp2_print_uint(Q->X, "xφ(P)");
 
@@ -387,7 +387,7 @@ void test_xLADDER() {
     CHECK(!mpz_cmp_ui(Q->X->a, 107) && !mpz_cmp_ui(Q->X->b, 47));
 }
 
-void test_ISOG_chain() {
+void test_ISOG_chain_odd() {
     // Point of order 35 on the curve E
     point_set_str_x(K, "108*i + 136");
     fp2_print_uint(K->X, "xK");
@@ -403,13 +403,55 @@ void test_ISOG_chain() {
 
     ISOG_chain(A_, C_, A24_plus, C24, K, deg); 
 
-    // A(E') = 110*i + 51
+    // A(E') = 102*i + 73
     fp2_div_unsafe(a_, A_, C_);
     fp2_print_uint(a_, "Aφ(K)");
     CHECK(!mpz_cmp_ui(a_->a, 73) && !mpz_cmp_ui(a_->b, 102));
 
     fp2_clear(&A_); fp2_clear(&C_); fp2_clear(&a_);
     pprod_clear(&deg);
+}
+
+void test_xISOG2_and_aISOG2() {
+    // Point of order 2, x != 0
+    point_set_str_x(K, "100*i + 136");
+    fp2_print_uint(K->X, "xK");
+
+    // Point of order 140
+    point_set_str_x(P, "70*i + 36");
+
+    fp2_t A_, C_, a_;
+    fp2_init(&A_); fp2_init(&C_), fp2_init(&a_);
+
+    // Calculate codomain of the 2-isogeny curve
+    // a' = 37*i + 73
+    aISOG2(A_, C_, K);
+    fp2_div_unsafe(a_, A_, C_);
+    fp2_print_uint(a_, "aE2");
+    CHECK(!mpz_cmp_ui(a_->a, 73) && !mpz_cmp_ui(a_->b, 37));
+
+    // Calculate codomain of the 2-isogeny curve (in xDBL form)
+    // a' = 44*i + 123
+    aISOG2_24p(A_, C_, K);
+    fp2_div_unsafe(a_, A_, C_);
+    fp2_print_uint(a_, "aE2(24p)");
+    CHECK(!mpz_cmp_ui(a_->a, 123) && !mpz_cmp_ui(a_->b, 44));
+
+    // Calculate the x-coordinate of the image of P under the 2-isogeny
+    // xP' = 128*i
+    xISOG2_unsafe(Q, K, P);
+    point_normalize_coords(Q);
+    fp2_print_uint(Q->X, "xφ(P)");
+    CHECK(!mpz_cmp_ui(Q->X->a, 0) && !mpz_cmp_ui(Q->X->b, 128));
+
+    // Calculate the x-coordinate using prepared Kernel
+    prepare_isog2_kernel(K);
+    xISOG2_prep(Q, K, P);
+    point_normalize_coords(Q);
+    fp2_print_uint(Q->X, "xφ(P)");
+    CHECK(!mpz_cmp_ui(Q->X->a, 0) && !mpz_cmp_ui(Q->X->b, 128));
+
+    fp2_clear(&A_); fp2_clear(&C_), fp2_clear(&a_);
 }
 
 
@@ -436,7 +478,8 @@ int main() {
     TEST_RUN(test_KPS());
     TEST_RUN(test_xISOG_and_aISOG());
     TEST_RUN(test_xLADDER());
-    TEST_RUN(test_ISOG_chain());
+    TEST_RUN(test_ISOG_chain_odd());
+    TEST_RUN(test_xISOG2_and_aISOG2());
 
     TEST_RUNS_END;
 

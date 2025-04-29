@@ -281,7 +281,7 @@ void prepare_kernel_points(point_t *kpoints, size_t n) {
     fp2_clear(&temp);
 }
 
-void xISOG_point(point_t Q, const point_t *prep_kpts, size_t n, const point_t P) {
+void xISOG_odd(point_t Q, const point_t *prep_kpts, size_t n, const point_t P) {
     assert(n > 0 && prep_kpts != NULL && "List of kernel points cannot be empty");
     // Registers: 4
 
@@ -401,10 +401,96 @@ void aISOG_curve(fp2_t A_, fp2_t C_, const fp2_t A24p, const fp2_t C24, const po
     free(kpts);
 }
 
+void xISOG2_unsafe(point_t Q, const point_t K, const point_t P) {
+    // Formula works only for K = (x, y=0) where x != 0
+    assert(!fp2_is_zero(K->X));
 
-/*
- * @brief Calculate isogenous curve
- */
+    fp2_t t0, t1, t2, t3;
+    fp2_init(&t0); fp2_init(&t1); fp2_init(&t2); fp2_init(&t3);
+    fp2_sub(t0, P->X, P->Z); // t0: XP - ZP
+    fp2_add(t1, P->X, P->Z); // t1: XP + ZP
+    fp2_sub(t2, K->Z, K->X); // t2: ZK - XK
+    fp2_add(t3, K->Z, K->X); // t3: ZK + XK
+
+    // Z = (XP - ZP)(ZK + XK) + (XP + ZP)(ZK - XK)
+    // X = (XP - ZP)(ZK + XK) - (XP + ZP)(ZK - XK)
+    criss_cross(Q->Z, Q->X, t0, t1, t2, t3);
+
+    fp2_mul_safe(Q->X, P->X);
+    fp2_mul_safe(Q->Z, P->Z);
+
+    fp2_clear(&t0); fp2_clear(&t1); fp2_clear(&t2); fp2_clear(&t3);
+}
+
+void prepare_isog2_kernel(point_t K) {
+    // Formula works only for K = (x, y=0) where x != 0
+    assert(!fp2_is_zero(K->X));
+
+    fp2_t t;
+    fp2_init(&t);
+
+    // t = ZK + XK
+    fp2_add(t, K->Z, K->X);
+    // ZK = ZK - XK
+    fp2_sub(K->Z, K->Z, K->X);
+    // XK = t: XK + ZK
+    fp2_set(K->X, t);
+    // K = (ZK + XK : ZK - XK)
+
+    fp2_clear(&t);
+}
+
+void xISOG2_prep(point_t Q, const point_t prep_K, const point_t P) {
+    // Assertion for K.x != 0 is present in `prepare_isog2_kernel`.
+    // At this point we cannot tell whether K.x = 0.
+
+    fp2_t t0, t1;
+    fp2_init(&t0); fp2_init(&t1); 
+    fp2_sub(t0, P->X, P->Z); // t0: XP - ZP
+    fp2_add(t1, P->X, P->Z); // t1: XP + ZP
+
+    // Z = (XP - ZP)(ZK + XK) + (XP + ZP)(ZK - XK)
+    // X = (XP - ZP)(ZK + XK) - (XP + ZP)(ZK - XK)
+    criss_cross(Q->Z, Q->X, t0, t1, prep_K->Z, prep_K->X);
+
+    fp2_mul_safe(Q->X, P->X);
+    fp2_mul_safe(Q->Z, P->Z);
+
+    fp2_clear(&t0); fp2_clear(&t1);
+}
+
+void aISOG2_24p(fp2_t A24p_, fp2_t C24_, const point_t K) {
+    // Formula works only for K = (x, 0) where x != 0
+    assert(!fp2_is_zero(K->X));
+    // (A + 2: 4) = (XK^2 - ZK^2 : ZK^2)
+
+    // A = XK^2
+    fp2_sq_unsafe(A24p_, K->X);
+    // C = ZK^2
+    fp2_sq_unsafe(C24_, K->Z);
+    // A = C - A: ZK^2 - XK^2 
+    fp2_sub(A24p_, C24_, A24p_);
+}
+
+void aISOG2(fp2_t A_, fp2_t C_, const point_t K) {
+    // Formula works only for K = (x, 0) where x != 0
+    assert(!fp2_is_zero(K->X));
+
+    // A = XK^2
+    fp2_sq_unsafe(A_, K->X);
+    // A = 2*XK^2
+    fp2_add(A_, A_, A_);
+
+    // C = ZK^2
+    fp2_sq_unsafe(C_, K->Z);
+    
+    // A = C - A: ZK^2 - 2XK^2
+    fp2_sub(A_, C_, A_);
+
+    // A = 2A: 2(ZK^2 - 2XK^2)
+    fp2_add(A_, A_, A_);
+}
+
 void ISOG_chain(fp2_t A_, fp2_t C_, const fp2_t A24p, const fp2_t C24, const point_t K, pprod_t degree) { 
 
     fp2_t A24p_last, C24_last;
@@ -471,7 +557,7 @@ void ISOG_chain(fp2_t A_, fp2_t C_, const fp2_t A24p, const fp2_t C24, const poi
         // Push original kernel K0 through the isogeny, if not the last in the chain
         if (i + 1 < degree->n_primes) {
             prepare_kernel_points(kpts, n);
-            xISOG_point(T, kpts, n, K0);
+            xISOG_odd(T, kpts, n, K0);
 
             // Overwride variables for next iteration of the loop
             point_set(K0, T);
