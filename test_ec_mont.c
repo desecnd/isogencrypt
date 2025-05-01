@@ -103,11 +103,11 @@ void test_A_A24p_conversion() {
 }
 
 void test_point_set_is_immutable() {
-    fp2_set_str(P->X, "5*i + 2");
+    point_set_str_x(P, "5*i + 2");
     // Q = P
     point_set(Q, P);
     // Modify Q, but not P
-    fp2_set_str(Q->X, "6*i + 3");
+    point_set_str_x(Q, "6*i + 3");
 
     // Check if point P was modified
     // if yes, then point_set is a shallow copy and not a deepcopy
