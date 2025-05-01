@@ -391,5 +391,9 @@ void fp2_inv_safe(fp2_t x) {
 
 
 void fp2_print_uint(fp2_t arg, const char* name) {
-    printf("%s: %ld*i + %ld\n", name, mpz_get_ui(arg->b), mpz_get_ui(arg->a));
+    if (fp_is_zero(arg->b)) {
+        printf("%s: %ld\n", name, mpz_get_ui(arg->a));
+    } else {
+        printf("%s: %ld*i + %ld\n", name, mpz_get_ui(arg->b), mpz_get_ui(arg->a));
+    }
 }
