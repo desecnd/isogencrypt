@@ -71,7 +71,6 @@ void point_normalize_coords(point_t P) {
     fp2_clear(&t);
 }
 
-// Calculate the double of the point R = [2]P
 void xDBL(point_t R, const point_t P, const fp2_t A24_plus, const fp2_t C24) {
     fp2_t t0, t1;
     fp2_init(&t0);
@@ -98,12 +97,8 @@ void xDBL(point_t R, const point_t P, const fp2_t A24_plus, const fp2_t C24) {
     fp2_clear(&t1);
 }
 
-// Calculate R: multiple [2^e]P of point P
 void xDBLe(point_t R, const point_t P, const fp2_t A24_plus, const fp2_t C24, const int e) {
-
-    // Set R <- P
     point_set(R, P);
-
     // Repeat the step of doubling multiple times
     for (int i = 0; i < e; i++) {
         xDBL(R, R, A24_plus, C24);
@@ -491,6 +486,47 @@ void aISOG2(fp2_t A_, fp2_t C_, const point_t K) {
     fp2_add(A_, A_, A_);
 }
 
+void ISOG2e(fp2_t A24p, fp2_t C24, const fp2_t A24p_init, const fp2_t C24_init, const point_t K, uint32_t e, point_t* push_points) {
+
+    point_t K0, T, R;
+    point_init(&K0); point_init(&T); point_init(&R);
+
+    // K0 = K
+    point_set(K0, K);
+
+    // Copy initial curve parameters
+    fp2_set(A24p, A24p_init);
+    fp2_set(C24, C24_init);
+
+    for (uint32_t i = 0; i < e; i++) {
+        // Calculate "local" kernel - T.order() == 2
+        if (i + 1 < e) {
+            xDBLe(T, K0, A24p, C24, e - i - 1);
+        } else {
+            point_set(T, K0);
+        }
+
+        assert(!fp2_is_zero(T->X) && "Kernel point cannot lay above (0, 0)");
+
+        // Push every point on the list through the partial isogeny
+        for (point_t *pptr = push_points; *pptr != NULL; pptr++) {
+            xISOG2_unsafe(R, T, *pptr);
+            point_set(*pptr, R);
+        }
+
+        // Calculate codomain
+        aISOG2_24p(A24p, C24, T);
+        
+        // Push the kernel of [2^e] degree isogeny, only if not last iteration.
+        // During the last iteration K0 will go to E(0) 
+        if (i + 1 < e) {
+            xISOG2_unsafe(R, T, K0);
+            point_set(K0, R);
+        }
+    }
+    point_clear(&K0); point_clear(&T); point_clear(&R);
+}
+
 void ISOG_chain(fp2_t A_, fp2_t C_, const fp2_t A24p, const fp2_t C24, const point_t K, pprod_t degree) { 
 
     fp2_t A24p_last, C24_last;
@@ -498,8 +534,8 @@ void ISOG_chain(fp2_t A_, fp2_t C_, const fp2_t A24p, const fp2_t C24, const poi
     fp2_set(A24p_last, A24p);
     fp2_set(C24_last, C24);
 
-    point_t K0, Ki, T;
-    point_init(&K0); point_init(&Ki); point_init(&T);
+    point_t K0, Q, T, R;
+    point_init(&K0); point_init(&Q); point_init(&T); point_init(&R);
 
     point_set(K0, K);
 
@@ -524,43 +560,44 @@ void ISOG_chain(fp2_t A_, fp2_t C_, const fp2_t A24p, const fp2_t C24, const poi
         // divisor
         unsigned int div = degree->primes[i];
         
-        if (div % 2 == 0) { 
-            // TODO
-            assert(0 && "Not implemented");
-            continue;
-        }
-        // Odd degree Isogeny calculation
-
         // Calculate the kernel of ith-degree isogeny
-        // Ki = [deg/div]K0 
-        point_set(Ki, K0);
+        // T = [deg/div]K0 is a point of order "div"
+        point_set(T, K0);
         for (unsigned int j = i + 1; j < degree->n_primes; j++) {
             // Ki = [m]Ki;  Ki *= m
-            xLADDER_int(T, Ki, degree->primes[j], A24p_last, C24_last);
-            point_set(Ki, T);
+            xLADDER_int(Q, T, degree->primes[j], A24p_last, C24_last);
+            point_set(T, Q);
+        }
+
+        // TODO: For now we assume that every component can be 'even'
+        // In the future we can store "power_of_two" inside the number
+        // We could "prepare" the kernel points if it is required more than once?
+        //
+        // TODO: Move it as "power2" isogeny function
+        if (div % 2 == 0) {
+            assert(0 && "Not implemented!");
         }
         
-        
-        point_normalize_coords(Ki);
-        fp2_print_uint(Ki->X, "xKi");
+        point_normalize_coords(T);
+        fp2_print_uint(T->X, "xT");
 
-        // Calculate [1]Ki, [2]Ki, [3]Ki, ... [n]Ki
+        // Calculate [1]T, [2]T, [3]T ... [n]T
         size_t n = KPS_DEG2SIZE(div);
-        KPS(kpts, n, Ki, A24p_last, C24_last);
+        KPS(kpts, n, T, A24p_last, C24_last);
 
         // Calculate coefficients of the next curve in the isogeny chain
         aISOG_curve_KPS(A_, C_, A24p_last, C24_last, kpts, n);
 
-        fp2_div_unsafe(T->X, A_, C_);
-        fp2_print_uint(T->X, "ai");
+        fp2_div_unsafe(Q->X, A_, C_);
+        fp2_print_uint(Q->X, "ai");
 
         // Push original kernel K0 through the isogeny, if not the last in the chain
         if (i + 1 < degree->n_primes) {
             prepare_kernel_points(kpts, n);
-            xISOG_odd(T, kpts, n, K0);
+            xISOG_odd(Q, kpts, n, K0);
 
             // Overwride variables for next iteration of the loop
-            point_set(K0, T);
+            point_set(K0, Q);
             A24p_from_A(A24p_last, C24_last, A_, C_);
         }
     }
@@ -571,5 +608,5 @@ void ISOG_chain(fp2_t A_, fp2_t C_, const fp2_t A24p, const fp2_t C24, const poi
     free(kpts);
 
     fp2_clear(&A24p_last); fp2_clear(&C24_last);
-    point_clear(&K0); point_clear(&Ki); point_clear(&T);
+    point_clear(&K0); point_clear(&Q); point_clear(&T);
 }

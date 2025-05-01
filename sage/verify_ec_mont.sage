@@ -147,6 +147,65 @@ class TestcaseP431:
         print(f"X': {X_}")
         assert X_ == 12*i + 95
 
+    def verify_test_xDBLe():
+        print("VERIFY ---: test_xDBLe")
+        P = E(387*i + 387, 325*i + 125)
+        assert P.order() == 432
+        print(f"xP: {P.x()}")
+
+        P2 = E(400*i + 311, 412*i + 256)
+        print(f"x[2]P: {P2.x()}")
+        assert P2 == P * 2
+
+        P4 = E(13*i + 67, 206*i + 377)
+        print(f"x[4]P: {P4.x()}")
+        assert P4 == P * 4
+
+        P8 = E(213*i + 105, 373*i + 392)
+        print(f"x[8]P: {P8.x()}")
+        assert P8 == P * 8
+
+        P2_12345 = E(304*i + 223, 134*i + 11)
+        print(f"x[2^1235]P: {P2_12345.x()}")
+        assert P2_12345 == P * (2 ** 12345)
+
+
+    def verify_test_ISOG2e():
+        print("VERIFY ---: test_ISOG2e")
+        K0 = E(33*i + 429, 205*i + 374)
+        K = K0
+        assert K.order() == 2**4
+        print(f"xK: {K.x()}")
+
+        # Push-through point
+        P0 = E(158*i + 183, 43*i + 20)
+        P = P0
+        print(f"xP: {P.x()}")
+        # Has full torsion and lays above different 2-order point than K
+        assert P.order() == 432
+        assert P * (432//2) != K * (16//2)
+
+        Ei = E
+        for j in range(4):
+            # T = [2^(e - 1)]K
+            T = (K * 2 ** (4 - j - 1)) if j < 3 else K
+            A = _mont_coef_2(T)
+            E_ = EllipticCurve(F, [0, A, 0, 1, 0])
+            phi = Ei.isogeny(T, codomain=E_)
+            P = phi(P)
+            Ei = E_
+            if j < 3:
+                K = phi(K)
+
+        # Additional check that the formula for mont_coef works
+        # Only x-coordinate is taken into account in mont_isog fomula, to it can differ
+        P_ = mont_isog(K0)(P0)
+        assert P == P_ or P == -P_ 
+        assert A == mont_coef(K0)
+
+        print(f"xφ(P): {P.x()}")
+        print(f"aφ(E): {A}")
+
 class TestcaseP139:
 
     def setup_params():
@@ -192,7 +251,7 @@ class TestcaseP139:
         print(f"xP: {P.x()}")
 
         # Montgomery Curve with A_ coefficient
-        A_ = _montgomery_coef(K)
+        A_ = _mont_coef_odd(K)
         print(f"aφ(E): {A_}")
 
         E_ = EllipticCurve(F, [0, A_, 0, 1, 0])
@@ -231,7 +290,7 @@ class TestcaseP139:
         print(f"xK5: {K5.x()}")
 
         # K5.isogeny()
-        A5 = _montgomery_coef(K5)
+        A5 = _mont_coef_odd(K5)
         E5 = EllipticCurve(F, [0, A5, 0, 1, 0])
         print(f"aE5: {A5}")
 
@@ -241,7 +300,7 @@ class TestcaseP139:
 
         assert K7.order() == 7
 
-        A7 = _montgomery_coef(K7)
+        A7 = _mont_coef_odd(K7)
         E7 = EllipticCurve(F, [0, A7, 0, 1, 0])
         phi7 = E5.isogeny(K7, codomain=E7)
 
@@ -275,7 +334,7 @@ class TestcaseP139:
         print("VERIFY ---: test_ISOG2_bad_point_error()")
         K2 = E(0, 0)
         assert K2.order() == 2
-        print(f"xP: {P.x()}")
+        print(f"xK: {K2.x()}")
 
         # Formula for obtaining the A' for 2-isogeny
         # This will give value 2 which is incorrect (singular curve)
@@ -290,12 +349,14 @@ class TestcaseP139:
 if __name__ == '__main__':
 
     # SIDH-like prime: 
-    # TestcaseP431.setup_params()
-    # TestcaseP431.verify_test_xDBL_small()
-    # TestcaseP431.verify_test_xADD_small()
-    # TestcaseP431.verify_test_criss_cross_small()
-    # TestcaseP431.verify_test_xLADDER3PT_small()
-    # TestcaseP431.verify_test_point_normalize_coords()
+    TestcaseP431.setup_params()
+    TestcaseP431.verify_test_xDBL_small()
+    TestcaseP431.verify_test_xADD_small()
+    TestcaseP431.verify_test_criss_cross_small()
+    TestcaseP431.verify_test_xLADDER3PT_small()
+    TestcaseP431.verify_test_point_normalize_coords()
+    TestcaseP431.verify_test_xDBLe()
+    TestcaseP431.verify_test_ISOG2e()
 
     # Odd-degree prime:
     TestcaseP139.setup_params()

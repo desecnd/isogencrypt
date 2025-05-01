@@ -1,6 +1,8 @@
 #ifndef EC_MONT_H
 #define EC_MONT_H
 
+#include <stdint.h>
+
 #include "fp2.h"
 #include "pprod.h"
 
@@ -34,10 +36,16 @@ void A24p_from_A(fp2_t A24_plus, fp2_t C24, const fp2_t A, const fp2_t C);
  */
 void A_from_A24p(fp2_t A, fp2_t C, const fp2_t A24_plus, const fp2_t C24);
 
-// Calculate the double of the point
+/*
+ * @brief Calculate x-coordinate of the double point x(R) = x([2]P). 
+ * Function is argument-safe for R = P.
+ */
 void xDBL(point_t R, const point_t P, const fp2_t A24_plus, const fp2_t C24);
 
-// Calculate R: multiple [2^e]P of point P
+/*
+ * @brief Calculate x-coordinate of the point multiplied by the power of 2 x(R) = x([2^e]P).
+ * Function is argument-safe for R = P.
+ */
 void xDBLe(point_t R, const point_t P, const fp2_t A24_plus, const fp2_t C24, const int e);
 
 /* 
@@ -125,6 +133,12 @@ void prepare_isog2_kernel(point_t K);
  * @ref https://eprint.iacr.org/2017/1198.pdf 
  */
 void xISOG2_prep(point_t Q, const point_t prep_K, const point_t P);
+
+/*
+ * @brief Calculate codomain of the 2^e-isogeny in the xDBL form (A24p) using point that does not lay above (0, 0).
+ *  Additionaly push all points specified in the list by the 2^e-isogeny 
+ */
+void ISOG2e(fp2_t A24p, fp2_t C24, const fp2_t A24p_init, const fp2_t C24_init, const point_t K, uint32_t e, point_t* push_points);
 
 /*
  * @brief Calculate codomain of the 2-isogeny in the xDBL form (A24p) using point of order 2 other than (0, 0)

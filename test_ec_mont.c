@@ -280,6 +280,69 @@ void test_point_normalize_coords() {
     CHECK(!mpz_cmp_ui(P->X->a, 95) && !mpz_cmp_ui(P->X->b, 12));
 }
 
+void test_xDBLe() {
+    point_set_str_x(P, "387*i + 387");
+
+    // x[2]P: 400*i + 311
+    xDBLe(Q, P, A24_plus, C24, 1);
+    fp2_print_uint(Q->Z, "z[2]P");
+    point_normalize_coords(Q);
+    CHECK(!mpz_cmp_ui(Q->X->a, 311) && !mpz_cmp_ui(Q->X->b, 400));
+
+    // x[4]P: 13*i + 67
+    xDBLe(Q, P, A24_plus, C24, 2);
+    point_normalize_coords(Q);
+    fp2_print_uint(Q->X, "x[4]P");
+    CHECK(!mpz_cmp_ui(Q->X->a, 67) && !mpz_cmp_ui(Q->X->b, 13));
+
+    // x[8]P: 213*i + 105
+    xDBLe(Q, P, A24_plus, C24, 3);
+    point_normalize_coords(Q);
+    fp2_print_uint(Q->X, "x[8]P");
+    CHECK(!mpz_cmp_ui(Q->X->a, 105) && !mpz_cmp_ui(Q->X->b, 213));
+
+    // x[2^1235]P: 304*i + 223
+    xDBLe(Q, P, A24_plus, C24, 12345);
+    point_normalize_coords(Q);
+    fp2_print_uint(Q->X, "x[2^12345]P");
+    CHECK(!mpz_cmp_ui(Q->X->a, 223) && !mpz_cmp_ui(Q->X->b, 304));
+}
+
+void test_ISOG2e() {
+    // Point of order 16, does not lay above (0, 0)
+    point_set_str_x(K, "33*i + 429");
+    fp2_print_uint(K->X, "xK");
+
+    point_set_str_x(P, "158*i + 183");
+    fp2_print_uint(P->X, "xP");
+
+    fp2_t A24p_, C24_, A_, C_, a_;
+    fp2_init(&A24p_); fp2_init(&C24_); fp2_init(&a_); fp2_init(&A_); fp2_init(&C_);
+
+    point_t push_points[2] = {P, NULL};
+
+    // Calculate codomain and push point P through the isogeny of degree 2^4 = 16.
+    ISOG2e(A24p_, C24_, A24_plus, C24, K, 4, push_points);
+
+    point_normalize_coords(P);
+    fp2_print_uint(P->X, "xφ(P)");
+
+    // xphi(P) = 69*i + 48
+    CHECK(!mpz_cmp_ui(P->X->a, 48) && !mpz_cmp_ui(P->X->b, 69));
+
+    A_from_A24p(A_, C_, A24p_, C24_);
+    fp2_div_unsafe(a_, A_, C_);
+    fp2_print_uint(a_, "aφ(E)");
+    // aphi(E) = 201
+    CHECK(!mpz_cmp_ui(a_->a, 201) && !mpz_cmp_ui(a_->b, 0));
+
+    fp2_clear(&A24p_); fp2_clear(&C24_); fp2_clear(&a_); fp2_clear(&A_); fp2_clear(&C_);
+}
+
+// ---------------------
+// Testcases for p = 139
+// ---------------------
+
 void test_KPS() {
     point_set_str_x(K, "101*i + 20");
     fp2_print_uint(K->X, "xK");
@@ -471,6 +534,8 @@ int main() {
     TEST_RUN(test_criss_cross_small());
     TEST_RUN(test_criss_cross_argsafe());
     TEST_RUN(test_xLADDER3PT_small());
+    TEST_RUN(test_xDBLe());
+    TEST_RUN(test_ISOG2e());
 
     // p = 139
     set_params_testp139();

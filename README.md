@@ -14,10 +14,11 @@ Requires `GMP` (Gnu Multiprecision Library) https://gmplib.org/.
 - [x] Implement `iso_curve()` function for the codomain in the Montgomery Model
     * [x] Implemented `aISOG_from_KPS` method
     * [x] Write `verify.sage` tests and `ec_mont` tests
+- [x] Implement `pow2-isogeny` and test it
 - [ ] Implement chain isogeny
     * [x] Implement 2-isogeny codomain curve
     * [x] Implement 2-isogeny point image
-    * [ ] Add **even**-degree isogeny chaining
+    * [x] Add **even**-degree isogeny chaining
     * [ ] Add list of "push-through" points
 - [ ] Implement mechanism behind the order2 of the point (x_push isog)
     * implement a_from_alpha function
@@ -27,6 +28,8 @@ Requires `GMP` (Gnu Multiprecision Library) https://gmplib.org/.
 - [ ] Implement **debug** mechanism (when to print specific message of values)
 - [ ] Find out the best way to create `const` typedef pointers (make point_t not a const pointer but const point)
 - [ ] Replace `assert` in some functions to "error" checking
+- [ ] Add `two_exp` ? or something that means number of 2 powers into `pprod_t` (simple counter of the power of 2), this will make some of the algorithms easier and more optimized
+- [ ] Make prints during tests and verifies as "Debug" and print them on the "error" stream, this way we can compare the results between the Python and C using simple "diff"
 
 ## Future
 
