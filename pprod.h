@@ -20,4 +20,9 @@ typedef struct pprod *pprod_t;
 
 void pprod_init(pprod_t *pp);
 void pprod_clear(pprod_t *pp);
+
+/* 
+ * @brief Set value of pprod_t number by taking a product of primes. 
+ *  Only the first argument of the `primes` table can be (optionally) a power of 2. 
+ */
 void pprod_set(pprod_t pp, unsigned int* primes, unsigned int n_primes);
