@@ -339,12 +339,105 @@ class TestcaseP139:
         # Formula for obtaining the A' for 2-isogeny
         # This will give value 2 which is incorrect (singular curve)
         A2 = 2 * (1 - 2 * K2.x() ** 2)
-        print(f"aE2: {A2}")
+        print(f"aφ(K): {A2}")
+
         try:
             E2 = EllipticCurve(F, [0, A2, 0, 1, 0])
             assert True and "Constructed curve should be singular"
         except ArithmeticError as e:
             pass
+
+    def verify_test_ISOG_chain():
+        print("VERIFY ---: verify_test_ISOG_chain()")
+
+        K0 = E(34*i + 99, 25*i + 95) 
+        print(f"xK: {K0.x()}")
+        assert K0.order() == 140
+        # K140 does not lie over (0, 0) point
+        assert (70 * K0).x() != 0
+
+        P0 = E(8*i + 137, 51*i + 35)
+        print("xP:", P0.x())
+        assert P0.order() == 140
+        assert (70 * P0).x() != 0
+        # P0 lays over different order 2 point than K0
+        assert (70 * P0) != (70 * K0)
+
+        # 1. Calculate phi1: E -> E1 with ker = T1 of degree 2 
+        T1 = K0 * 70
+        assert T1.order() == 2
+
+        # a) Calculate codomain
+        A1 = _mont_coef_2(T1)
+
+        # b) Construct the isogeny
+        E1 = EllipticCurve(F, [0, A1, 0, 1, 0])
+        phi1 = E.isogeny(T1, codomain=E1)
+
+        # c) Push the kernel K through the isogeny
+        K1 = phi1(K0)
+        assert K1.order() == 70
+        P = phi1(P0)
+
+        # 2. Calculate phi2: E1 -> E2 with ker = T2 of degree 2 
+        T2 = K1 * 35
+        assert T2.order() == 2
+
+        # a) Calculate codomain
+        A2 = _mont_coef_2(T2)
+
+        # b) Construct the isogeny
+        E2 = EllipticCurve(F, [0, A2, 0, 1, 0])
+        phi2 = E1.isogeny(T2, codomain=E2)
+
+        # c) Push the kernel K through the isogeny
+        K2 = phi2(K1)
+        assert K2.order() == 35
+        P = phi2(P)
+
+        # 3. Calculate phi3: E2 -> E3 with ker = T3 of degree 5
+        T3 = K2 * 7
+        assert T3.order() == 5
+
+        # a) Calculate codomain
+        A3 = _mont_coef_odd(T3)
+
+        # b) Construct the isogeny
+        E3 = EllipticCurve(F, [0, A3, 0, 1, 0])
+        phi3 = E2.isogeny(T3, codomain=E3)
+
+        # c) Push the kernel K through the isogeny
+        K3 = phi3(K2)
+        assert K3.order() == 7
+        P = phi3(P)
+
+        # 4. Calculate phi4: E3 -> E4 with ker = T4 of degree 7
+        T4 = K3
+        assert T4.order() == 7
+
+        # a) Calculate codomain
+        A4 = _mont_coef_odd(T4)
+
+        # b) Construct the isogeny
+        E4 = EllipticCurve(F, [0, A4, 0, 1, 0])
+        phi4 = E3.isogeny(T4, codomain=E4)
+
+        # c) Push the kernel K through the isogeny
+        K4 = phi4(K3)
+        assert K4 == E4(0)
+
+        P = phi4(P)
+        A = A4
+
+        # Additional check that the formula for mont_coef works
+        # Only x-coordinate is taken into account in mont_isog fomula, to it can differ
+        P_ = mont_isog(K0)(P0)
+        assert P == P_ or P == -P_ 
+        assert A == mont_coef(K0)
+
+        print(f"aφ(E): {A}")
+        print(f"xφ(P): {P.x()}")
+
 
 if __name__ == '__main__':
 
@@ -366,11 +459,4 @@ if __name__ == '__main__':
     TestcaseP139.verify_test_ISOG_chain_odd()
     TestcaseP139.verify_test_xISOG2_and_aISOG2()
     TestcaseP139.verify_test_ISOG2_bad_point_error()
-
-    # TestcaseP139.verify_test_xISOG4()
-    # TestcaseP139.verify_test_aISOG4()
-
-
-
-
-
+    TestcaseP139.verify_test_ISOG_chain()

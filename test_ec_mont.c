@@ -1,6 +1,7 @@
 #include <stdio.h>
 
 #include "ec_mont.h"
+#include "fp2.h"
 #include "testing.h"
 
 fp2_t A, C;
@@ -450,7 +451,10 @@ void test_xLADDER_int() {
     CHECK(!mpz_cmp_ui(Q->X->a, 107) && !mpz_cmp_ui(Q->X->b, 47));
 }
 
+// TODO: reform the test
 void test_ISOG_chain_odd() {
+    return;
+
     // Point of order 35 on the curve E
     point_set_str_x(K, "108*i + 136");
     fp2_print_uint(K->X, "xK");
@@ -464,7 +468,7 @@ void test_ISOG_chain_odd() {
     unsigned int primes[2] = {5, 7};
     pprod_set(deg, primes, 2);
 
-    ISOG_chain(A_, C_, A24_plus, C24, K, deg); 
+    // ISOG_chain(A_, C_, A24_plus, C24, K, deg); 
 
     // A(E') = 102*i + 73
     fp2_div_unsafe(a_, A_, C_);
@@ -518,6 +522,43 @@ void test_xISOG2_and_aISOG2() {
 }
 
 
+void test_ISOG_chain() {
+    // Point of order 140, does not lay over (0, 0)
+    point_set_str_x(K, "34*i + 99");
+    fp2_print_uint(K->X, "xK");
+
+
+    point_set_str_x(P, "8*i + 137");
+    fp2_print_uint(P->X, "xP");
+
+    fp2_t A_, C_, a_, A24p_, C24_; 
+    fp2_init(&A24p_); fp2_init(&C24_); fp2_init(&A_); fp2_init(&C_), fp2_init(&a_);
+
+    pprod_t deg;
+    pprod_init(&deg);
+
+    unsigned int factors[] = {4, 5, 7};
+    pprod_set(deg, factors, 3);
+
+    // Two more NULLs for usage by ISOG_chain
+    point_t push_points[3] = {P, NULL, NULL};
+
+    // Return in 24p form
+    ISOG_chain(A24p_, C24_, A24_plus, C24, K, deg, push_points);
+    A_from_A24p(A_, C_, A24p_, C24_); 
+    fp2_div_unsafe(a_, A_, C_);
+
+    fp2_print_uint(a_, "aφ(K)");
+    CHECK(!mpz_cmp_ui(a_->a, 0) && !mpz_cmp_ui(a_->b, 49));
+
+    point_normalize_coords(P);
+    fp2_print_uint(P->X, "xφ(P)");
+    CHECK(!mpz_cmp_ui(P->X->a, 68) && !mpz_cmp_ui(P->X->b, 114));
+
+    fp2_clear(&A24p_); fp2_clear(&C24_); fp2_clear(&A_); fp2_clear(&C_), fp2_clear(&a_);
+    pprod_clear(&deg);
+}
+
 int main() {
     init_test_variables();
 
@@ -533,7 +574,7 @@ int main() {
     TEST_RUN(test_xADD_small());
     TEST_RUN(test_criss_cross_small());
     TEST_RUN(test_criss_cross_argsafe());
-    TEST_RUN(test_xLADDER3PT_small());
+    TEST_RUN(test_xLADDER3PT());
     TEST_RUN(test_xDBLe());
     TEST_RUN(test_ISOG2e());
 
@@ -542,9 +583,10 @@ int main() {
 
     TEST_RUN(test_KPS());
     TEST_RUN(test_xISOG_and_aISOG());
-    TEST_RUN(test_xLADDER());
-    TEST_RUN(test_ISOG_chain_odd());
+    TEST_RUN(test_xLADDER_int());
+    // TEST_RUN(test_ISOG_chain_odd());
     TEST_RUN(test_xISOG2_and_aISOG2());
+    TEST_RUN(test_ISOG_chain());
 
     TEST_RUNS_END;
 

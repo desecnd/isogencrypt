@@ -1,7 +1,9 @@
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 
 #include "ec_mont.h"
+#include "fp2.h"
 
 
 void point_init(point_t *P) {
@@ -527,23 +529,32 @@ void ISOG2e(fp2_t A24p, fp2_t C24, const fp2_t A24p_init, const fp2_t C24_init, 
     point_clear(&K0); point_clear(&T); point_clear(&R);
 }
 
-void ISOG_chain(fp2_t A_, fp2_t C_, const fp2_t A24p, const fp2_t C24, const point_t K, pprod_t degree) { 
+void ISOG_chain(fp2_t A24p, fp2_t C24, const fp2_t A24p_init, const fp2_t C24_init, const point_t K, pprod_t isog_degree, point_t *push_points) { 
 
-    fp2_t A24p_last, C24_last;
-    fp2_init(&A24p_last); fp2_init(&C24_last);
-    fp2_set(A24p_last, A24p);
-    fp2_set(C24_last, C24);
+    fp2_t A24p_next, C24_next;
+    fp2_init(&A24p_next); fp2_init(&C24_next);
+
+    fp2_set(A24p, A24p_init);
+    fp2_set(C24, C24_init);
 
     point_t K0, Q, T, R;
     point_init(&K0); point_init(&Q); point_init(&T); point_init(&R);
 
     point_set(K0, K);
 
+    // Push K0 into the push_points list, as first occured "NULL"
+    for (point_t *pp = push_points; *pp != NULL; pp++) {
+        if (*(pp+1) == NULL) { 
+            *(pp+1) = K0;
+            break;
+        }
+    }
+
     // TODO: optimize: calculate MAX out of degree->div and allocate space
     // maybe store it inside pprod structure? 
     unsigned int max_div = 0;
-    for (unsigned int i = 0; i < degree->n_primes; i++) {
-        max_div = degree->primes[i] > max_div ? degree->primes[i] : max_div;
+    for (unsigned int i = 0; i < isog_degree->n_primes; i++) {
+        max_div = isog_degree->primes[i] > max_div ? isog_degree->primes[i] : max_div;
     }
 
     size_t max_n = KPS_DEG2SIZE(max_div);
@@ -555,17 +566,17 @@ void ISOG_chain(fp2_t A_, fp2_t C_, const fp2_t A24p, const fp2_t C24, const poi
     }
 
     // Iterate over all distinct degrees that produce final isogeny
-    for (unsigned int i = 0; i < degree->n_primes; i++) {
+    for (unsigned int i = 0; i < isog_degree->n_primes; i++) {
 
         // divisor
-        unsigned int div = degree->primes[i];
+        unsigned int div = isog_degree->primes[i];
         
         // Calculate the kernel of ith-degree isogeny
         // T = [deg/div]K0 is a point of order "div"
         point_set(T, K0);
-        for (unsigned int j = i + 1; j < degree->n_primes; j++) {
+        for (unsigned int j = i + 1; j < isog_degree->n_primes; j++) {
             // Ki = [m]Ki;  Ki *= m
-            xLADDER_int(Q, T, degree->primes[j], A24p_last, C24_last);
+            xLADDER_int(Q, T, isog_degree->primes[j], A24p, C24);
             point_set(T, Q);
         }
 
@@ -575,38 +586,45 @@ void ISOG_chain(fp2_t A_, fp2_t C_, const fp2_t A24p, const fp2_t C24, const poi
         //
         // TODO: Move it as "power2" isogeny function
         if (div % 2 == 0) {
-            assert(0 && "Not implemented!");
-        }
-        
-        point_normalize_coords(T);
-        fp2_print_uint(T->X, "xT");
+            assert(i == 0 && "Only first number can be a power of 2");
+            int log2 = 0;
+            while (div > 1) {
+                log2++;
+                div /= 2;
+            }
 
-        // Calculate [1]T, [2]T, [3]T ... [n]T
+            // K0 was already appended into the list of push_points
+            ISOG2e(A24p_next, C24_next, A24p, C24, T, log2, push_points);
+            fp2_set(A24p, A24p_next);
+            fp2_set(C24, C24_next);
+            continue;
+        }
+
+        // Calculate [1]T, [2]T, [3]T ... [div//2]T
         size_t n = KPS_DEG2SIZE(div);
-        KPS(kpts, n, T, A24p_last, C24_last);
+        KPS(kpts, n, T, A24p, C24);
 
         // Calculate coefficients of the next curve in the isogeny chain
-        aISOG_curve_KPS(A_, C_, A24p_last, C24_last, kpts, n);
+        aISOG_curve_KPS(A24p_next, C24_next, A24p, C24, kpts, n);
+        A24p_from_A(A24p, C24, A24p_next, C24_next); 
 
-        fp2_div_unsafe(Q->X, A_, C_);
-        fp2_print_uint(Q->X, "ai");
+        // Step required for the multiple calculations of the points
+        prepare_kernel_points(kpts, n);
 
-        // Push original kernel K0 through the isogeny, if not the last in the chain
-        if (i + 1 < degree->n_primes) {
-            prepare_kernel_points(kpts, n);
-            xISOG_odd(Q, kpts, n, K0);
-
-            // Overwride variables for next iteration of the loop
-            point_set(K0, Q);
-            A24p_from_A(A24p_last, C24_last, A_, C_);
+        // K0 is included in the push_points
+        for (point_t *pp = push_points; *pp != NULL; pp++) {
+            xISOG_odd(Q, kpts, n, *pp);
+            point_set(*pp, Q);
         }
     }
+
+    assert(fp2_is_zero(K0->Z) && "Kernel of the isogeny should end-up as E(0) - E0->Z = 0");
 
     for (size_t i = 0; i < max_n; i++) {
         point_clear(&kpts[i]);
     }
     free(kpts);
 
-    fp2_clear(&A24p_last); fp2_clear(&C24_last);
-    point_clear(&K0); point_clear(&Q); point_clear(&T);
+    fp2_clear(&A24p_next); fp2_clear(&C24_next);
+    point_clear(&K0); point_clear(&Q); point_clear(&T); point_clear(&R);
 }
