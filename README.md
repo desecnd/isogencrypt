@@ -9,9 +9,9 @@ Requires `GMP` (Gnu Multiprecision Library) https://gmplib.org/.
 ### Theoretical
 - [x] Implement `fp2_mul_int` for easier mulitplying complex a+bi by scalar c 
 - [x] Implement `A_from_A24p()` and `A24p_from_A()` and write tests for it
-- [ ] Implement `xLADDER()` algorithm 
-    * [x] Test xLADDER_int algoirhtm
-    * [ ] Implement `xLADDER()` for mpz? 
+- [x] Implement `xLADDER()` algorithm 
+    * [x] Test `xLADDER_int()` algorithm
+    * [x] Implement `xLADDER()` for mpz_t
 - [x] Implement `iso_curve()` function for the codomain in the Montgomery Model
     * [x] Implemented `aISOG_from_KPS` method
     * [x] Write `verify.sage` tests and `ec_mont` tests
@@ -24,6 +24,9 @@ Requires `GMP` (Gnu Multiprecision Library) https://gmplib.org/.
 - [ ] Implement mechanism behind the order2 of the point (x_push isog)
     * implement a_from_alpha function
     * implement root alpha finding (?)
+- [ ] Add j-invariant calculation in montgomery model
+- [ ] Add MSIDH with initialized torsion basis
+
 
 ### Technical
 

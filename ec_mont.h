@@ -64,6 +64,12 @@ void xADD(point_t PQsum, const point_t P, const point_t Q, const point_t PQdiff)
  * @brief Calculate x coordinate of R = [m]P using Montgomery Ladder algorithm
  * @ref https://eprint.iacr.org/2017/212.pdf
  */
+void xLADDER(point_t R0, const point_t P, mpz_t m, const fp2_t A24p, const fp2_t C24);
+
+/* 
+ * @brief Calculate x coordinate of R = [m]P using Montgomery Ladder algorithm with m fitting in 63 bits
+ * @ref https://eprint.iacr.org/2017/212.pdf
+ */
 void xLADDER_int(point_t R0, const point_t P, long int m, const fp2_t A24p, const fp2_t C24);
 
 void xLADDER3PT_int(point_t P, point_t Q, point_t PQdiff, long int m, const fp2_t A24p, const fp2_t C24);

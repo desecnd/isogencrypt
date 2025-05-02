@@ -267,6 +267,25 @@ class TestcaseP139:
     def verify_test_xLADDER(): 
         print("VERIFY ---: test_xLADDER()")
 
+        P = E(7*i + 97, 9*i + 129) 
+        print(f"xP: {P.x()}")
+
+        P1 = E(98*i + 43, 23*i + 67)
+        print(f"x[2^80]P: {P1.x()}")
+        assert P1 == P * 2**80
+
+        P2 = E(56*i + 96, 14*i + 39)
+        print(f"x[2^80-1]P: {P2.x()}")
+        assert P2 == P * (2**80 - 1)
+
+        P3 = E(94*i + 31, 80*i + 23)
+        m = 0xf5697b000f01c17d4c5e
+        print(f"x[{hex(m)}]P: {P3.x()}")
+        assert P3 == P * m
+
+    def verify_test_xLADDER_int(): 
+        print("VERIFY ---: test_xLADDER_int()")
+
         P = E(108*i + 136, 68*i + 134)
         print(f"xP: {P.x()}")
 
@@ -455,6 +474,7 @@ if __name__ == '__main__':
     TestcaseP139.setup_params()
     TestcaseP139.verify_test_KPS()
     TestcaseP139.verify_test_xISOG_and_aISOG()
+    TestcaseP139.verify_test_xLADDER_int()
     TestcaseP139.verify_test_xLADDER()
     TestcaseP139.verify_test_ISOG_chain_odd()
     TestcaseP139.verify_test_xISOG2_and_aISOG2()

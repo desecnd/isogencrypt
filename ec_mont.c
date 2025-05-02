@@ -1,3 +1,4 @@
+#include <gmp.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -187,6 +188,39 @@ void criss_cross(fp2_t lsum, fp2_t rdiff, const fp2_t x, const fp2_t y, const fp
     fp2_clear(&t0); fp2_clear(&t1);
 }
 
+void xLADDER(point_t R0, const point_t P, mpz_t m, const fp2_t A24p, const fp2_t C24) {
+    assert(mpz_sgn(m) > 0 && "Given scalar m must be nonnegative");
+    
+    mpz_t r;
+    mpz_init(r);
+
+    point_t R1;
+    point_init(&R1);
+
+    // R0 = P, R1 = [2]R
+    point_set(R0, P);
+    xDBL(R1, P, A24p, C24);
+
+    // Get number of "active" bits
+    int n_bits = mpz_sizeinbase(m, 2);
+
+    // Iterate over bits downwards (leading bit not included).
+    // Invariant of the algorithm R1 - R0 = P
+    for (int bit = n_bits - 2; bit >= 0; bit--) {
+        // Bit is equal to 1
+        if (mpz_tstbit(m, bit)) {
+            // R1 = [2]R1; R0 = R0 + R1
+            xDBLADD(R1, R0, P, A24p, C24);
+        } else {
+            // R0 = [2]R0; R1 = R0 + R1
+            xDBLADD(R0, R1, P, A24p, C24);
+        }
+    }
+
+    mpz_clear(r);
+    point_clear(&R1);
+}
+
 void xLADDER_int(point_t R0, const point_t P, long int m, const fp2_t A24p, const fp2_t C24) {
     assert(m > 0 && "Given scalar m must be nonnegative");
 
@@ -217,6 +251,7 @@ void xLADDER_int(point_t R0, const point_t P, long int m, const fp2_t A24p, cons
 
     point_clear(&R1);
 }
+
 
 // calculate P = P + [m]Q
 void xLADDER3PT_int(point_t P, point_t Q, point_t PQdiff, long int m, const fp2_t A24p, const fp2_t C24) {

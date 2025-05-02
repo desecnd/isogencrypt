@@ -1,3 +1,4 @@
+#include <gmp.h>
 #include <stdio.h>
 
 #include "ec_mont.h"
@@ -451,6 +452,41 @@ void test_xLADDER_int() {
     CHECK(!mpz_cmp_ui(Q->X->a, 107) && !mpz_cmp_ui(Q->X->b, 47));
 }
 
+void test_xLADDER() {
+    point_set_str_x(P, "7*i + 97");
+    fp2_print_uint(P->X, "xP"); 
+
+    mpz_t m;
+    // 1. m = 2^80
+    mpz_init_set_str(m, "100000000000000000000", 16);
+    xLADDER(Q, P, m, A24_plus, C24);
+    point_normalize_coords(Q);
+
+    // x[2^80]P: 98*i + 43
+    fp2_print_uint(Q->X, "x[2^80]P");
+    CHECK(!mpz_cmp_ui(Q->X->a, 43) && !mpz_cmp_ui(Q->X->b, 98));
+
+    // 2. m = 2^80 - 1
+    mpz_init_set_str(m, "ffffffffffffffffffff", 16);
+    xLADDER(Q, P, m, A24_plus, C24);
+    point_normalize_coords(Q);
+
+    // x[2^80-1]P: 56*i + 96
+    fp2_print_uint(Q->X, "x[2^80-1]P");
+    CHECK(!mpz_cmp_ui(Q->X->a, 96) && !mpz_cmp_ui(Q->X->b, 56));
+
+    // 3. m = random in [2^79, 2^80]
+    mpz_init_set_str(m, "f5697b000f01c17d4c5e", 16);
+    xLADDER(Q, P, m, A24_plus, C24);
+    point_normalize_coords(Q);
+
+    // x[0xf5697b000f01c17d4c5e]P: 94*i + 31
+    fp2_print_uint(Q->X, "x[0xf5697b000f01c17d4c5e]P");
+    CHECK(!mpz_cmp_ui(Q->X->a, 31) && !mpz_cmp_ui(Q->X->b, 94));
+
+    mpz_clear(m);
+}
+
 // TODO: reform the test
 void test_ISOG_chain_odd() {
     return;
@@ -584,6 +620,7 @@ int main() {
     TEST_RUN(test_KPS());
     TEST_RUN(test_xISOG_and_aISOG());
     TEST_RUN(test_xLADDER_int());
+    TEST_RUN(test_xLADDER());
     // TEST_RUN(test_ISOG_chain_odd());
     TEST_RUN(test_xISOG2_and_aISOG2());
     TEST_RUN(test_ISOG_chain());
