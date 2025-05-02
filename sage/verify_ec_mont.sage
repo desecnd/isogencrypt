@@ -117,8 +117,8 @@ class TestcaseP431:
         print(f"xw-yz: {f}")
 
         
-    def verify_test_xLADDER3PT_small():
-        print("VERIFY ---: test_xLADDER3PT_small")
+    def verify_test_xLADDER3PT():
+        print("VERIFY ---: test_xLADDER3PT")
         P = E(271*i + 259, 422*i + 97)
         print(f"xP: {P.x()}")
         Q = E(335*i + 262, 69*i + 198)
@@ -353,7 +353,7 @@ if __name__ == '__main__':
     TestcaseP431.verify_test_xDBL_small()
     TestcaseP431.verify_test_xADD_small()
     TestcaseP431.verify_test_criss_cross_small()
-    TestcaseP431.verify_test_xLADDER3PT_small()
+    TestcaseP431.verify_test_xLADDER3PT()
     TestcaseP431.verify_test_point_normalize_coords()
     TestcaseP431.verify_test_xDBLe()
     TestcaseP431.verify_test_ISOG2e()

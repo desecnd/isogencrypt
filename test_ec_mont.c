@@ -240,7 +240,7 @@ void test_criss_cross_argsafe() {
     fp2_clear(&x); fp2_init(&y); fp2_init(&z); fp2_init(&w);
 }
 
-void test_xLADDER3PT_small() {
+void test_xLADDER3PT() {
     point_set_str_x(P, "271*i + 259");
     point_set_str_x(Q, "335*i + 262");
     point_set_str_x(PQd, "411*i + 143");
@@ -425,7 +425,7 @@ void test_xISOG_and_aISOG() {
 }
 
 
-void test_xLADDER() {
+void test_xLADDER_int() {
 
     point_set_str_x(P, "108*i + 136");
 
@@ -468,7 +468,7 @@ void test_ISOG_chain_odd() {
 
     // A(E') = 102*i + 73
     fp2_div_unsafe(a_, A_, C_);
-    fp2_print_uint(a_, "Aφ(K)");
+    fp2_print_uint(a_, "aφ(K)");
     CHECK(!mpz_cmp_ui(a_->a, 73) && !mpz_cmp_ui(a_->b, 102));
 
     fp2_clear(&A_); fp2_clear(&C_); fp2_clear(&a_);
