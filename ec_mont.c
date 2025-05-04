@@ -37,20 +37,20 @@ void point_set_str_x(point_t P, const char *x) {
     fp2_set_uint(P->Z, 1);
 }
 
-void A24p_from_A(fp2_t A24_plus, fp2_t C24, const fp2_t A, const fp2_t C) {
+void A24p_from_A(fp2_t A24p, fp2_t C24, const fp2_t A, const fp2_t C) {
     // Set A24p := A + 2C and C24 := 4C
-    fp2_set(A24_plus, A);               // A24p = A
+    fp2_set(A24p, A);               // A24p = A
     fp2_add(C24, C, C);                 // C24 = 2C
-    fp2_add(A24_plus, A24_plus, C24);   // A24p = A + 2C
+    fp2_add(A24p, A24p, C24);   // A24p = A + 2C
     fp2_add(C24, C24, C24);             // C24 = 4C
 }
 
-void A_from_A24p(fp2_t A, fp2_t C, const fp2_t A24_plus, const fp2_t C24) {
+void A_from_A24p(fp2_t A, fp2_t C, const fp2_t A24p, const fp2_t C24) {
     // Set A := 4*A24p - 2*C24 and C := C24
 
     // A = 4A'
-    fp_mul_int(A->a, A24_plus->a, 4);
-    fp_mul_int(A->b, A24_plus->b, 4);
+    fp_mul_int(A->a, A24p->a, 4);
+    fp_mul_int(A->b, A24p->b, 4);
 
     // C = C' (use C as register)
     fp2_add(C, C24, C24);
@@ -74,7 +74,7 @@ void point_normalize_coords(point_t P) {
     fp2_clear(&t);
 }
 
-void xDBL(point_t R, const point_t P, const fp2_t A24_plus, const fp2_t C24) {
+void xDBL(point_t R, const point_t P, const fp2_t A24p, const fp2_t C24) {
     fp2_t t0, t1;
     fp2_init(&t0);
     fp2_init(&t1);
@@ -91,7 +91,7 @@ void xDBL(point_t R, const point_t P, const fp2_t A24_plus, const fp2_t C24) {
     fp2_mul_unsafe(R->X, R->Z, t1);    // X' = (X + Z)^2 * (X - Z)^2 * C24
 
     fp2_sub(t1, t1, t0);        // t1 = (X + Z)^2 - (X - Z)^2 
-    fp2_mul_unsafe(t0, A24_plus, t1);  // t0 = A24p * [(X + Z)^2 - (X - Z)^2]
+    fp2_mul_unsafe(t0, A24p, t1);  // t0 = A24p * [(X + Z)^2 - (X - Z)^2]
 
     fp2_add(R->Z, R->Z, t0);    // Z' = A24p * [(X + Z)^2 - (X - Z)^2] + (X - Z)^2 * C24
     fp2_mul_safe(R->Z, t1);    // Z' = { A24p * [(X + Z)^2 - (X - Z)^2] + C24 (X - Z)^2] } [(X + Z)^2 - (X - Z)^2]
@@ -100,11 +100,11 @@ void xDBL(point_t R, const point_t P, const fp2_t A24_plus, const fp2_t C24) {
     fp2_clear(&t1);
 }
 
-void xDBLe(point_t R, const point_t P, const fp2_t A24_plus, const fp2_t C24, const int e) {
+void xDBLe(point_t R, const point_t P, const fp2_t A24p, const fp2_t C24, const int e) {
     point_set(R, P);
     // Repeat the step of doubling multiple times
     for (int i = 0; i < e; i++) {
-        xDBL(R, R, A24_plus, C24);
+        xDBL(R, R, A24p, C24);
     }
 }
 
@@ -188,7 +188,7 @@ void criss_cross(fp2_t lsum, fp2_t rdiff, const fp2_t x, const fp2_t y, const fp
     fp2_clear(&t0); fp2_clear(&t1);
 }
 
-void xLADDER(point_t R0, const point_t P, mpz_t m, const fp2_t A24p, const fp2_t C24) {
+void xLADDER(point_t R0, const point_t P, const mpz_t m, const fp2_t A24p, const fp2_t C24) {
     assert(mpz_sgn(m) > 0 && "Given scalar m must be nonnegative");
     
     mpz_t r;
@@ -267,15 +267,16 @@ void xLADDER3PT_int(point_t P, point_t Q, point_t PQdiff, long int m, const fp2_
 }
 
 // calculate P = P + [m]Q
-void xLADDER3PT(point_t P, point_t Q, point_t PQdiff, mpz_t m, const fp2_t A24p, const fp2_t C24) {
+void xLADDER3PT(point_t P, point_t Q, point_t PQdiff, const mpz_t m, const fp2_t A24p, const fp2_t C24) {
     assert(mpz_sgn(m) > 0 && "Given scalar m must be nonnegative");
 
-    mpz_t r;
+    mpz_t r, n;
     mpz_init(r);
+    mpz_init_set(n, m);
 
-    while (mpz_sgn(m) > 0) {
+    while (mpz_sgn(n) > 0) {
         // m = m//2; r = m % 2
-        mpz_fdiv_qr_ui(m, r, m, 2);
+        mpz_fdiv_qr_ui(n, r, n, 2);
 
         if (mpz_sgn(r) > 0)
             xDBLADD(Q, P, PQdiff, A24p, C24);
@@ -284,6 +285,7 @@ void xLADDER3PT(point_t P, point_t Q, point_t PQdiff, mpz_t m, const fp2_t A24p,
     }
 
     mpz_clear(r);
+    mpz_clear(n);
 }
 
 void KPS(point_t * kpts, size_t n, const point_t K, const fp2_t A24p, const fp2_t C24) {

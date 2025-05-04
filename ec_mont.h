@@ -29,24 +29,24 @@ void point_normalize_coords(point_t P);
 /* 
  * @brief Transform (A : C) = (a : 1) into (A' : C') = ((a+ 2)/4 : 1) = (a + 2 : 4) suitable for xDBL
  */
-void A24p_from_A(fp2_t A24_plus, fp2_t C24, const fp2_t A, const fp2_t C);
+void A24p_from_A(fp2_t A24p, fp2_t C24, const fp2_t A, const fp2_t C);
 
 /* 
  * @brief Transform (A' : C') = (a + 2 : 4) into (A : C) = (a : 1) 
  */
-void A_from_A24p(fp2_t A, fp2_t C, const fp2_t A24_plus, const fp2_t C24);
+void A_from_A24p(fp2_t A, fp2_t C, const fp2_t A24p, const fp2_t C24);
 
 /*
  * @brief Calculate x-coordinate of the double point x(R) = x([2]P). 
  * Function is argument-safe for R = P.
  */
-void xDBL(point_t R, const point_t P, const fp2_t A24_plus, const fp2_t C24);
+void xDBL(point_t R, const point_t P, const fp2_t A24p, const fp2_t C24);
 
 /*
  * @brief Calculate x-coordinate of the point multiplied by the power of 2 x(R) = x([2^e]P).
  * Function is argument-safe for R = P.
  */
-void xDBLe(point_t R, const point_t P, const fp2_t A24_plus, const fp2_t C24, const int e);
+void xDBLe(point_t R, const point_t P, const fp2_t A24p, const fp2_t C24, const int e);
 
 /* 
  * @brief Calculate (xw + yz, xw - yz) given (x, y, z, w)
@@ -61,20 +61,22 @@ void criss_cross(fp2_t lsum, fp2_t rdiff, const fp2_t x, const fp2_t y, const fp
 void xADD(point_t PQsum, const point_t P, const point_t Q, const point_t PQdiff);
 
 /* 
- * @brief Calculate x coordinate of R = [m]P using Montgomery Ladder algorithm
+ * @brief Calculate x coordinate of R = [m]P using Montgomery Ladder algorithm. 
+ *  Function is not argsafe for R0 = P.
  * @ref https://eprint.iacr.org/2017/212.pdf
  */
-void xLADDER(point_t R0, const point_t P, mpz_t m, const fp2_t A24p, const fp2_t C24);
+void xLADDER(point_t R0, const point_t P, const mpz_t m, const fp2_t A24p, const fp2_t C24);
 
 /* 
- * @brief Calculate x coordinate of R = [m]P using Montgomery Ladder algorithm with m fitting in 63 bits
+ * @brief Calculate x coordinate of R = [m]P using Montgomery Ladder algorithm with m fitting in 63 bits.
+ *  Function is not argsafe for R0 = P
  * @ref https://eprint.iacr.org/2017/212.pdf
  */
 void xLADDER_int(point_t R0, const point_t P, long int m, const fp2_t A24p, const fp2_t C24);
 
 void xLADDER3PT_int(point_t P, point_t Q, point_t PQdiff, long int m, const fp2_t A24p, const fp2_t C24);
 
-void xLADDER3PT(point_t P, point_t Q, point_t PQdiff, mpz_t m, const fp2_t A24p, const fp2_t C24);
+void xLADDER3PT(point_t P, point_t Q, point_t PQdiff, const mpz_t m, const fp2_t A24p, const fp2_t C24);
 
 /*
  * @brief Return size of the kernel points array based on odd isogeny degree

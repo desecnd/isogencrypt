@@ -6,13 +6,13 @@
 #include "testing.h"
 
 fp2_t A, C;
-fp2_t A24_plus, C24;
+fp2_t A24p, C24;
 point_t P, Q, K, PQd;
 
 void init_test_variables() {
     fp2_init(&A);
     fp2_init(&C);
-    fp2_init(&A24_plus);
+    fp2_init(&A24p);
     fp2_init(&C24);
     point_init(&P);
     point_init(&Q);
@@ -23,7 +23,7 @@ void init_test_variables() {
 void clear_test_variables() {
     fp2_clear(&A);
     fp2_clear(&C);
-    fp2_clear(&A24_plus);
+    fp2_clear(&A24p);
     fp2_clear(&C24);
     point_clear(&P);
     point_clear(&Q);
@@ -51,7 +51,7 @@ void set_params_testp431() {
     // (A, C) = (6, 1)
     // (A24+ : C24) ~ (A + 2C : 4C)
     // This projective pair is the representant of the variable (a + 2)/4
-    A24p_from_A(A24_plus, C24, A, C);
+    A24p_from_A(A24p, C24, A, C);
 }
 
 void set_params_testp139() {
@@ -64,7 +64,7 @@ void set_params_testp139() {
     fp2_set_uint(A, 6);
     fp2_set_uint(C, 1);
 
-    A24p_from_A(A24_plus, C24, A, C);
+    A24p_from_A(A24p, C24, A, C);
 }
 
 void test_A_A24p_conversion() {
@@ -84,17 +84,17 @@ void test_A_A24p_conversion() {
     fp2_mul_int(A, A, 259);
     fp2_mul_int(C, C, 259);
 
-    A24p_from_A(A24_plus, C24, A, C);
+    A24p_from_A(A24p, C24, A, C);
 
     // normalize to affine: a = A24p / C24
-    fp2_div_unsafe(a, A24_plus, C24);
+    fp2_div_unsafe(a, A24p, C24);
     fp2_print_uint(a, "A24/C24");
 
     // (A24p : C24) = (a + 2 : 4) = 2
     CHECK(!mpz_cmp_ui(a->a, 2) && !mpz_cmp_ui(a->b, 0));
 
     // Retrieve back (A : C) given (A24p : C24)
-    A_from_A24p(A, C, A24_plus, C24);
+    A_from_A24p(A, C, A24p, C24);
 
     fp2_div_unsafe(a, A, C);
     fp2_print_uint(a, "A/C");
@@ -155,7 +155,7 @@ void test_xDBL_small() {
 
     // Q = [2]P
     { 
-        xDBL(Q, P, A24_plus, C24);
+        xDBL(Q, P, A24p, C24);
 
         // Answer in affine coordinates: x(Q) = 61 + 184 * i
         // Which is equal to projective coordinates (this implementation)
@@ -249,7 +249,7 @@ void test_xLADDER3PT() {
     long int n = 87;
 
     // P contains the result, other points modified
-    xLADDER3PT_int(P, Q, PQd, n, A24_plus, C24);
+    xLADDER3PT_int(P, Q, PQd, n, A24p, C24);
     point_normalize_coords(P);
     
     fp2_print_uint(P->X, "xP");
@@ -261,7 +261,7 @@ void test_xLADDER3PT() {
 
     mpz_t m;
     mpz_init_set_ui(m, n);
-    xLADDER3PT(P, Q, PQd, m, A24_plus, C24);
+    xLADDER3PT(P, Q, PQd, m, A24p, C24);
     point_normalize_coords(P);
 
     fp2_print_uint(P->X, "xP");
@@ -286,25 +286,25 @@ void test_xDBLe() {
     point_set_str_x(P, "387*i + 387");
 
     // x[2]P: 400*i + 311
-    xDBLe(Q, P, A24_plus, C24, 1);
+    xDBLe(Q, P, A24p, C24, 1);
     fp2_print_uint(Q->Z, "z[2]P");
     point_normalize_coords(Q);
     CHECK(!mpz_cmp_ui(Q->X->a, 311) && !mpz_cmp_ui(Q->X->b, 400));
 
     // x[4]P: 13*i + 67
-    xDBLe(Q, P, A24_plus, C24, 2);
+    xDBLe(Q, P, A24p, C24, 2);
     point_normalize_coords(Q);
     fp2_print_uint(Q->X, "x[4]P");
     CHECK(!mpz_cmp_ui(Q->X->a, 67) && !mpz_cmp_ui(Q->X->b, 13));
 
     // x[8]P: 213*i + 105
-    xDBLe(Q, P, A24_plus, C24, 3);
+    xDBLe(Q, P, A24p, C24, 3);
     point_normalize_coords(Q);
     fp2_print_uint(Q->X, "x[8]P");
     CHECK(!mpz_cmp_ui(Q->X->a, 105) && !mpz_cmp_ui(Q->X->b, 213));
 
     // x[2^1235]P: 304*i + 223
-    xDBLe(Q, P, A24_plus, C24, 12345);
+    xDBLe(Q, P, A24p, C24, 12345);
     point_normalize_coords(Q);
     fp2_print_uint(Q->X, "x[2^12345]P");
     CHECK(!mpz_cmp_ui(Q->X->a, 223) && !mpz_cmp_ui(Q->X->b, 304));
@@ -324,7 +324,7 @@ void test_ISOG2e() {
     point_t push_points[2] = {P, NULL};
 
     // Calculate codomain and push point P through the isogeny of degree 2^4 = 16.
-    ISOG2e(A24p_, C24_, A24_plus, C24, K, 4, push_points);
+    ISOG2e(A24p_, C24_, A24p, C24, K, 4, push_points);
 
     point_normalize_coords(P);
     fp2_print_uint(P->X, "xφ(P)");
@@ -358,7 +358,7 @@ void test_KPS() {
         point_init(&kpt[i]);
     }
 
-    KPS(kpt, n, K, A24_plus, C24);
+    KPS(kpt, n, K, A24p, C24);
 
     // Normalize the coordinates for each point
     for (size_t i = 0; i < n; i++) {
@@ -396,19 +396,19 @@ void test_xISOG_and_aISOG() {
     printf("deg: %d\n", degree);
     printf("n: %lu\n", n);
 
-    KPS(kpts, n, K, A24_plus, C24);
+    KPS(kpts, n, K, A24p, C24);
 
     fp2_t phiA, phiC, phi_a;
     fp2_init(&phiA); fp2_init(&phiC); fp2_init(&phi_a);
 
     // Check codomain Curve value
-    aISOG_curve_KPS(phiA, phiC, A24_plus, C24, kpts, n);
+    aISOG_curve_KPS(phiA, phiC, A24p, C24, kpts, n);
     fp2_div_unsafe(phi_a, phiA, phiC);
     fp2_print_uint(phi_a, "aφ(E)");
     CHECK(!mpz_cmp_ui(phi_a->a, 85) && !mpz_cmp_ui(phi_a->b, 76));
 
     // Run the same computation, make sure the result is equal
-    aISOG_curve(phiA, phiC, A24_plus, C24, K, degree);
+    aISOG_curve(phiA, phiC, A24p, C24, K, degree);
     fp2_div_unsafe(phi_a, phiA, phiC);
     fp2_print_uint(phi_a, "aφ(E)");
     CHECK(!mpz_cmp_ui(phi_a->a, 85) && !mpz_cmp_ui(phi_a->b, 76));
@@ -432,22 +432,22 @@ void test_xLADDER_int() {
     point_set_str_x(P, "108*i + 136");
 
     // x[1]P = 108*i + 136
-    xLADDER_int(Q, P, 1, A24_plus, C24);
+    xLADDER_int(Q, P, 1, A24p, C24);
     point_normalize_coords(Q);
     CHECK(!mpz_cmp_ui(Q->X->a, 136) && !mpz_cmp_ui(Q->X->b, 108));
 
     // x[2]P = 113*i + 131
-    xLADDER_int(Q, P, 2, A24_plus, C24);
+    xLADDER_int(Q, P, 2, A24p, C24);
     point_normalize_coords(Q);
     CHECK(!mpz_cmp_ui(Q->X->a, 131) && !mpz_cmp_ui(Q->X->b, 113));
 
     // x[3]P = 42*i + 83 
-    xLADDER_int(Q, P, 3, A24_plus, C24);
+    xLADDER_int(Q, P, 3, A24p, C24);
     point_normalize_coords(Q);
     CHECK(!mpz_cmp_ui(Q->X->a, 83) && !mpz_cmp_ui(Q->X->b, 42));
 
     // x[4]P = 47*i + 107 
-    xLADDER_int(Q, P, 4, A24_plus, C24);
+    xLADDER_int(Q, P, 4, A24p, C24);
     point_normalize_coords(Q);
     CHECK(!mpz_cmp_ui(Q->X->a, 107) && !mpz_cmp_ui(Q->X->b, 47));
 }
@@ -459,7 +459,7 @@ void test_xLADDER() {
     mpz_t m;
     // 1. m = 2^80
     mpz_init_set_str(m, "100000000000000000000", 16);
-    xLADDER(Q, P, m, A24_plus, C24);
+    xLADDER(Q, P, m, A24p, C24);
     point_normalize_coords(Q);
 
     // x[2^80]P: 98*i + 43
@@ -468,7 +468,7 @@ void test_xLADDER() {
 
     // 2. m = 2^80 - 1
     mpz_init_set_str(m, "ffffffffffffffffffff", 16);
-    xLADDER(Q, P, m, A24_plus, C24);
+    xLADDER(Q, P, m, A24p, C24);
     point_normalize_coords(Q);
 
     // x[2^80-1]P: 56*i + 96
@@ -477,7 +477,7 @@ void test_xLADDER() {
 
     // 3. m = random in [2^79, 2^80]
     mpz_init_set_str(m, "f5697b000f01c17d4c5e", 16);
-    xLADDER(Q, P, m, A24_plus, C24);
+    xLADDER(Q, P, m, A24p, C24);
     point_normalize_coords(Q);
 
     // x[0xf5697b000f01c17d4c5e]P: 94*i + 31
@@ -580,7 +580,7 @@ void test_ISOG_chain() {
     point_t push_points[3] = {P, NULL, NULL};
 
     // Return in 24p form
-    ISOG_chain(A24p_, C24_, A24_plus, C24, K, deg, push_points);
+    ISOG_chain(A24p_, C24_, A24p, C24, K, deg, push_points);
     A_from_A24p(A_, C_, A24p_, C24_); 
     fp2_div_unsafe(a_, A_, C_);
 
