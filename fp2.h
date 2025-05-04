@@ -155,7 +155,10 @@ static inline void fp2_div_unsafe(fp2_t res, const fp2_t lhs, const fp2_t rhs) {
     fp2_mul_safe(res, lhs);
 }
 
-void fp2_print_uint(fp2_t arg, const char *name);
+/* 
+ * @brief Output fp2 element to the stdout in format: "name: a*i + b"
+ */
+void fp2_print(fp2_t x, const char* name);
 
 
 #endif
