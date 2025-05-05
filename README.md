@@ -21,11 +21,13 @@ Requires `GMP` (Gnu Multiprecision Library) https://gmplib.org/.
     * [x] Implement 2-isogeny point image
     * [x] Add **even**-degree isogeny chaining
     * [x] Add list of "push-through" points
+- [x] Add j-invariant calculation in montgomery model
+- [ ] Add MSIDH with initialized torsion basis
+    * [x] Add msidh_gen_pubkey
+    * [ ] Add msidh_key_exchange
 - [ ] Implement mechanism behind the order2 of the point (x_push isog)
     * implement a_from_alpha function
     * implement root alpha finding (?)
-- [ ] Add j-invariant calculation in montgomery model
-- [ ] Add MSIDH with initialized torsion basis
 
 
 ### Technical

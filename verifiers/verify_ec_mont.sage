@@ -457,8 +457,37 @@ class TestcaseP139:
         print(f"aφ(E): {A}")
         print(f"xφ(P): {P.x()}")
 
+    def verify_test_j_invariant():
+        print("---: test_j_invariant()")
+
+        A = F(92*i + 25)
+        j = F(9*i + 29)
+        assert j == EllipticCurve(F, [0, A, 0, 1, 0]).j_invariant()
+        assert j == 256 * (A**2 - 3)**3 / (A**2 - 4)
+        print(f"a(E): {A}")
+        print(f"j(E): {j}")
+
+        A = F(125*i + 99)
+        j = F(79*i + 30)
+        assert j == EllipticCurve(F, [0, A, 0, 1, 0]).j_invariant()
+        assert j == 256 * (A**2 - 3)**3 / (A**2 - 4)
+        print(f"a(E): {A}")
+        print(f"j(E): {j}")
+
+        A = F(43*i + 61)
+        j = F(78*i + 97)
+        assert j == EllipticCurve(F, [0, A, 0, 1, 0]).j_invariant()
+        assert j == 256 * (A**2 - 3)**3 / (A**2 - 4)
+        print(f"a(E): {A}")
+        print(f"j(E): {j}")
+
+
+
+
+
 
 if __name__ == '__main__':
+
 
     # SIDH-like prime: 
     TestcaseP431.setup_params()
@@ -480,3 +509,4 @@ if __name__ == '__main__':
     TestcaseP139.verify_test_xISOG2_and_aISOG2()
     TestcaseP139.verify_test_ISOG2_bad_point_error()
     TestcaseP139.verify_test_ISOG_chain()
+    TestcaseP139.verify_test_j_invariant()

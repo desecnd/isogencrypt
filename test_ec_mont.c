@@ -595,6 +595,41 @@ void test_ISOG_chain() {
     pprod_clear(&deg);
 }
 
+void test_j_invariant() {
+    fp2_t a, c, j_inv;
+    fp2_init(&a); fp2_init(&c); fp2_init(&j_inv);
+    fp2_set_uint(c, 1);
+
+    fp2_set_str(a, "92*i + 25");
+    fp2_print(a, "a(E)");
+
+    j_invariant(j_inv, a, c);
+
+    // j(E): 9*i + 29
+    fp2_print(j_inv, "j(E)");
+    CHECK(!mpz_cmp_ui(j_inv->a, 29) && !mpz_cmp_ui(j_inv->b, 9));
+
+    fp2_set_str(a, "125*i + 99");
+    fp2_print(a, "a(E)");
+
+    j_invariant(j_inv, a, c);
+
+    // j(E): 79*i + 30
+    fp2_print(j_inv, "j(E)");
+    CHECK(!mpz_cmp_ui(j_inv->a, 30) && !mpz_cmp_ui(j_inv->b, 79));
+
+    fp2_set_str(a, "43*i + 61");
+    fp2_print(a, "a(E)");
+
+    j_invariant(j_inv, a, c);
+
+    // j(E): 78*i + 97
+    fp2_print(j_inv, "j(E)");
+    CHECK(!mpz_cmp_ui(j_inv->a, 97) && !mpz_cmp_ui(j_inv->b, 78));
+
+    fp2_clear(&a); fp2_clear(&c); fp2_clear(&j_inv);
+}
+
 int main() {
     init_test_variables();
 
@@ -624,9 +659,9 @@ int main() {
     // TEST_RUN(test_ISOG_chain_odd());
     TEST_RUN(test_xISOG2_and_aISOG2());
     TEST_RUN(test_ISOG_chain());
-
-    TEST_RUNS_END;
+    TEST_RUN(test_j_invariant());
 
     clear_test_variables();
-    return 0;
+
+    TEST_RUNS_END;
 }

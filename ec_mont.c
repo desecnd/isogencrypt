@@ -673,3 +673,44 @@ void ISOG_chain(fp2_t A24p, fp2_t C24, const fp2_t A24p_init, const fp2_t C24_in
     fp2_clear(&A24p_next); fp2_clear(&C24_next);
     point_clear(&K0); point_clear(&Q); point_clear(&T); point_clear(&R);
 }
+
+void j_invariant(fp2_t j_inv, const fp2_t A, const fp2_t C) {
+    fp2_t t0, t1;
+    fp2_init(&t0); fp2_init(&t1);
+
+    // TODO: compare this approach with trying to stay in projective coords until last division
+
+    // Use jinv as register until last line:
+    // jinv = A/C: a
+    fp2_div_unsafe(j_inv, A, C); 
+
+    // t0 = jinv^2: a^2 
+    fp2_sq_unsafe(t0, j_inv);
+
+    // jinv = t0 - 3: a^2 - 3 
+    fp2_sub_uint(j_inv, t0, 3);
+    
+    // t0 = jinv^3: (a^2 - 3)^3
+    fp2_sq_unsafe(t0, j_inv);
+    fp2_mul_safe(t0, j_inv);
+    
+    // t1 = jinv - 1: a^2 - 4
+    fp2_sub_uint(t1, j_inv, 1);
+    assert(!fp2_is_zero(t1) && "A was equal 2 or -2");
+    
+    // jinv = t0 / t1: (a^2 - 3)^3/(a^2 - 4)
+    fp2_div_unsafe(j_inv, t0, t1);
+
+    // jinv = 256 * jinv: 256(a^2 - 3)^3/(a^2 - 4)
+    // fp2_mul_int(j_inv, j_inv, 256);
+    fp2_add(j_inv, j_inv, j_inv);
+    fp2_add(j_inv, j_inv, j_inv);
+    fp2_add(j_inv, j_inv, j_inv);
+    fp2_add(j_inv, j_inv, j_inv);
+    fp2_add(j_inv, j_inv, j_inv);
+    fp2_add(j_inv, j_inv, j_inv);
+    fp2_add(j_inv, j_inv, j_inv);
+    fp2_add(j_inv, j_inv, j_inv);
+
+    fp2_clear(&t0); fp2_clear(&t1);
+}

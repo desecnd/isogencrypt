@@ -165,4 +165,9 @@ void aISOG2_24p(fp2_t A24p_, fp2_t C24_, const point_t K);
  */
 void aISOG2(fp2_t A_, fp2_t C_, const point_t K);
 
+/*
+ * @brief Calculate j-invariant of the Elliptic Curve in Montgomery Model with coefficient a = (A : C)
+ */
+void j_invariant(fp2_t j_inv, const fp2_t A, const fp2_t C);
+
 #endif
