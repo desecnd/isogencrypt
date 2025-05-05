@@ -38,6 +38,8 @@ Requires `GMP` (Gnu Multiprecision Library) https://gmplib.org/.
 - [ ] Add `two_exp` ? or something that means number of 2 powers into `pprod_t` (simple counter of the power of 2), this will make some of the algorithms easier and more optimized
 - [ ] Make prints during tests and verifies as "Debug" and print them on the "error" stream, this way we can compare the results between the Python and C using simple "diff"
 - [ ] Add variadic function for fp2 init? also for point_init 
+- [ ] Add clangd formating with `.clang-format` 
+- [ ] Setup Tests for Sage and [Makefile](https://stackoverflow.com/questions/4927676/implementing-make-check-or-make-test) for comparison with the expected output
 
 ## Future
 
