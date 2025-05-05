@@ -367,7 +367,7 @@ class TestcaseP139:
             pass
 
     def verify_test_ISOG_chain():
-        print("VERIFY ---: verify_test_ISOG_chain()")
+        print("VERIFY ---: test_ISOG_chain()")
 
         K0 = E(34*i + 99, 25*i + 95) 
         print(f"xK: {K0.x()}")
