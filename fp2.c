@@ -21,7 +21,7 @@ int global_fpchar_setup_uint(unsigned int p) {
 // For now, only p = 3 (mod 4) is allowed
 int global_fpchar_setup(fp_t p) {
     if (is_fpchar_set) {
-        printf("[!] trying to initialize the characteristic second time!\n");
+        fprintf(stderr, "[!] trying to initialize the characteristic second time!\n");
         return -1;
     }
 
@@ -38,7 +38,7 @@ int global_fpchar_setup(fp_t p) {
     }
 
     if (invalid_mod4) {
-        printf("[!] Trying to set prime field characteristic with prime != 3 (mod 4)\n");
+        fprintf(stderr, "[!] Trying to set prime field characteristic with prime != 3 (mod 4)\n");
         return -2;
     }
 
@@ -50,7 +50,7 @@ int global_fpchar_setup(fp_t p) {
 
 int global_fpchar_clear() {
     if (!is_fpchar_set) {
-        printf("[!] trying to clear not-initialized characteristic!\n");
+        fprintf(stderr, "[!] trying to clear not-initialized characteristic!\n");
         return -1;
     }
     fp_clear(fpchar);
@@ -399,6 +399,6 @@ void fp2_print(fp2_t x, const char* name) {
     } else if (fp_is_zero(x->b)) {
         gmp_printf("%s: %Zd\n", name, x->a);
     } else {
-        gmp_printf("%s: %Zd*i + %Zd\n", name, x->a, x->b);
+        gmp_printf("%s: %Zd*i + %Zd\n", name, x->b, x->a);
     }
 }
