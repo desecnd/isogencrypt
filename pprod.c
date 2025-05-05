@@ -24,7 +24,7 @@ void pprod_clear(pprod_t *pp) {
     pp = NULL;
 }
 
-void pprod_set(pprod_t pp, unsigned int *primes, unsigned int n_primes) {
+void pprod_set_array(pprod_t pp, unsigned int *primes, unsigned int n_primes) {
     if (pp->primes != NULL) {
         free(pp->primes);
         pp->primes = NULL;
@@ -61,3 +61,6 @@ void pprod_set(pprod_t pp, unsigned int *primes, unsigned int n_primes) {
 }
 
 
+void pprod_set(pprod_t pp, pprod_t other) {
+    pprod_set_array(pp, other->primes, other->n_primes);
+}

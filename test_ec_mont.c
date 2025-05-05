@@ -502,7 +502,7 @@ void test_ISOG_chain_odd() {
     pprod_init(&deg);
 
     unsigned int primes[2] = {5, 7};
-    pprod_set(deg, primes, 2);
+    pprod_set_array(deg, primes, 2);
 
     // ISOG_chain(A_, C_, A24_plus, C24, K, deg); 
 
@@ -574,7 +574,7 @@ void test_ISOG_chain() {
     pprod_init(&deg);
 
     unsigned int factors[] = {4, 5, 7};
-    pprod_set(deg, factors, 3);
+    pprod_set_array(deg, factors, 3);
 
     // Two more NULLs for usage by ISOG_chain
     point_t push_points[3] = {P, NULL, NULL};
