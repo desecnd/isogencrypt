@@ -23,6 +23,11 @@ void point_clear(point_t *P);
 // Set: x(P) = x, and z(P) = 1
 void point_set_str_x(point_t P, const char *x); 
 
+/*
+ * @brief Print the nomrliazed (Z = 1) x-coordinate of the point P = (X : Z)
+ */
+void point_printx(point_t P, const char* name);
+
 // Normalize: P = (X : Z) -> (X' : 1) with X' = X/Z
 void point_normalize_coords(point_t P);
 

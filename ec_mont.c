@@ -37,6 +37,13 @@ void point_set_str_x(point_t P, const char *x) {
     fp2_set_uint(P->Z, 1);
 }
 
+void point_printx(point_t P, const char* name) {
+    // Make sure that the coordinate is normalized, otherwise we get false results when Z != 1: x = (X : Z)
+    point_normalize_coords(P);
+    fp2_print(P->X, name);
+}
+
+
 void A24p_from_A(fp2_t A24p, fp2_t C24, const fp2_t A, const fp2_t C) {
     // Set A24p := A + 2C and C24 := 4C
     fp2_set(A24p, A);               // A24p = A
@@ -63,6 +70,7 @@ void A_from_A24p(fp2_t A, fp2_t C, const fp2_t A24p, const fp2_t C24) {
 
 // Normalize: P = (X : Z) -> (X' : 1) with X' = X/Z
 void point_normalize_coords(point_t P) {
+    assert(!fp2_is_zero(P->Z) && "Normalized Point cannot have Z = 0");
     // Registers: 1
 
     fp2_t t; fp2_init(&t);
