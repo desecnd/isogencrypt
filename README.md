@@ -23,10 +23,11 @@ Requires `GMP` (Gnu Multiprecision Library) https://gmplib.org/.
     * [x] Add list of "push-through" points
 - [x] Add j-invariant calculation in montgomery model
 - [x] Add "zero"-multiply tests for xLADDER3PT
-- [ ] Add MSIDH with initialized torsion basis
+- [x] Add MSIDH with initialized torsion basis
     * [x] Add msidh_gen_pubkey
     * [x] Add msidh_key_exchange
-    * [ ] Add msidh_state and monte carlo tests
+    * [x] Add msidh_state and monte carlo tests
+- [ ] Add check for fp characteristic and "p" field to msidh_state (for checking)
 - [ ] Extract "ISOG_odd" from "ISOG_chain"
 - [ ] Implement the push_points list mechanism (linked-list?) instead of double null
 - [ ] Implement mechanism behind the order2 of the point (x_push isog)

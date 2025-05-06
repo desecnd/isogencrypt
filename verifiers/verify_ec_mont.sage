@@ -108,10 +108,9 @@ class TestP431:
 
         e = x * w + y * z
         f = x * w - y * z
-        # assert e == 206*i + 256
-        # assert f == 180*i + 52 
-        print(x * w)
-        print(y * z)
+        
+        assert e == 367*i + 314
+        assert f == 19*i + 425
 
         print(f"x: {x}")
         print(f"y: {y}")
@@ -483,10 +482,6 @@ class TestP139:
         assert j == 256 * (A**2 - 3)**3 / (A**2 - 4)
         print(f"a(E): {A}")
         print(f"j(E): {j}")
-
-
-
-
 
 
 if __name__ == '__main__':
