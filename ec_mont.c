@@ -588,12 +588,12 @@ void ISOG_chain(fp2_t A24p, fp2_t C24, const fp2_t A24p_init, const fp2_t C24_in
     point_set(K0, K);
 
     // Push K0 into the push_points list, as first occured "NULL"
-    for (point_t *pp = push_points; *pp != NULL; pp++) {
-        if (*(pp+1) == NULL) { 
-            *(pp+1) = K0;
-            break;
-        }
-    }
+    point_t *pp = push_points;
+    while (*pp != NULL) pp++;
+    // Make sure that push_points end with 2x NULL
+    assert(*pp == NULL && *(pp+1) == NULL);
+    // Replace the first NULL with K0
+    *pp = K0;
 
     // TODO: optimize: calculate MAX out of degree->div and allocate space
     // maybe store it inside pprod structure? 
