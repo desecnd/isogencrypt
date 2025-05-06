@@ -9,19 +9,18 @@
 #include "proto_msidh.h"
 
 
-
 /*
  * @brief Calculate subgroup basis of the torsion basis (Pn, Qn) = [N/n](P, Q) of order n, where N is the order of (P, Q)
  */
-void tors_basis_get_subgroup(struct tors_basis *PQsub, mpz_t n, const struct tors_basis *PQ, const fp2_t A24p, const fp2_t C24) {
+void tors_basis_get_subgroup(struct tors_basis *PQsub, pprod_t n, const struct tors_basis *PQ, const fp2_t A24p, const fp2_t C24) {
     // Temporarily set the order as [N/n]
-    mpz_divexact(PQsub->n, PQ->n, n); 
+    mpz_divexact(PQsub->n->value, PQ->n->value, n->value); 
     // Multiply all points in the subbasis by [N/n]
-    xLADDER(PQsub->P, PQ->P, PQsub->n, A24p, C24);
-    xLADDER(PQsub->Q, PQ->Q, PQsub->n, A24p, C24);
-    xLADDER(PQsub->PQd, PQ->PQd, PQsub->n, A24p, C24);
+    xLADDER(PQsub->P, PQ->P, PQsub->n->value, A24p, C24);
+    xLADDER(PQsub->Q, PQ->Q, PQsub->n->value, A24p, C24);
+    xLADDER(PQsub->PQd, PQ->PQd, PQsub->n->value, A24p, C24);
     // Set the proper order of the subgroup torsion basis
-    mpz_set(PQsub->n, n);
+    pprod_set(PQsub->n, n);
 }
 
 // Sample an element `x` from ``Z/mZ`` where ``x^2 = 1 (mod m)``.
@@ -157,8 +156,8 @@ int msidh_gen_pub_params(mpz_t p, pprod_t A, pprod_t B, unsigned int t) {
     }
 
     // Generate composite numbers A, B
-    pprod_set(A, PRIMES_ALICE, (t + 1)/2);
-    pprod_set(B, PRIMES_BOB, t/2);
+    pprod_set_array(A, PRIMES_ALICE, (t + 1)/2);
+    pprod_set_array(B, PRIMES_BOB, t/2);
 
     // Find cofactor f: p = fAB - 1
     mpz_t AB; 
@@ -187,7 +186,7 @@ void msidh_prepare(mpz_t secret, const mpz_t degree) {
 /* 
  * @brief Generate MSIDH public key from Alice perspective
 */
-void msidh_genkey(fp2_t A24p_alice, fp2_t C24_alice, point_t PB, point_t QB, point_t PQBd, const mpz_t p, const fp2_t A24p_base, const fp2_t C24_base, point_t PA, point_t QA, point_t PQAd, const pprod_t deg_A, const pprod_t deg_B, const mpz_t secret, const mpz_t mask) {
+void msidh_genkey(fp2_t A24p_alice, fp2_t C24_alice, point_t PB, point_t QB, point_t PQBd, const fp2_t A24p_base, const fp2_t C24_base, point_t PA, point_t QA, point_t PQAd, const pprod_t deg_A, const pprod_t deg_B, const mpz_t secret, const mpz_t mask) {
     // P, Q is a torsion basis for deg
 
     // assert(global_fpchar_setup(p));
@@ -215,4 +214,26 @@ void msidh_genkey(fp2_t A24p_alice, fp2_t C24_alice, point_t PB, point_t QB, poi
     point_set(QB, QA);
     xLADDER(QA, PQBd, mask, A24p_alice, C24_alice);
     point_set(PQBd, QA);
+}
+
+
+void msidh_key_exchange(fp2_t j_inv, fp2_t A24p_final, fp2_t C24_final, const fp2_t A24p_bob, const fp2_t C24_bob, const struct tors_basis * BPQA, const mpz_t A_sec) {
+
+    // TODO: why point_t is ignored as const?
+
+    // 1. Calculate the kernel of the Alice isogeny
+    // PA = PA + [s]QA
+    xLADDER3PT(BPQA->P, BPQA->Q, BPQA->PQd, A_sec, A24p_bob, C24_bob);
+
+    point_t push_points[] = {NULL, NULL};
+
+    ISOG_chain(A24p_final, C24_final, A24p_bob, C24_bob, BPQA->P, BPQA->n, push_points);
+
+    fp2_t A, C;
+    fp2_init(&A); fp2_init(&C);
+
+    A_from_A24p(A, C, A24p_final, C24_final);
+    j_invariant(j_inv, A, C);
+
+    fp2_clear(&A); fp2_clear(&C);
 }

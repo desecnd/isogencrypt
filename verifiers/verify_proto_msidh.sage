@@ -1,6 +1,6 @@
 #!/usr/bin/sage
 
-from sage.all import EllipticCurve, Primes, randint, order_from_multiple, gcd, is_prime, prod, GF
+from sage.all import EllipticCurve, order_from_multiple, GF
 from verifiers.protocols import MSIDH 
 
 def verify_test_msidh_gen_pub_params():
@@ -112,19 +112,78 @@ class TestT4:
         assert PB - QB == (P - Q) * (n // B) == PQBd
         assert order_from_multiple(PB.weil_pairing(QB, B), B, operation="*") == B
 
-        # 1, 8, 13 20: are the quadratic roots of unity modulo 21 (B)
-        for j, (a_sec, a_mask) in enumerate([(2, 1), (13, 8), (3, 13), (15, 20)]):
+        # 1, 8, 13 20: are the quadratic roots of unity modulo 21 (B) used by Alice for masking
+        # 1, 9, 11, 19: are quadratic roots of unity modulo 20 (A) used by Bob for masking
+        for j, (a_sec, a_mask, b_sec, b_mask) in enumerate([(2, 1, 5, 9), (13, 8, 7, 1), (3, 13, 17, 19), (15, 20, 1, 11)]):
             assert pow(a_mask, 2, B) == 1
+            assert pow(b_mask, 2, A) == 1
+
             print(f"a_sec: {a_sec}")
             print(f"a_mask: {a_mask}")
+            print(f"b_sec: {b_sec}")
+            print(f"b_mask: {b_mask}")
 
-            msidh = MSIDH(cls.p, A, B, E, PA, QA, a_sec, a_mask, is_bob=False, mont_model=True)
-            AE, APB, AQB = msidh.gen_pubkey(PB, QB)
+            A_msidh = MSIDH(cls.p, A, B, E, PA, QA, a_sec, a_mask, is_bob=False, mont_model=True)
+            AE, APB, AQB = A_msidh.gen_pubkey(PB, QB)
             a2_24p = (AE.a2() + 2)/4
             print(f"aφ(E)(24p): {a2_24p}")
             print(f"xφ(PB): {APB.x()}")
             print(f"xφ(QB): {AQB.x()}")
             print(f"xφ(PQBd): {(APB-AQB).x()}")
+
+            B_msidh = MSIDH(cls.p, A, B, E, PB, QB, b_sec, b_mask, is_bob=True, mont_model=True)
+            j_inv = B_msidh.key_exchange(AE, APB, AQB)
+            assert B_msidh.tau_ker.order() == B
+
+            EK = B_msidh.EK
+            assert j_inv == EK.j_invariant()
+            a2_24p = (EK.a2() + 2)/4
+            print(f"aτ(φ(E))(24p): {a2_24p}")
+            print(f"jτ(φ(E)): {j_inv}")
+
+    @classmethod
+    def verify_test_msidh_key_exchange(cls):
+        print("---: test_msidh_gen_pubkey()")
+        i, E, A, B, n = cls.i, cls.E, cls.A, cls.B, cls.n
+
+        P = E(295*i + 398, 158*i + 219)
+        Q = E(314*i + 149, 240*i + 165)
+        PQd = E(29*i + 395, 58*i + 150)
+        assert PQd == P - Q
+
+        print(f"xP: {P.x()}")
+        print(f"xQ: {Q.x()}")
+        print(f"xPQd: {PQd.x()}")
+
+        # Check if valid full torsion basis
+        assert n == 420
+        assert order_from_multiple(P.weil_pairing(Q, n), n, operation="*") == n
+
+        # Construct Alice basis (PA, QA) = [n//A](P, Q)
+        PA = E(128*i + 414, 248*i + 385)
+        QA = E(269*i + 32, 396*i + 61)
+        PQAd = E(107*i + 300, 387*i + 41)
+
+        print(f"xPA: {PA.x()}")
+        print(f"xQA: {QA.x()}")
+        print(f"xPQAd: {PQAd.x()}")
+        assert PA == P * (n // A)
+        assert QA == Q * (n // A)
+        assert PA - QA == (P - Q) * (n // A) == PQAd
+        assert order_from_multiple(PA.weil_pairing(QA, A), A, operation="*") == A
+
+        # Construct Bob basis (PB, QB) = [n//B](P, Q)
+        PB = E(214*i + 177, 156*i + 347)
+        QB = E(65*i + 173, 79*i + 203)
+        PQBd = E(173*i + 197, 405*i + 98)
+
+        print(f"xPB: {PB.x()}")
+        print(f"xQB: {QB.x()}")
+        print(f"xPQBd: {PQBd.x()}")
+        assert PB == P * (n // B)
+        assert QB == Q * (n // B)
+        assert PB - QB == (P - Q) * (n // B) == PQBd
+        assert order_from_multiple(PB.weil_pairing(QB, B), B, operation="*") == B
 
 
 if __name__ == "__main__":

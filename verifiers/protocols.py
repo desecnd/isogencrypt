@@ -46,13 +46,13 @@ class MSIDH:
         else:
             assert self.secret in range(self.A)
 
-        self.K = self.P + self.secret * self.Q
+        self.phi_ker = self.P + self.secret * self.Q
         if self.mont_model:
-            A_ = mont_coef(self.K)
+            A_ = mont_coef(self.phi_ker)
             E_ = EllipticCurve(E0.base(), [0, A_, 0, 1, 0])
-            self.phi = self.E0.isogeny(self.K, codomain=E_, algorithm='factored')
+            self.phi = self.E0.isogeny(self.phi_ker, codomain=E_, algorithm='factored')
         else:
-            self.phi = self.E0.isogeny(self.K, algorithm='factored')
+            self.phi = self.E0.isogeny(self.phi_ker, algorithm='factored')
         self.E = self.phi.codomain()
         self.key = None
     
@@ -89,9 +89,9 @@ class MSIDH:
         assert order_from_multiple(PB.weil_pairing(QB, self.B), self.B, operation='*') == self.B
 
         # Apply masking
-        self.PB = self.mask * self.phi(PB)
-        self.QB = self.mask * self.phi(QB)
-        return (self.E, self.PB, self.QB)
+        PB = self.mask * self.phi(PB)
+        QB = self.mask * self.phi(QB)
+        return (self.E, PB, QB)
 
     def key_exchange(self, EB, BPA, BQA):
         assert BPA.curve() == EB
@@ -99,13 +99,13 @@ class MSIDH:
         # Weil pairing property of the curve
         assert BPA.weil_pairing(BQA, self.A) == self.P.weil_pairing(self.Q, self.A) ** self.B
 
-        BK = BPA + BQA * self.secret 
+        self.tau_ker = BPA + BQA * self.secret 
         if self.mont_model:
-            A_ = mont_coef(BK)
+            A_ = mont_coef(self.tau_ker)
             E_ = EllipticCurve(self.E0.base(), [0, A_, 0, 1, 0])
-            self.tau = EB.isogeny(BK, codomain=E_, algorithm="factored")
+            self.tau = EB.isogeny(self.tau_ker, codomain=E_, algorithm="factored")
         else:
-            self.tau = EB.isogeny(BK, algorithm="factored")
+            self.tau = EB.isogeny(self.tau_ker, algorithm="factored")
 
         self.EK = self.tau.codomain()
         return self.EK.j_invariant()

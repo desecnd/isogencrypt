@@ -24,7 +24,10 @@ Requires `GMP` (Gnu Multiprecision Library) https://gmplib.org/.
 - [x] Add j-invariant calculation in montgomery model
 - [ ] Add MSIDH with initialized torsion basis
     * [x] Add msidh_gen_pubkey
-    * [ ] Add msidh_key_exchange
+    * [x] Add msidh_key_exchange
+    * [ ] Add msidh_state and monte carlo tests
+- [ ] Extract "ISOG_odd" from "ISOG_chain"
+- [ ] Implement the push_points list mechanism (linked-list?) instead of double null
 - [ ] Implement mechanism behind the order2 of the point (x_push isog)
     * implement a_from_alpha function
     * implement root alpha finding (?)
