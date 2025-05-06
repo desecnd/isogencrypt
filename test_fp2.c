@@ -15,12 +15,12 @@ void test_failed_once() {
     // x = 291 + 15*i
     fp_set_uint(x->a, 291);
     fp_set_uint(x->b, 15);
-    fp2_print_uint(x, "x");
+    fp2_print(x, "x");
 
     // y = 293 + 15*i
     fp_set_uint(y->a, 293);
     fp_set_uint(y->b, 15);
-    fp2_print_uint(y, "y");
+    fp2_print(y, "y");
 
     // Square-ing test that failed
     {
@@ -28,12 +28,12 @@ void test_failed_once() {
         fp2_init(&r);
 
         fp2_sq_unsafe(r, x);
-        fp2_print_uint(r, "x^2");
+        fp2_print(r, "x^2");
         CHECK(!mpz_cmp_ui(r->a, 411));
         CHECK(!mpz_cmp_ui(r->b, 110));
 
         fp2_sq_unsafe(r, y);
-        fp2_print_uint(r, "y^2");
+        fp2_print(r, "y^2");
         CHECK(!mpz_cmp_ui(r->a, 286));
         CHECK(!mpz_cmp_ui(r->b, 170));
 
@@ -120,33 +120,33 @@ void test_safe_unsafe_mul_sq() {
     // x = 27 + 59i
     fp_set_uint(x->a, 21);
     fp_set_uint(x->b, 59);
-    fp2_print_uint(x, "x");
+    fp2_print(x, "x");
 
     fp2_set(r, x);
-    fp2_print_uint(r, "r");
+    fp2_print(r, "r");
 
     fp2_mul_unsafe(r, x, x);
-    fp2_print_uint(r, "(unsafe) r := x * x");
+    fp2_print(r, "(unsafe) r := x * x");
     CHECK(!mpz_cmp_ui(r->a, 408) && !mpz_cmp_ui(r->b, 323));
 
     fp2_set(r, x);
     fp2_mul_safe(r, x);
-    fp2_print_uint(r, "(safe) r *= x");
+    fp2_print(r, "(safe) r *= x");
     CHECK(!mpz_cmp_ui(r->a, 408) && !mpz_cmp_ui(r->b, 323));
 
     fp2_set(r, x);
     fp2_mul_safe(r,  r);
-    fp2_print_uint(r, "(safe) r *= r");
+    fp2_print(r, "(safe) r *= r");
     CHECK(!mpz_cmp_ui(r->a, 408) && !mpz_cmp_ui(r->b, 323));
 
     fp2_set(r, x);
     fp2_sq_unsafe(r, x);
-    fp2_print_uint(r, "(unsafe-sq) r := x^2");
+    fp2_print(r, "(unsafe-sq) r := x^2");
     CHECK(!mpz_cmp_ui(r->a, 408) && !mpz_cmp_ui(r->b, 323));
 
     fp2_set(r, x);
     fp2_sq_safe(r);
-    fp2_print_uint(r, "(safe-sq) r ^= 2");
+    fp2_print(r, "(safe-sq) r ^= 2");
     CHECK(!mpz_cmp_ui(r->a, 408) && !mpz_cmp_ui(r->b, 323));
 
     // Make sure that unsafe is wrong when called wrong?
@@ -173,16 +173,16 @@ void test_inv_div() {
         // x = 27 + 59i
         fp_set_uint(x->a, 21);
         fp_set_uint(x->b, 59);
-        fp2_print_uint(x, "x");
+        fp2_print(x, "x");
 
         // r = ~x = 221 + 159i
         fp2_inv_unsafe(r, x);
-        fp2_print_uint(r, "~x");
+        fp2_print(r, "~x");
         CHECK(!mpz_cmp_ui(r->a, 221) && !mpz_cmp_ui(r->b, 159));
 
         // r * x == 1
         fp2_mul_safe(r, x);
-        fp2_print_uint(r, "~x * x");
+        fp2_print(r, "~x * x");
         CHECK(!mpz_cmp_ui(r->a, 1) && !mpz_cmp_ui(r->b, 0));
 
     }
@@ -191,16 +191,16 @@ void test_inv_div() {
         // x = 27 + 59i
         fp_set_uint(x->a, 270);
         fp_set_uint(x->b, 240);
-        fp2_print_uint(x, "x");
+        fp2_print(x, "x");
 
         // r = ~x = 221 + 159i
         fp2_inv_unsafe(r, x);
-        fp2_print_uint(r, "~x");
+        fp2_print(r, "~x");
         CHECK(!mpz_cmp_ui(r->a, 11) && !mpz_cmp_ui(r->b, 86));
 
         // r * x == 1
         fp2_mul_safe(r, x);
-        fp2_print_uint(r, "~x * x");
+        fp2_print(r, "~x * x");
         CHECK(!mpz_cmp_ui(r->a, 1) && !mpz_cmp_ui(r->b, 0));
 
     }
@@ -211,13 +211,63 @@ void test_inv_div() {
     CHECK(!global_fpchar_clear());
 }
 
+void test_set_str() {
+    CHECK(!global_fpchar_setup_uint(431));
+
+    fp2_t x;
+    fp2_init(&x);
+
+    fp2_set_str(x, "416*i + 175");
+    fp2_print(x, "x");
+    CHECK(!mpz_cmp_ui(x->a, 175) && !mpz_cmp_ui(x->b, 416));
+
+    fp2_set_str(x, "416 + 175 * i");
+    CHECK(!mpz_cmp_ui(x->a, 416) && !mpz_cmp_ui(x->b, 175));
+
+    fp2_set_str(x, "0xff + 23 * i");
+    CHECK(!mpz_cmp_ui(x->a, 255) && !mpz_cmp_ui(x->b, 23));
+
+    CHECK(0 != fp2_set_str(x, "10"));
+    CHECK(0 != fp2_set_str(x, "10 * i"));
+
+    fp2_clear(&x);
+    CHECK(!global_fpchar_clear());
+}
+
+void test_fp2_mul_int() {
+    CHECK(!global_fpchar_setup_uint(431));
+
+    fp2_t r, x;
+    fp2_init(&r); fp2_init(&x);
+    fp2_set_str(x, "224*i + 192");
+    fp2_print(x, "x");
+
+    // [224i + 192] * 365 == 301*i + 258 (mod 431)
+    fp2_mul_int(r, x, 365);
+    fp2_print(r, "365x");
+    CHECK(!mpz_cmp_ui(r->a, 258) && !mpz_cmp_ui(r->b, 301));
+
+    // [224i + 192] * -5 == 173*i + 333 (mod 431)
+    fp2_mul_int(r, x, -5);
+    fp2_print(r, "-5x");
+    CHECK(!mpz_cmp_ui(r->a, 333) && !mpz_cmp_ui(r->b, 173));
+
+    // [145*i + 309] * 1234 == 145*i + 309  (mod 431)
+    fp2_mul_int(r, x, 1234);
+    fp2_print(r, "1234x");
+    CHECK(!mpz_cmp_ui(r->a, 309) && !mpz_cmp_ui(r->b, 145));
+
+    fp2_clear(&r); fp2_clear(&x);
+    CHECK(!global_fpchar_clear());
+}
+
 int main() {
 
+    TEST_RUN(test_set_str());
     TEST_RUN(test_failed_once());
     TEST_RUN(test_basic_arithmetic());
     TEST_RUN(test_safe_unsafe_mul_sq());
     TEST_RUN(test_inv_div());
+    TEST_RUN(test_fp2_mul_int());
     TEST_RUNS_END;
-
-    return 0;
 }

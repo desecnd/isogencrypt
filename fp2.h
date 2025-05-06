@@ -6,6 +6,10 @@
 
 typedef mpz_t fp_t;
 
+
+// TODO: Maybe use a typedef to 1-dim array?
+// https://stackoverflow.com/a/69731101
+
 typedef union {
      struct {
          fp_t a;
@@ -17,6 +21,8 @@ typedef union {
 // ------ FP Methods
 
 // set the global static field characteristic to p
+// TODO: add check for valid modulus x^2 + 1 == 0
+// prime should be select such that x^2 + 1 is irreducible over Fp^2
 int global_fpchar_setup(fp_t p); 
 int global_fpchar_setup_uint(unsigned int p); 
 int global_fpchar_clear();
@@ -75,8 +81,6 @@ void fp2_init(fp2_t *res);
 
 void fp2_clear(fp2_t *res);
 
-// fill: set individual fields as FP elements
-void fp2_fill(fp2_t res, fp_t a, fp_t b);
 
 // set: result <- a + bi
 void fp2_set(fp2_t res, const fp2_t arg);
@@ -84,10 +88,19 @@ void fp2_set(fp2_t res, const fp2_t arg);
 // set: result <- (unsigned int) rhs 
 void fp2_set_uint(fp2_t res, unsigned long int rhs);
 
-// set: set value of res to a + bi
+// set: result <- x[a + bi]
+int fp2_set_str(fp2_t res, const char *x);
+
+// fill: set individual fields as FP elements
+void fp2_fill(fp2_t res, fp_t a, fp_t b);
+
+// fill: res = (a, b)
+void fp2_fill_uint(fp2_t res, unsigned long int a, unsigned long int b);
+
+// fill: res = (a, b)
 // if string are given with prefix (0x, 0, 0b) 
 // corresponding base will be detected and applied to conversion
-void fp2_set_str(fp2_t res, const char *a, const char *b);
+void fp2_fill_str(fp2_t res, const char *a, const char *b);
 
 // add: result <- lhs[a + bi] + rhs[a + bi]
 void fp2_add(fp2_t res, const fp2_t lhs, const fp2_t rhs);
@@ -101,6 +114,14 @@ void fp2_sub(fp2_t res, const fp2_t lhs, const fp2_t rhs);
 // sub: result <- lhs[a + bi] - (unsigned int) rhs 
 void fp2_sub_uint(fp2_t res, const fp2_t lhs, unsigned long int rhs);
 
+/*
+ * @brief Multiply fp2_t by a fp-rational long int number
+ * @param[out]  r   result of the operation x * y
+ * @param[in]   x   fp2 element to multiply, can safely point to `r`
+ * @param[in]   y   long int element to multiply
+ */
+void fp2_mul_int(fp2_t r, const fp2_t x, long int y);
+
 // mul: result <- lhs[a + bi] * rhs[a + bi] (mod p)
 void fp2_mul_unsafe(fp2_t res, const fp2_t lhs, const fp2_t rhs);
 void fp2_mul_safe(fp2_t x, const fp2_t y);
@@ -110,30 +131,34 @@ void fp2_inv_safe(fp2_t x);
 
 // sq: result <- arg^2
 // This function cannot be used when res == arg
-static void fp2_sq_unsafe(fp2_t res, const fp2_t arg) {
+static inline void fp2_sq_unsafe(fp2_t res, const fp2_t arg) {
     assert(res != arg && "fp2_sq cannot be called with res = arg");
     fp2_mul_unsafe(res, arg, arg);
 }
 
 // sq: result <- arg^2
 // This function can be used safely with res == arg
-static void fp2_sq_safe(fp2_t x) {
+static inline void fp2_sq_safe(fp2_t x) {
     fp2_mul_safe(x, x);
 }
 
 // Return true if fp2 is zero
-static int fp2_is_zero(const fp2_t arg) {
+static inline int fp2_is_zero(const fp2_t arg) {
     return (int) (fp_is_zero(arg->a) && fp_is_zero(arg->b));
 }
 
 // Calculate res: lhs / rhs
-static void fp2_div_unsafe(fp2_t res, const fp2_t lhs, const fp2_t rhs) {
+static inline void fp2_div_unsafe(fp2_t res, const fp2_t lhs, const fp2_t rhs) {
+    assert(res != rhs && res != lhs && "Fp^2 division is not arg-safe, cannot be called with r = rhs or r = lhs");
     fp2_inv_unsafe(res, rhs);
     // Uses safe in order to not allocate additional memory
     fp2_mul_safe(res, lhs);
 }
 
-void fp2_print_uint(fp2_t arg, const char *name);
+/* 
+ * @brief Output fp2 element to the stdout in format: "name: a*i + b"
+ */
+void fp2_print(fp2_t x, const char* name);
 
 
 #endif

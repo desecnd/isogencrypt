@@ -1,5 +1,10 @@
-/ext
+__pycache__
+.vscode
+
 test_fp
 test_fp2
 test_ec_mont
+test_msidh
+
 *.sage.py
+/old

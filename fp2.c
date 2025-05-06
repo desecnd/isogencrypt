@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>
+#include <string.h>
 
 #include "fp2.h"
 
@@ -20,7 +21,7 @@ int global_fpchar_setup_uint(unsigned int p) {
 // For now, only p = 3 (mod 4) is allowed
 int global_fpchar_setup(fp_t p) {
     if (is_fpchar_set) {
-        printf("[!] trying to initialize the characteristic second time!\n");
+        fprintf(stderr, "[!] trying to initialize the characteristic second time!\n");
         return -1;
     }
 
@@ -37,7 +38,7 @@ int global_fpchar_setup(fp_t p) {
     }
 
     if (invalid_mod4) {
-        printf("[!] Trying to set prime field characteristic with prime != 3 (mod 4)\n");
+        fprintf(stderr, "[!] Trying to set prime field characteristic with prime != 3 (mod 4)\n");
         return -2;
     }
 
@@ -49,7 +50,7 @@ int global_fpchar_setup(fp_t p) {
 
 int global_fpchar_clear() {
     if (!is_fpchar_set) {
-        printf("[!] trying to clear not-initialized characteristic!\n");
+        fprintf(stderr, "[!] trying to clear not-initialized characteristic!\n");
         return -1;
     }
     fp_clear(fpchar);
@@ -180,11 +181,12 @@ void fp2_clear(fp2_t *res) {
     *res = NULL;
 }
 
-// fill: set individual fields as FP elements
-void fp2_fill(fp2_t res, fp_t a, fp_t b) {
-    fp_set(res->a, a);
-    fp_set(res->b, b);
+// set: result = x
+void fp2_set(fp2_t r, const fp2_t x) {
+    fp_set(r->a, x->a);
+    fp_set(r->b, x->b);
 }
+
 
 // set: result <- (unsigned int) rhs 
 void fp2_set_uint(fp2_t res, unsigned long int rhs) {
@@ -192,18 +194,64 @@ void fp2_set_uint(fp2_t res, unsigned long int rhs) {
     fp_set_uint(res->b, 0);
 }
 
+// set: result <- a + bi
+int fp2_set_str(fp2_t res, const char *x) {
+    
+    // Allow only for both real and imaginary part
+    if (strstr(x, "+") == NULL || strstr(x, "i") == NULL) {
+        return 1;
+    }
+    
+    int n_chars = strlen(x);
+    char * buffer = malloc(sizeof(char) * (n_chars + 1));
+    strncpy(buffer, x, n_chars);
+    buffer[n_chars] = '\0';
+    
+    char *imag = buffer;
+    char *real = strsep(&imag, "+");
+    char *temp = imag;
+    
+    // swap imag and real
+    if (strstr(imag, "i") == NULL){
+        imag = real;
+        real = temp;
+        temp = imag;
+    } else if (strstr(real, "i") != NULL) {
+        // Found i in both real and imag
+        free(buffer);
+        return 1;
+    }
+    
+    // Strip the "* i" part
+    imag = strsep(&temp, "*");
+    
+    // TODO: change inconsistent API
+    mpz_set_str(res->a, real, 0);
+    mpz_set_str(res->b, imag, 0);
+    
+    free(buffer);
+    return 0;
+}
 
-void fp2_set_str(fp2_t res, const char *a, const char *b) {
+// fill: set individual fields as FP elements
+void fp2_fill(fp2_t res, fp_t a, fp_t b) {
+    fp_set(res->a, a);
+    fp_set(res->b, b);
+}
+
+// fill_str: result = a + bi
+void fp2_fill_str(fp2_t res, const char *a, const char *b) {
     // TODO: change inconsistent API
     mpz_set_str(res->a, a, 0);
     mpz_set_str(res->b, b, 0);
 }
 
-// set: result = a
-void fp2_set(fp2_t res, const fp2_t arg) {
-    fp_set(res->a, arg->a);
-    fp_set(res->b, arg->b);
+// fill_uint: result = a + bi
+void fp2_fill_uint(fp2_t res, unsigned long int a, unsigned long int b) {
+    fp_set_uint(res->a, a);
+    fp_set_uint(res->b, b);
 }
+
 
 // add: result <- lhs[a + bi] + rhs[a + bi]
 void fp2_add(fp2_t res, const fp2_t lhs, const fp2_t rhs) {
@@ -261,6 +309,13 @@ void fp2_mul_unsafe(fp2_t res, const fp2_t lhs, const fp2_t rhs) {
     fp_add(res->b, res->b, t);
 
     fp_clear(t);
+}
+
+void fp2_mul_int(fp2_t r, const fp2_t x, long int y) {
+    // Multiply each of the "coordinates"
+    // xy = (a + bi)y = ay + byi 
+    fp_mul_int(r->a, x->a, y);
+    fp_mul_int(r->b, x->b, y);
 }
 
 void fp2_mul_safe(fp2_t res, const fp2_t rhs) {
@@ -335,6 +390,15 @@ void fp2_inv_safe(fp2_t x) {
 }
 
 
-void fp2_print_uint(fp2_t arg, const char* name) {
-    printf("%s = %ld + %ld * i\n", name, mpz_get_ui(arg->a), mpz_get_ui(arg->b));
+/* 
+ * @brief Output fp2 element to the stdout in format: "name: a*i + b"
+ */
+void fp2_print(fp2_t x, const char* name) {
+    if (fp_is_zero(x->a)) {
+        gmp_printf("%s: %Zd*i\n", name, x->b);
+    } else if (fp_is_zero(x->b)) {
+        gmp_printf("%s: %Zd\n", name, x->a);
+    } else {
+        gmp_printf("%s: %Zd*i + %Zd\n", name, x->b, x->a);
+    }
 }
