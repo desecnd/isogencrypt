@@ -1,5 +1,9 @@
 from sage.all import factor, order_from_multiple, randrange, CRT_list, EllipticCurve, prod
 
+def check_points_torsion_basis(P, Q, n: int) -> bool:
+    """Return True if points (P, Q) create valid (non-degenerate) torsion basis of order n"""
+    return order_from_multiple(P.weil_pairing(Q, n), n, operation='*') == n
+
 def sample_torsion_basis_smooth(E, r: int, montgomery_basis: bool = False):
     """Fast method for finding smooth torsion basis on supersingular elliptic curve"""
 

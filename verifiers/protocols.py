@@ -1,7 +1,7 @@
 #/usr/bin/sage 
 
 from sage.all import EllipticCurve, Primes, randint, order_from_multiple, gcd, is_prime, prod, GF
-from verifiers.isogeny import sample_quadratic_root_of_unity, sample_torsion_basis_smooth, mont_coef
+from verifiers.isogeny import sample_quadratic_root_of_unity, sample_torsion_basis_smooth, mont_coef, check_points_torsion_basis
 
 class MSIDH:
     def __init__(self, p: int, A: int, B: int, E0, P = None, Q = None, secret: int = None, mask: int = None, is_bob: bool = False, mont_model: bool = False):
@@ -86,7 +86,7 @@ class MSIDH:
     def gen_pubkey(self, PB, QB) -> tuple:
         assert PB.curve() == self.E0
         assert QB.curve() == self.E0
-        assert order_from_multiple(PB.weil_pairing(QB, self.B), self.B, operation='*') == self.B
+        assert check_points_torsion_basis(PB, QB, self.B)
 
         # Apply masking
         PB = self.mask * self.phi(PB)
