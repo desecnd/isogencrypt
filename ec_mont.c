@@ -263,7 +263,7 @@ void xLADDER_int(point_t R0, const point_t P, long int m, const fp2_t A24p, cons
 
 // calculate P = P + [m]Q
 void xLADDER3PT_int(point_t P, point_t Q, point_t PQdiff, long int m, const fp2_t A24p, const fp2_t C24) {
-    assert(m > 0 && "Given scalar m must be nonnegative");
+    assert(m >= 0 && "Given scalar m must be nonnegative");
 
     while (m > 0) {
         if (m & 1) 
@@ -276,7 +276,7 @@ void xLADDER3PT_int(point_t P, point_t Q, point_t PQdiff, long int m, const fp2_
 
 // calculate P = P + [m]Q
 void xLADDER3PT(point_t P, point_t Q, point_t PQdiff, const mpz_t m, const fp2_t A24p, const fp2_t C24) {
-    assert(mpz_sgn(m) > 0 && "Given scalar m must be nonnegative");
+    assert(mpz_sgn(m) >= 0 && "Given scalar m must be nonnegative");
 
     mpz_t r, n;
     mpz_init(r);

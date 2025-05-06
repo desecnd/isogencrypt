@@ -22,6 +22,7 @@ Requires `GMP` (Gnu Multiprecision Library) https://gmplib.org/.
     * [x] Add **even**-degree isogeny chaining
     * [x] Add list of "push-through" points
 - [x] Add j-invariant calculation in montgomery model
+- [x] Add "zero"-multiply tests for xLADDER3PT
 - [ ] Add MSIDH with initialized torsion basis
     * [x] Add msidh_gen_pubkey
     * [x] Add msidh_key_exchange

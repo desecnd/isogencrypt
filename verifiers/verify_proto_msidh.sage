@@ -141,10 +141,11 @@ class TestT4:
             print(f"aτ(φ(E))(24p): {a2_24p}")
             print(f"jτ(φ(E)): {j_inv}")
 
+
     @classmethod
-    def verify_test_msidh_key_exchange(cls):
-        print("---: test_msidh_gen_pubkey()")
-        i, E, A, B, n = cls.i, cls.E, cls.A, cls.B, cls.n
+    def verify_test_msidh_secret_zero(cls):
+        print("---: test_msidh_secret_zero()")
+        i, E, n = cls.i, cls.E, cls.n
 
         P = E(295*i + 398, 158*i + 219)
         Q = E(314*i + 149, 240*i + 165)
@@ -159,32 +160,12 @@ class TestT4:
         assert n == 420
         assert order_from_multiple(P.weil_pairing(Q, n), n, operation="*") == n
 
-        # Construct Alice basis (PA, QA) = [n//A](P, Q)
-        PA = E(128*i + 414, 248*i + 385)
-        QA = E(269*i + 32, 396*i + 61)
-        PQAd = E(107*i + 300, 387*i + 41)
-
-        print(f"xPA: {PA.x()}")
-        print(f"xQA: {QA.x()}")
-        print(f"xPQAd: {PQAd.x()}")
-        assert PA == P * (n // A)
-        assert QA == Q * (n // A)
-        assert PA - QA == (P - Q) * (n // A) == PQAd
-        assert order_from_multiple(PA.weil_pairing(QA, A), A, operation="*") == A
-
-        # Construct Bob basis (PB, QB) = [n//B](P, Q)
-        PB = E(214*i + 177, 156*i + 347)
-        QB = E(65*i + 173, 79*i + 203)
-        PQBd = E(173*i + 197, 405*i + 98)
-
-        print(f"xPB: {PB.x()}")
-        print(f"xQB: {QB.x()}")
-        print(f"xPQBd: {PQBd.x()}")
-        assert PB == P * (n // B)
-        assert QB == Q * (n // B)
-        assert PB - QB == (P - Q) * (n // B) == PQBd
-        assert order_from_multiple(PB.weil_pairing(QB, B), B, operation="*") == B
-
+        s = 0
+        K = P + s * Q
+        assert K == P
+        print(f"xK: {K.x()}")
+        # Print twice to match with the .c test version
+        print(f"xK: {K.x()}")
 
 if __name__ == "__main__":
 
@@ -193,4 +174,5 @@ if __name__ == "__main__":
     # Small MSIDH t = 4
     TestT4.setup_params()
     TestT4.verify_test_msidh_gen_pubkey()
+    TestT4.verify_test_msidh_secret_zero()
 

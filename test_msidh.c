@@ -196,6 +196,33 @@ void setup_params_t4() {
     fp2_clear(&A); fp2_clear(&C);
 }
 
+void test_msidh_secret_zero() {
+    point_set_str_x(P, "295*i + 398");
+    fp2_print(P->X, "xP");
+
+    point_set_str_x(Q, "314*i + 149");
+    fp2_print(Q->X, "xQ");
+
+    point_set_str_x(PQd, "29*i + 395");
+    fp2_print(PQd->X, "xPQd");
+
+    mpz_set_ui(m, 0);
+    xLADDER3PT(P,  Q, PQd, m, A24p, C24);
+
+    // P should not change
+    // xP: 295*i + 398
+    point_printx(P, "xK");
+    CHECK(!mpz_cmp_ui(P->X->a, 398) && !mpz_cmp_ui(P->X->b, 295));
+
+    xLADDER3PT_int(P, Q, PQd, 0, A24p, C24);
+
+    // P should not change
+    // xP: 295*i + 398
+    point_printx(P, "xK");
+    CHECK(!mpz_cmp_ui(P->X->a, 398) && !mpz_cmp_ui(P->X->b, 295));
+}
+
+
 void test_msidh_gen_pubkey() {
     point_set_str_x(P, "295*i + 398");
     fp2_print(P->X, "xP");
@@ -460,6 +487,7 @@ int main() {
     setup_params_t4();
 
     TEST_RUN(test_msidh_gen_pubkey());
+    TEST_RUN(test_msidh_secret_zero());
 
     clear_test_variables();
 
