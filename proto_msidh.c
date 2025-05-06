@@ -174,30 +174,74 @@ int msidh_gen_pub_params(mpz_t p, pprod_t A, pprod_t B, unsigned int t) {
     return f;
 }
 
-void msidh_prepare(mpz_t secret, const mpz_t degree) {
-    gmp_randstate_t state;
-    gmp_randinit_mt(state);
+void msidh_key_exchange(struct msidh_state *msidh, const fp2_t A24p, const fp2_t C24, const struct tors_basis* BPQA) {
+    assert(msidh->status == MSIDH_STATUS_PREPARED);
 
-    // Generate random secret s in range [0, deg)
-    mpz_urandomm(secret, state, degree);
-    gmp_randclear(state);
+    fp2_t A24p_final, C24_final;
+    fp2_init(&A24p_final);
+    fp2_init(&C24_final);
+
+    // TODO: Copy the point into my own torsion, to not discard the original one
+    // TODO: add verification of the pairing
+
+    // Update my torsion basis (it will be destroyed during the key_exchange process)
+    assert(msidh->PQ_me.n == BPQA->n);
+    point_set(msidh->PQ_me.P, BPQA->P);
+    point_set(msidh->PQ_me.Q, BPQA->Q);
+    point_set(msidh->PQ_me.PQd, BPQA->PQd);
+
+    _msidh_key_exchange_alice(msidh->sk_jinv, A24p_final, C24_final, A24p, C24, &msidh->PQ_me, msidh->secret);
+
+    fp2_clear(&A24p_final);
+    fp2_clear(&C24_final);
+    
+    msidh->status = MSIDH_STATUS_EXCHANGED;
+}
+
+void msidh_prepare(struct msidh_state *msidh, const fp2_t A24p, const fp2_t C24, const struct tors_basis *PQ, pprod_t A_deg, pprod_t B_deg, int is_bob) {
+    // TODO: what about the seed?
+    // TODO: pass gmp_randstate to sample methods
+    assert(msidh->status == MSIDH_STATUS_INITIALIZED);
+
+    mpz_t mask;
+    mpz_init(mask);
+
+    if (is_bob) {
+        tors_basis_get_subgroup(&msidh->PQ_other, A_deg, PQ, A24p, C24); 
+        tors_basis_get_subgroup(&msidh->PQ_me, B_deg, PQ, A24p, C24); 
+        // Generate random secret s in range [0, A_deg)
+        mpz_urandomm(msidh->secret, msidh->randstate, A_deg->value);
+        sample_quadratic_root_of_unity(mask, A_deg); 
+    } else {
+        tors_basis_get_subgroup(&msidh->PQ_me, A_deg, PQ, A24p, C24); 
+        tors_basis_get_subgroup(&msidh->PQ_other, B_deg, PQ, A24p, C24); 
+        // Generate random secret s in range [0, B_deg)
+        mpz_urandomm(msidh->secret, msidh->randstate, A_deg->value);
+        sample_quadratic_root_of_unity(mask, B_deg); 
+    }
+
+    _msidh_gen_pubkey_alice(msidh->pk_A24p, msidh->pk_C24, &msidh->PQ_me, &msidh->PQ_other, A24p, C24, msidh->secret, mask);
+
+    mpz_clear(mask);
+
+    msidh->status = MSIDH_STATUS_PREPARED;
 }
 
 /* 
  * @brief Generate MSIDH public key from Alice perspective
 */
-void msidh_genkey(fp2_t A24p_alice, fp2_t C24_alice, point_t PB, point_t QB, point_t PQBd, const fp2_t A24p_base, const fp2_t C24_base, point_t PA, point_t QA, point_t PQAd, const pprod_t deg_A, const pprod_t deg_B, const mpz_t secret, const mpz_t mask) {
+void _msidh_gen_pubkey_alice(fp2_t A24p_alice, fp2_t C24_alice, struct tors_basis* PQ_alice, struct tors_basis* PQ_bob, const fp2_t A24p_base, const fp2_t C24_base, const mpz_t secret, const mpz_t mask) {
     // P, Q is a torsion basis for deg
 
     // assert(global_fpchar_setup(p));
 
     // 1. Calculate the kernel of the Alice isogeny
     // PA = PA + [s]QA
-    xLADDER3PT(PA, QA, PQAd, secret, A24p_base, C24_base);
+    xLADDER3PT(PQ_alice->P, PQ_alice->Q, PQ_alice->PQd, secret, A24p_base, C24_base);
 
-    point_t push_points[] = {PB, QB, PQBd, NULL, NULL};
+    point_t push_points[] = {PQ_bob->P, PQ_bob->Q, PQ_bob->PQd, NULL, NULL};
 
-    ISOG_chain(A24p_alice, C24_alice, A24p_base, C24_base, PA, deg_A, push_points);
+    ISOG_chain(A24p_alice, C24_alice, A24p_base, C24_base, PQ_alice->P, PQ_alice->n, push_points);
 
     // Mask the Bob torsion basis using quadratic root - alpha.
     // mpz_t alpha;
@@ -208,16 +252,18 @@ void msidh_genkey(fp2_t A24p_alice, fp2_t C24_alice, point_t PB, point_t QB, poi
     // 3. Apply masking
     // We multiply all the points (PB, QB, PQBd) by `alpha` 
     // We use QA as temporary register for holding the point result
-    xLADDER(QA, PB, mask, A24p_alice, C24_alice);
-    point_set(PB, QA);
-    xLADDER(QA, QB, mask, A24p_alice, C24_alice);
-    point_set(QB, QA);
-    xLADDER(QA, PQBd, mask, A24p_alice, C24_alice);
-    point_set(PQBd, QA);
+    xLADDER(PQ_alice->Q, PQ_bob->P, mask, A24p_alice, C24_alice);
+    point_set(PQ_bob->P, PQ_alice->Q);
+    xLADDER(PQ_alice->Q, PQ_bob->Q, mask, A24p_alice, C24_alice);
+    point_set(PQ_bob->Q, PQ_alice->Q);
+    xLADDER(PQ_alice->Q, PQ_bob->PQd, mask, A24p_alice, C24_alice);
+    point_set(PQ_bob->PQd, PQ_alice->Q);
 }
 
 
-void msidh_key_exchange(fp2_t j_inv, fp2_t A24p_final, fp2_t C24_final, const fp2_t A24p_bob, const fp2_t C24_bob, const struct tors_basis * BPQA, const mpz_t A_sec) {
+// TODO: Note that BPQA get destroyed
+
+void _msidh_key_exchange_alice(fp2_t j_inv, fp2_t A24p_final, fp2_t C24_final, const fp2_t A24p_bob, const fp2_t C24_bob, struct tors_basis * BPQA, const mpz_t A_sec) {
 
     // TODO: why point_t is ignored as const?
 
@@ -236,4 +282,36 @@ void msidh_key_exchange(fp2_t j_inv, fp2_t A24p_final, fp2_t C24_final, const fp
     j_invariant(j_inv, A, C);
 
     fp2_clear(&A); fp2_clear(&C);
+}
+
+void msidh_state_init(struct msidh_state* msidh) {
+    gmp_randinit_mt(msidh->randstate);
+
+    point_init(&msidh->PQ_me.P);
+    point_init(&msidh->PQ_me.Q);
+    point_init(&msidh->PQ_me.PQd);
+    pprod_init(&msidh->PQ_me.n);
+
+    fp2_init(&msidh->pk_A24p);
+    fp2_init(&msidh->pk_C24);
+    fp2_init(&msidh->sk_jinv);
+    mpz_init(msidh->secret);
+
+    msidh->status = MSIDH_STATUS_INITIALIZED;
+}
+
+void msidh_state_clear(struct msidh_state* msidh) {
+    gmp_randclear(msidh->randstate);
+
+    point_clear(&msidh->PQ_me.P);
+    point_clear(&msidh->PQ_me.Q);
+    point_clear(&msidh->PQ_me.PQd);
+    pprod_clear(&msidh->PQ_me.n);
+
+    fp2_clear(&msidh->pk_A24p);
+    fp2_clear(&msidh->pk_C24);
+    fp2_clear(&msidh->sk_jinv);
+    mpz_clear(msidh->secret);
+
+    msidh->status = MSIDH_STATUS_UNINITIALIZED;
 }

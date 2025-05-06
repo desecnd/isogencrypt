@@ -290,7 +290,7 @@ void test_msidh_gen_pubkey() {
     gmp_printf("b_sec: %Zd\n", b_sec);
     gmp_printf("b_mask: %Zd\n", b_mask);
 
-    msidh_genkey(A24p_alice, C24_alice, PQB.P, PQB.Q, PQB.PQd, A24p, C24, PQA.P, PQA.Q, PQA.PQd, A_deg, B_deg, a_sec, a_mask); 
+    _msidh_gen_pubkey_alice(A24p_alice, C24_alice, &PQA, &PQB, A24p, C24,  a_sec, a_mask); 
 
     // aφ(E)(24p): 271*i + 111
     fp2_div_unsafe(aE_alice, A24p_alice, C24_alice); 
@@ -309,7 +309,7 @@ void test_msidh_gen_pubkey() {
     point_printx(PQBd, "xφ(PQBd)");
     CHECK(!mpz_cmp_ui(PQBd->X->a, 90) && !mpz_cmp_ui(PQBd->X->b, 239));
 
-    msidh_key_exchange(j_inv, A24p_final, C24_final, A24p_alice, C24_alice, &PQB, b_sec);
+    _msidh_key_exchange_alice(j_inv, A24p_final, C24_final, A24p_alice, C24_alice, &PQB, b_sec);
     fp2_div_unsafe(aE_final, A24p_final, C24_final);
 
     // aτ(φ(E))(24p): 356*i + 219
@@ -334,7 +334,7 @@ void test_msidh_gen_pubkey() {
     tors_basis_get_subgroup(&PQA, A_deg, &PQ, A24p, C24); 
     tors_basis_get_subgroup(&PQB, B_deg, &PQ, A24p, C24); 
 
-    msidh_genkey(A24p_alice, C24_alice, PQB.P, PQB.Q, PQB.PQd, A24p, C24, PQA.P, PQA.Q, PQA.PQd, A_deg, B_deg, a_sec, a_mask); 
+    _msidh_gen_pubkey_alice(A24p_alice, C24_alice, &PQA, &PQB, A24p, C24,  a_sec, a_mask); 
 
     // aφ(E)(24p): 408*i + 332
     fp2_div_unsafe(aE_alice, A24p_alice, C24_alice); 
@@ -353,8 +353,7 @@ void test_msidh_gen_pubkey() {
     point_printx(PQBd, "xφ(PQBd)");
     CHECK(!mpz_cmp_ui(PQBd->X->a, 181) && !mpz_cmp_ui(PQBd->X->b, 127));
 
-
-    msidh_key_exchange(j_inv, A24p_final, C24_final, A24p_alice, C24_alice, &PQB, b_sec);
+    _msidh_key_exchange_alice(j_inv, A24p_final, C24_final, A24p_alice, C24_alice, &PQB, b_sec);
     fp2_div_unsafe(aE_final, A24p_final, C24_final);
 
     // aτ(φ(E))(24p): 204*i + 395
@@ -379,7 +378,7 @@ void test_msidh_gen_pubkey() {
     tors_basis_get_subgroup(&PQA, A_deg, &PQ, A24p, C24); 
     tors_basis_get_subgroup(&PQB, B_deg, &PQ, A24p, C24); 
 
-    msidh_genkey(A24p_alice, C24_alice, PQB.P, PQB.Q, PQB.PQd, A24p, C24, PQA.P, PQA.Q, PQA.PQd, A_deg, B_deg, a_sec, a_mask); 
+    _msidh_gen_pubkey_alice(A24p_alice, C24_alice, &PQA, &PQB, A24p, C24,  a_sec, a_mask); 
 
     // aφ(E)(24p): 109*i + 386
     fp2_div_unsafe(aE_alice, A24p_alice, C24_alice); 
@@ -398,7 +397,7 @@ void test_msidh_gen_pubkey() {
     point_printx(PQBd, "xφ(PQBd)");
     CHECK(!mpz_cmp_ui(PQBd->X->a, 66) && !mpz_cmp_ui(PQBd->X->b, 323));
 
-    msidh_key_exchange(j_inv, A24p_final, C24_final, A24p_alice, C24_alice, &PQB, b_sec);
+    _msidh_key_exchange_alice(j_inv, A24p_final, C24_final, A24p_alice, C24_alice, &PQB, b_sec);
     fp2_div_unsafe(aE_final, A24p_final, C24_final);
 
     // aτ(φ(E))(24p): 244*i + 279
@@ -423,7 +422,7 @@ void test_msidh_gen_pubkey() {
     tors_basis_get_subgroup(&PQA, A_deg, &PQ, A24p, C24); 
     tors_basis_get_subgroup(&PQB, B_deg, &PQ, A24p, C24); 
 
-    msidh_genkey(A24p_alice, C24_alice, PQB.P, PQB.Q, PQB.PQd, A24p, C24, PQA.P, PQA.Q, PQA.PQd, A_deg, B_deg, a_sec, a_mask); 
+    _msidh_gen_pubkey_alice(A24p_alice, C24_alice, &PQA, &PQB, A24p, C24,  a_sec, a_mask); 
 
     // aφ(E)(24p): 16*i + 353
     fp2_div_unsafe(aE_alice, A24p_alice, C24_alice); 
@@ -443,7 +442,7 @@ void test_msidh_gen_pubkey() {
     CHECK(!mpz_cmp_ui(PQBd->X->a, 244) && !mpz_cmp_ui(PQBd->X->b, 330));
 
 
-    msidh_key_exchange(j_inv, A24p_final, C24_final, A24p_alice, C24_alice, &PQB, b_sec);
+    _msidh_key_exchange_alice(j_inv, A24p_final, C24_final, A24p_alice, C24_alice, &PQB, b_sec);
     fp2_div_unsafe(aE_final, A24p_final, C24_final);
 
     // aτ(φ(E))(24p): 302
