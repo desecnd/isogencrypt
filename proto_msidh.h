@@ -38,7 +38,9 @@ void msidh_state_init(struct msidh_state* msidh);
 
 void msidh_state_clear(struct msidh_state* msidh);
 
-void msidh_prepare(struct msidh_state *msidh, const fp2_t A24p, const fp2_t C24, const struct tors_basis *PQ, pprod_t A_deg, pprod_t B_deg, int is_bob);
+void msidh_state_reset(struct msidh_state *msidh);
+
+void msidh_state_prepare(struct msidh_state *msidh, const fp2_t A24p, const fp2_t C24, const struct tors_basis *PQ, pprod_t A_deg, pprod_t B_deg, int is_bob);
 
 // TODO: add gmp_randstate instead of random
 int sample_quadratic_root_of_unity(mpz_t result, pprod_t modulus);

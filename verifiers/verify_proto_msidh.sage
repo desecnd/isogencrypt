@@ -1,6 +1,7 @@
 #!/usr/bin/sage
 
 from sage.all import EllipticCurve, order_from_multiple, GF
+from verifiers.isogeny import check_points_torsion_basis
 from verifiers.protocols import MSIDH 
 
 def verify_test_msidh_gen_pub_params():
@@ -69,8 +70,8 @@ class TestT4:
             raise ValueError("E is not a supersingular curve")
 
     @classmethod
-    def verify_test_msidh_gen_pubkey(cls):
-        print("---: test_msidh_gen_pubkey()")
+    def verify_test_msidh_internals(cls):
+        print("---: test_msidh_internals()")
         i, E, A, B, n = cls.i, cls.E, cls.A, cls.B, cls.n
 
         P = E(295*i + 398, 158*i + 219)
@@ -158,7 +159,7 @@ class TestT4:
 
         # Check if valid full torsion basis
         assert n == 420
-        assert order_from_multiple(P.weil_pairing(Q, n), n, operation="*") == n
+        assert check_points_torsion_basis(P, Q, n)
 
         s = 0
         K = P + s * Q
@@ -167,12 +168,43 @@ class TestT4:
         # Print twice to match with the .c test version
         print(f"xK: {K.x()}")
 
+    @classmethod
+    def verify_test_msidh_non_deterministic(cls):
+        print("---: test_msidh_non_deterministic()")
+        i, E, = cls.i, cls.E
+
+        P = E(209*i + 332, 248*i + 396)
+        Q = E(345*i + 223, 389*i + 40)
+        PQd = E(98*i + 199, 71*i + 181)
+        assert PQd == P - Q
+
+        print(f"xP: {P.x()}")
+        print(f"xQ: {Q.x()}")
+        print(f"xPQd: {PQd.x()}")
+
+    @classmethod
+    def verify_test_msidh_monte_carlo(cls):
+        print("---: test_msidh_monte_carlo()")
+        i, E, = cls.i, cls.E
+
+        P = E(209*i + 332, 248*i + 396)
+        Q = E(345*i + 223, 389*i + 40)
+        PQd = E(98*i + 199, 71*i + 181)
+        assert PQd == P - Q
+
+        print(f"xP: {P.x()}")
+        print(f"xQ: {Q.x()}")
+        print(f"xPQd: {PQd.x()}")
+
 if __name__ == "__main__":
 
     verify_test_msidh_gen_pub_params()
 
     # Small MSIDH t = 4
     TestT4.setup_params()
-    TestT4.verify_test_msidh_gen_pubkey()
+    TestT4.verify_test_msidh_internals()
     TestT4.verify_test_msidh_secret_zero()
+    TestT4.verify_test_msidh_non_deterministic()
+    TestT4.verify_test_msidh_monte_carlo()
+
 

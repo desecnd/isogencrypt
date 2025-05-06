@@ -223,15 +223,15 @@ void test_msidh_secret_zero() {
 }
 
 
-void test_msidh_gen_pubkey() {
+void test_msidh_internals() {
     point_set_str_x(P, "295*i + 398");
-    fp2_print(P->X, "xP");
+    point_printx(P, "xP");
 
     point_set_str_x(Q, "314*i + 149");
-    fp2_print(Q->X, "xQ");
+    point_printx(Q, "xQ");
 
     point_set_str_x(PQd, "29*i + 395");
-    fp2_print(PQd->X, "xPQd");
+    point_printx(PQd, "xPQd");
 
     struct tors_basis PQ = { .P=P, .Q=Q, .PQd=PQd  };
     pprod_init(&PQ.n);
@@ -473,6 +473,85 @@ void test_msidh_gen_pubkey() {
     pprod_clear(&PQB.n);
 }
 
+
+void test_msidh_non_deterministic() {
+
+    struct msidh_state m1, m2, m3;
+    msidh_state_init(&m1);
+    msidh_state_init(&m2);
+    msidh_state_init(&m3);
+
+    struct tors_basis PQ;
+    PQ.P = P;
+    PQ.Q = Q;
+    PQ.PQd = PQd;
+    pprod_init(&PQ.n);
+    mpz_add_ui(PQ.n->value, p, 1);
+
+    point_set_str_x(P, "209*i + 332");
+    point_printx(P, "xP");
+
+    point_set_str_x(Q, "345*i + 223");
+    point_printx(Q, "xQ");
+
+    point_set_str_x(PQd, "98*i + 199");
+    point_printx(PQd, "xPQd");
+
+    msidh_state_prepare(&m1, A24p, C24, &PQ, A_deg, B_deg, 0);
+    msidh_state_prepare(&m2, A24p, C24, &PQ, A_deg, B_deg, 0);
+    msidh_state_prepare(&m3, A24p, C24, &PQ, A_deg, B_deg, 0);
+
+    // At least one has to be different -> extremally low chance for false test
+    CHECK(m1.secret != m2.secret || m2.secret == m3.secret || m3.secret == m1.secret);
+
+    msidh_state_clear(&m1);
+    msidh_state_clear(&m2);
+    msidh_state_clear(&m3);
+    pprod_clear(&PQ.n);
+}
+
+void test_msidh_monte_carlo() {
+
+    struct msidh_state alice, bob;
+    msidh_state_init(&alice);
+    msidh_state_init(&bob);
+
+    struct tors_basis PQ;
+    PQ.P = P;
+    PQ.Q = Q;
+    PQ.PQd = PQd;
+    pprod_init(&PQ.n);
+    mpz_add_ui(PQ.n->value, p, 1);
+
+    point_set_str_x(P, "209*i + 332");
+    point_printx(P, "xP");
+
+    point_set_str_x(Q, "345*i + 223");
+    point_printx(Q, "xQ");
+
+    point_set_str_x(PQd, "98*i + 199");
+    point_printx(PQd, "xPQd");
+
+    // Test is not deterministic - we try many different combinations of (secret/mask) for both parties
+    for (int iter = 0; iter < 100; iter++) {
+        msidh_state_prepare(&alice, A24p, C24, &PQ, A_deg, B_deg, 0);
+        msidh_state_prepare(&bob, A24p, C24, &PQ, A_deg, B_deg, 1);
+
+        msidh_key_exchange(&alice, bob.pk_A24p, bob.pk_C24, &bob.PQ_other);
+        msidh_key_exchange(&bob, alice.pk_A24p, alice.pk_C24, &alice.PQ_other);
+
+        // Make sure that the computed shared secret is the same for both parties
+        CHECK(!mpz_cmp(alice.sk_jinv->a, bob.sk_jinv->a) && !mpz_cmp(alice.sk_jinv->b, bob.sk_jinv->b));
+
+        msidh_state_reset(&alice);
+        msidh_state_reset(&bob);
+    }
+
+    msidh_state_clear(&alice);
+    msidh_state_clear(&bob);
+}
+
+
 int main() {
     init_test_variables();
 
@@ -485,8 +564,10 @@ int main() {
     // t = 4 for MSIDH
     setup_params_t4();
 
-    TEST_RUN(test_msidh_gen_pubkey());
+    TEST_RUN(test_msidh_internals());
     TEST_RUN(test_msidh_secret_zero());
+    TEST_RUN(test_msidh_non_deterministic());
+    TEST_RUN(test_msidh_monte_carlo());
 
     clear_test_variables();
 

@@ -1,6 +1,6 @@
 #/usr/bin/sage 
 
-from sage.all import EllipticCurve, Primes, randint, order_from_multiple, gcd, is_prime, prod, GF
+from sage.all import EllipticCurve, Primes, randint, gcd, is_prime, prod, GF
 from verifiers.isogeny import sample_quadratic_root_of_unity, sample_torsion_basis_smooth, mont_coef, check_points_torsion_basis
 
 class MSIDH:
