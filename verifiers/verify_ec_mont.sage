@@ -1,5 +1,7 @@
 #!/usr/bin/sage 
 
+from sage.all import EllipticCurve, GF, prod
+
 # Sage-friendly definition in global scope 
 # otherwise i is bound to the class and defining 
 # numbers "x + y*i" with cls.i or self.i gets tedious
@@ -41,7 +43,7 @@ def _mont_coef_odd(K):
     sigma = sum([KP.x() for KP in kpts])
     sigma_hat = sum([1/KP.x() for KP in kpts])
     pi = prod(KP.x() for KP in kpts)
-    A_ = (6 * sigma_hat - 6 * sigma + A) * pi^2
+    A_ = (6 * sigma_hat - 6 * sigma + A) * pi**2
 
     return A_
 
@@ -49,7 +51,7 @@ def _mont_coef_2(K):
     assert K.order() == 2 and K.x() != 0
     return 2 * (1 - 2 * K.x() ** 2)
 
-class TestcaseP431:
+class TestP431:
 
     def setup_params():
         """Prepare global variables for running tests"""
@@ -57,7 +59,9 @@ class TestcaseP431:
 
         # p + 1 = 2^4 * 3^3
         p = 431
-        F.<i> = GF(p^2, modulus=[1,0,1])
+        F = GF(p ** 2, modulus=[1,0,1], names="i")
+        i, = F._first_ngens(1)
+
         # Montgomery Starting Curve E: y^2 = x^3 + 6x^2 + x
         E = EllipticCurve(F, [0, 6, 0, 1, 0])
 
@@ -206,7 +210,7 @@ class TestcaseP431:
         print(f"xφ(P): {P.x()}")
         print(f"aφ(E): {A}")
 
-class TestcaseP139:
+class TestP139:
 
     def setup_params():
         """Prepare global variables for running tests"""
@@ -214,7 +218,8 @@ class TestcaseP139:
 
         # p + 1 = 2^2 * 5 * 7 
         p = 139
-        F.<i> = GF(p^2, modulus=[1,0,1])
+        F = GF(p**2, modulus=[1,0,1], names="i")
+        i, = F._first_ngens(1)
         # E = EllipticCurve(F, [1, 0])
         E = EllipticCurve(F, [0, 6, 0, 1, 0])
 
@@ -295,8 +300,6 @@ class TestcaseP139:
         for m, mulx in enumerate(muls):
             print(f"x[{m + 1}]P = {mulx}")
 
-
-
     def verify_test_ISOG_chain_odd():
         print("VERIFY ---: test_ISOG_chain_odd()")
         K = E(108*i + 136, 68*i + 134)
@@ -361,9 +364,9 @@ class TestcaseP139:
         print(f"aφ(K): {A2}")
 
         try:
-            E2 = EllipticCurve(F, [0, A2, 0, 1, 0])
-            assert True and "Constructed curve should be singular"
-        except ArithmeticError as e:
+            EllipticCurve(F, [0, A2, 0, 1, 0])
+            assert False and "Constructed curve should be singular"
+        except ArithmeticError:
             pass
 
     def verify_test_ISOG_chain():
@@ -488,25 +491,24 @@ class TestcaseP139:
 
 if __name__ == '__main__':
 
-
     # SIDH-like prime: 
-    TestcaseP431.setup_params()
-    TestcaseP431.verify_test_xDBL_small()
-    TestcaseP431.verify_test_xADD_small()
-    TestcaseP431.verify_test_criss_cross_small()
-    TestcaseP431.verify_test_xLADDER3PT()
-    TestcaseP431.verify_test_point_normalize_coords()
-    TestcaseP431.verify_test_xDBLe()
-    TestcaseP431.verify_test_ISOG2e()
+    TestP431.setup_params()
+    TestP431.verify_test_xDBL_small()
+    TestP431.verify_test_xADD_small()
+    TestP431.verify_test_criss_cross_small()
+    TestP431.verify_test_xLADDER3PT()
+    TestP431.verify_test_point_normalize_coords()
+    TestP431.verify_test_xDBLe()
+    TestP431.verify_test_ISOG2e()
 
     # Odd-degree prime:
-    TestcaseP139.setup_params()
-    TestcaseP139.verify_test_KPS()
-    TestcaseP139.verify_test_xISOG_and_aISOG()
-    TestcaseP139.verify_test_xLADDER_int()
-    TestcaseP139.verify_test_xLADDER()
-    TestcaseP139.verify_test_ISOG_chain_odd()
-    TestcaseP139.verify_test_xISOG2_and_aISOG2()
-    TestcaseP139.verify_test_ISOG2_bad_point_error()
-    TestcaseP139.verify_test_ISOG_chain()
-    TestcaseP139.verify_test_j_invariant()
+    TestP139.setup_params()
+    TestP139.verify_test_KPS()
+    TestP139.verify_test_xISOG_and_aISOG()
+    TestP139.verify_test_xLADDER_int()
+    TestP139.verify_test_xLADDER()
+    TestP139.verify_test_ISOG_chain_odd()
+    TestP139.verify_test_xISOG2_and_aISOG2()
+    TestP139.verify_test_ISOG2_bad_point_error()
+    TestP139.verify_test_ISOG_chain()
+    TestP139.verify_test_j_invariant()

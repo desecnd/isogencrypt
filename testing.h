@@ -40,8 +40,10 @@ int g_curr_test_error = 0;
     do { \
         if (g_any_test_failed) {   \
             fprintf(stderr, "\x1b[31m[!] Error\x1b[0m: Tests finished with errors.\n"); \
+            return 1; \
         } else { \
             fprintf(stderr, "\x1b[32m[+] Ok\x1b[0m: Tests finished successfully\n"); \
+            return 0; \
         } \
     } while (0) \
 

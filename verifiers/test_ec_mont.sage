@@ -1,5 +1,7 @@
 #!/usr/bin/sage
 
+from sage.all import GF, prod, is_prime, EllipticCurve, PolynomialRing
+
 def find_ell_prime_number(factors: list[int]) -> int:
     """Find prime number that contains specific factors under of p + 1 and makes a valid supersingular ec graph"""
 
@@ -10,7 +12,8 @@ def find_ell_prime_number(factors: list[int]) -> int:
             continue
         try:
             # Modulus must be x^2 + 1, otherwise the arithmetic may be wrong
-            U.<u> = GF(p^2, modulus=[1,0,1])
+            U = GF(p**2, modulus=[1,0,1], names="u")
+            u, = U._first_ngens(1)
             if (EllipticCurve(U, [1, 0]).is_supersingular()):
                 return p
         except:
@@ -23,7 +26,8 @@ def test_xADD_formula():
 
     print("TEST ---: xADD")
     p = 431
-    F.<i> = GF(p^2, modulus=[1,0,1])
+    F = GF(p**2, modulus=[1,0,1], names="i")
+    i, = F._first_ngens(1)
     # Montgomery starting curve E: y^2 = x^3 + 6x^2 + x
     E = EllipticCurve(F, [0, 6, 0, 1, 0])
 
@@ -47,8 +51,8 @@ def test_xADD_formula():
     # xADD formula in projective coordinates: P + Q = (X' : Z')
     # X' = ZR * (XP * XQ - ZP * ZQ)^2 
     # Z' = XR * (XP * ZQ - XQ * ZP)^2
-    X = ZR * (XP * XQ - ZP * ZQ)^2
-    Z = XR * (XP * ZQ - XQ * ZP)^2
+    X = ZR * (XP * XQ - ZP * ZQ)**2
+    Z = XR * (XP * ZQ - XQ * ZP)**2
 
     print(f"{X = }")
     print(f"{Z = }")
@@ -63,15 +67,15 @@ def test_xADD_formula():
     XQ, ZQ = [ (247*i + 159) * coord for coord in [XQ, ZQ] ]
     XR, ZR = [ (75*i + 79)   * coord for coord in [XR, ZR] ]
 
-    X = ZR * (XP * XQ - ZP * ZQ)^2
-    Z = XR * (XP * ZQ - XQ * ZP)^2
+    X = ZR * (XP * XQ - ZP * ZQ)**2
+    Z = XR * (XP * ZQ - XQ * ZP)**2
     print(f"{X = }")
     print(f"{Z = }")
     x = X/Z
     print(f"> X/Z = {x = }")
     assert x == T.x()
 
-def test_xISOG_fromula():
+def test_xISOG_formula():
     print("TEST ---: xISOG")
     # Test if we obtain the exact same formula for f(x) polynomial 
     # given isogeny of degree 5
@@ -79,9 +83,9 @@ def test_xISOG_fromula():
     # Define the parameters
     # p + 1 = 4 * 5 * 7
     p = 139
-    F.<i> = GF(p^2, modulus=[1,0,1])
+    F = GF(p ** 2, modulus=[1,0,1], names="i")
+    i, = F._first_ngens(1)
     A = 6
-    B = 1
     # E: y^2 = x^3 + Ax^2 + x 
     E = EllipticCurve(F, [0, A, 0, 1, 0])
     assert E.is_supersingular()
@@ -97,17 +101,18 @@ def test_xISOG_fromula():
     pi = prod([ (K * j).x() for j in range(1, 3) ])
 
     # A' is the coefficient of the codomain
-    A_ = (6 * sigma_inv - 6 * sigma + A) * pi^2
+    A_ = (6 * sigma_inv - 6 * sigma + A) * pi**2
     # B' does not matter when only x-arithmetic is used
-    B_ = B * pi^2
+    # B_ = B * pi^2
 
     # Codomain elliptic curve E' calculated from formulas above
     E_ = EllipticCurve(F, [0, A_, 0, 1, 0])
 
     # Define polynomial ring with cooeficients in Fp^2
     # Equation (6):
-    R.<x> = F[]
-    x_map = x * prod([ ((x * (K * j).x() - 1)/(x - (K * j).x()))^2 for j in range(1, 3) ])
+    R = PolynomialRing(F, names="x")
+    x, = R._first_ngens(1)
+    x_map = x * prod([ ((x * (K * j).x() - 1)/(x - (K * j).x()))**2 for j in range(1, 3) ])
     print(f"x_map: {x_map}")
 
     # Use Velu formulas to obtain isogeny of degree 5
@@ -133,8 +138,6 @@ def test_xISOG_fromula():
     # Velu formula, but joined with isomorphism to E'
     assert iso == E.isogeny(K, codomain=E_)
 
-
-
 if __name__ == '__main__':
-    # test_xADD_formula()
+    test_xADD_formula()
     test_xISOG_formula()

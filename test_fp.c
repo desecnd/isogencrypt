@@ -1,4 +1,3 @@
-#include <stdio.h>
 #include <assert.h>
 
 #include "testing.h"
@@ -78,6 +77,4 @@ int main() {
     TEST_RUN(test_small_arithmetic());
     TEST_RUN(test_modulo_arithmetic());
     TEST_RUNS_END;
-
-    return 0;
 }

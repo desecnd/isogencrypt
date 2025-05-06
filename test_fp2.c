@@ -270,6 +270,4 @@ int main() {
     TEST_RUN(test_inv_div());
     TEST_RUN(test_fp2_mul_int());
     TEST_RUNS_END;
-
-    return 0;
 }
