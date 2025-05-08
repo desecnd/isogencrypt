@@ -4,6 +4,19 @@ C library for isogeny-based cryptographic research.
 
 Requires `GMP` (Gnu Multiprecision Library) https://gmplib.org/.
 
+
+```bash
+# Compile all the test examples
+make tests
+
+# Run unit test and save the results
+make check
+
+# Regenerate the test vectors corresponding the ones in 'vectors' directory into 'build/vectors'
+# Requires 'sage' to run the verifiers scripts
+make vectors
+```
+
 ## Near Roadmap
 
 ### Theoretical
@@ -37,6 +50,7 @@ Requires `GMP` (Gnu Multiprecision Library) https://gmplib.org/.
 
 ### Technical
 
+- [x] Setup Tests for Sage and [Makefile](https://stackoverflow.com/questions/4927676/implementing-make-check-or-make-test) for comparison with the expected output
 - [ ] Implement benchmark mechanism
 - [ ] Implement `fp2_equal` for comparsion and replace all calls to `mpz_cmp_ui`
 - [ ] Implement **debug** mechanism (when to print specific message of values)
@@ -46,7 +60,6 @@ Requires `GMP` (Gnu Multiprecision Library) https://gmplib.org/.
 - [ ] Make prints during tests and verifies as "Debug" and print them on the "error" stream, this way we can compare the results between the Python and C using simple "diff"
 - [ ] Add variadic function for fp2 init? also for point_init 
 - [ ] Add clangd formating with `.clang-format` 
-- [ ] Setup Tests for Sage and [Makefile](https://stackoverflow.com/questions/4927676/implementing-make-check-or-make-test) for comparison with the expected output
 
 ## Future
 
