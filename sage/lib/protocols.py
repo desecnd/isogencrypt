@@ -1,7 +1,7 @@
 #/usr/bin/sage 
 
 from sage.all import EllipticCurve, Primes, randint, gcd, is_prime, prod, GF
-from verifiers.isogeny import sample_quadratic_root_of_unity, sample_torsion_basis_smooth, mont_coef, check_points_torsion_basis
+from lib.isogeny import sample_quadratic_root_of_unity, sample_torsion_basis_smooth, mont_coef, check_points_torsion_basis
 
 class MSIDH:
     def __init__(self, p: int, A: int, B: int, E0, P = None, Q = None, secret: int = None, mask: int = None, is_bob: bool = False, mont_model: bool = False):
@@ -27,21 +27,22 @@ class MSIDH:
             self.name = "Alice"
 
         if self.P is None or self.Q is None:
-            print(f"{self.name}: Sampling Torsion Basis (P, Q)...")
+            # print(f"{self.name}: Sampling Torsion Basis (P, Q)...")
             self.P, self.Q = sample_torsion_basis_smooth(self.E0, self.A)
         else:
             assert self.P.curve() == self.E0
             assert self.Q.curve() == self.E0
+            assert check_points_torsion_basis(self.P, self.Q, self.A)
 
         if self.mask is None:
-            print(f"{self.name}: Sampling mask...")
+            # print(f"{self.name}: Sampling mask...")
             self.mask = sample_quadratic_root_of_unity(self.B)
         else:
             # assert pow(self.mask, 2, self.B) == 1
             pass
         
         if self.secret is None:
-            print(f"{self.name}: Generating secret...")
+            # print(f"{self.name}: Generating secret...")
             self.secret = randint(0, self.A)
         else:
             assert self.secret in range(self.A)
@@ -111,7 +112,7 @@ class MSIDH:
         return self.EK.j_invariant()
 
 if __name__ == '__main__':
-    p, A, B, f = MSIDH.gen_pub_params(6)
+    p, A, B, f = MSIDH.gen_pub_params(10)
 
     F = GF(p**2, names=('i',))
     (i,) = F._first_ngens(1)
@@ -126,4 +127,4 @@ if __name__ == '__main__':
 
     jinv_alice = Alice.key_exchange(*pubkey_bob)
     jinv_bob = Bob.key_exchange(*pubkey_alice)
-    print(jinv_alice == jinv_bob)
+    assert jinv_alice == jinv_bob
