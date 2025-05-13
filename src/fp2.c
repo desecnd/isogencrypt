@@ -1,3 +1,4 @@
+#include <gmp.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>
@@ -156,6 +157,14 @@ void fp_sqrt(fp_t res, const fp_t a) {
 
     // step 4: clear memory for e variable
     mpz_clear(exp);
+}
+
+int fp_equal_uint(fp_t a, unsigned long int b) {
+    return !mpz_cmp_ui(a, b);
+}
+
+int fp_equal(fp_t a, fp_t b) {
+    return !mpz_cmp(a, b);
 }
 
 // =========== 
@@ -401,4 +410,24 @@ void fp2_print(fp2_t x, const char* name) {
     } else {
         gmp_printf("%s: %Zd*i + %Zd\n", name, x->b, x->a);
     }
+}
+
+int fp2_equal_uint(fp2_t x, unsigned long int a) {
+    return fp_equal_uint(x->a, a) && fp_is_zero(x->b);
+}
+
+int fp2_equal(fp2_t x, fp2_t y) {
+    return !!(fp_equal(x->a, y->a) && fp_equal(x->b, y->b));
+}
+
+int fp2_equal_str(fp2_t res, const char * x_str) {
+    fp2_t x;
+    fp2_init(&x);
+
+    fp2_set_str(x, x_str);
+
+    int are_equal = fp2_equal(res, x);
+    fp2_clear(&x);
+
+    return are_equal;
 }

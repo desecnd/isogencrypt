@@ -75,6 +75,16 @@ static int fp_is_zero(const fp_t a) {
     return (int) (mpz_sgn(a) == 0);
 }
 
+/*
+ * @brief Return 1 if FiniteField element is equal to ulong number
+ */
+int fp_equal_uint(fp_t a, unsigned long int b);
+
+/*
+ * @brief Return 1 if two FiniteField elements are equal, 0 otherwise
+ */
+int fp_equal(fp_t a, fp_t b);
+
 // --- FP2 Methods
 
 void fp2_init(fp2_t *res);
@@ -101,6 +111,18 @@ void fp2_fill_uint(fp2_t res, unsigned long int a, unsigned long int b);
 // if string are given with prefix (0x, 0, 0b) 
 // corresponding base will be detected and applied to conversion
 void fp2_fill_str(fp2_t res, const char *a, const char *b);
+
+int fp2_equal(fp2_t x, fp2_t y);
+
+/*
+ * @brief Compare fp2_t element with fp2 element represented as str type. 
+ * Returns 1 if equal, 0 otherwise. 
+ * Allocates additional fp2_t element for comparison.
+ */
+int fp2_equal_str(fp2_t res, const char * x_str);
+
+int fp2_equal_uint(fp2_t x, unsigned long int a);
+
 
 // add: result <- lhs[a + bi] + rhs[a + bi]
 void fp2_add(fp2_t res, const fp2_t lhs, const fp2_t rhs);
@@ -159,6 +181,5 @@ static inline void fp2_div_unsafe(fp2_t res, const fp2_t lhs, const fp2_t rhs) {
  * @brief Output fp2 element to the stdout in format: "name: a*i + b"
  */
 void fp2_print(fp2_t x, const char* name);
-
 
 #endif
