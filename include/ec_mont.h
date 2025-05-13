@@ -32,7 +32,8 @@ void point_printx(point_t P, const char* name);
 void point_normalize_coords(point_t P);
 
 /* 
- * @brief Transform (A : C) = (a : 1) into (A' : C') = ((a+ 2)/4 : 1) = (a + 2 : 4) suitable for xDBL
+ * @brief Transform (A : C) = (a : 1) into (A' : C') = ((a+ 2)/4 : 1) = (a + 2 : 4) suitable for xDBL.
+ * Function is argument safe for A24p = A and C24 = C.
  */
 void A24p_from_A(fp2_t A24p, fp2_t C24, const fp2_t A, const fp2_t C);
 
