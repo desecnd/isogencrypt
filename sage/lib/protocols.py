@@ -114,7 +114,7 @@ class MSIDH:
 if __name__ == '__main__':
     p, A, B, f = MSIDH.gen_pub_params(10)
 
-    F = GF(p**2, names=('i',))
+    F = GF(p**2, names=('i',), modulus=[1, 0, 1])
     (i,) = F._first_ngens(1)
 
     E0 = EllipticCurve(F, [0, 6, 0, 1, 0])
