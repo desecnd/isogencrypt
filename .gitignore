@@ -1,5 +1,7 @@
 __pycache__
 .vscode
+.cache
+compile_commands.json
 
 *.sage.py
 /junk
