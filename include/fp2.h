@@ -85,6 +85,13 @@ int fp_equal_uint(fp_t a, unsigned long int b);
  */
 int fp_equal(fp_t a, fp_t b);
 
+int fp_equal_str(fp_t a, const char *b_str);
+
+/* 
+ * @brief Output fp element to the stdout in format: "name: a"
+ */
+void fp_print(fp_t a, const char* name);
+
 // --- FP2 Methods
 
 void fp2_init(fp2_t *res);

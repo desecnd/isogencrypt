@@ -167,6 +167,18 @@ int fp_equal(fp_t a, fp_t b) {
     return !mpz_cmp(a, b);
 }
 
+int fp_equal_str(fp_t a, const char *b_str) {
+    fp_t b; 
+    mpz_init_set_str(b, b_str, 0);
+    int equal = fp_equal(a, b);
+    fp_clear(b);
+    return equal;
+}
+
+void fp_print(fp_t a, const char* name) {
+    gmp_printf("%s: %Zd\n", name, a);
+}
+
 // =========== 
 // FP2 methods
 // ===========
