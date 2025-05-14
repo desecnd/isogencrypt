@@ -121,9 +121,9 @@ int find_cofator(mpz_t result, const mpz_t base) {
     for (int f = 1; f < 1000; f++) {
         mpz_mul_ui(result, base, f);
         mpz_sub_ui(result, result, 1);
-        int is_prime = mpz_probab_prime_p(result, 30);
+        int is_prime = mpz_probab_prime_p(result, 100);
         // 2 means "confident", 1 means "probably prime"
-        if (is_prime == 2) {
+        if (is_prime == 1 || is_prime == 2) {
             return f;
         }
     }
