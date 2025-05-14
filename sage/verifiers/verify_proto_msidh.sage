@@ -1,8 +1,8 @@
 #!/usr/bin/sage
 
 from sage.all import EllipticCurve, order_from_multiple, GF
-from verifiers.isogeny import check_points_torsion_basis
-from verifiers.protocols import MSIDH 
+from lib.isogeny import verify_torsion_basis, sample_quadratic_root_of_unity
+from lib.protocols import MSIDH 
 
 def verify_test_msidh_gen_pub_params():
     print("---: test_msidh_gen_pub_params()")
@@ -19,17 +19,21 @@ def verify_test_msidh_gen_pub_params():
     assert f == 1
     assert p == A * B * f - 1
 
-    t = 9
+    t = 20
     print("t:", t)
     p, A, B, f = MSIDH.gen_pub_params(t)
     print("p:", p)
     print("A:", A)
     print("B:", B)
     print("f:", f)
-    assert A == 4 * 5 * 11 * 17 * 23
-    assert B == 3 * 7 * 13 * 19
-    assert f == 2
-    assert p == A * B * f - 1
+
+    t = 100
+    print("t:", t)
+    p, A, B, f = MSIDH.gen_pub_params(t)
+    print("p:", p)
+    print("A:", A)
+    print("B:", B)
+    print("f:", f)
 
 class TestT4:
 
@@ -159,7 +163,7 @@ class TestT4:
 
         # Check if valid full torsion basis
         assert n == 420
-        assert check_points_torsion_basis(P, Q, n)
+        assert verify_torsion_basis(P, Q, n)
 
         s = 0
         K = P + s * Q

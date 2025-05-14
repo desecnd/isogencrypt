@@ -134,43 +134,48 @@ void test_msidh_gen_pub_params() {
     int t, f;
 
     t = 4;
-    printf("t: %d\n", t);
-
     f = msidh_gen_pub_params(p, A_deg, B_deg, t);
-    CHECK_MSG(f>0, "msidh_gen_pub_params returned < 0");
-
-    gmp_printf("p: %Zd\n", p);
-    CHECK(!mpz_cmp_ui(p, 419));
-
-    gmp_printf("A: %Zd\n", A_deg->value);
-    CHECK(!mpz_cmp_ui(A_deg->value, 20));
-
-    gmp_printf("B: %Zd\n", B_deg->value);
-    CHECK(!mpz_cmp_ui(B_deg->value, 21));
-
+    assert(f>0);
+    printf("t: %d\n", t);
+    fp_print(p, "p");
+    fp_print(A_deg->value, "A");
+    fp_print(B_deg->value, "B");
     printf("f: %d\n", f);
+ 
+    // (1115881660253397921934830779, 20312793853220, 54934917782199, 1)
+    CHECK(fp_equal_str(p, "419"));
+    CHECK(fp_equal_str(A_deg->value, "20"));
+    CHECK(fp_equal_str(B_deg->value, "21"));
     CHECK(f == 1);
 
-    // char *p_str = mpz_get_str(NULL, 10, p);
-    // CHECK_MSG(!strcmp(p_str, "419"), "Incorrect str comparison");
-
-    t = 9;
-    printf("t: %d\n", t);
-
+    t = 20;
     f = msidh_gen_pub_params(p, A_deg, B_deg, t);
-    CHECK_MSG(f>0, "msidh_gen_pub_params returned < 0");
-
-    gmp_printf("p: %Zd\n", p);
-    CHECK(!mpz_cmp_ui(p, 892371479));
-
-    gmp_printf("A: %Zd\n", A_deg->value);
-    CHECK(!mpz_cmp_ui(A_deg->value, 86020));
-
-    gmp_printf("B: %Zd\n", B_deg->value);
-    CHECK(!mpz_cmp_ui(B_deg->value, 5187));
-
+    assert(f>0);
+    printf("t: %d\n", t);
+    fp_print(p, "p");
+    fp_print(A_deg->value, "A");
+    fp_print(B_deg->value, "B");
     printf("f: %d\n", f);
-    CHECK(f == 2);
+ 
+    // (1115881660253397921934830779, 20312793853220, 54934917782199, 1)
+    CHECK(fp_equal_str(p, "1115881660253397921934830779"));
+    CHECK(fp_equal_str(A_deg->value, "20312793853220"));
+    CHECK(fp_equal_str(B_deg->value, "54934917782199"));
+    CHECK(f == 1);
+
+    t = 100;
+    f = msidh_gen_pub_params(p, A_deg, B_deg, t);
+    assert(f>0);
+    printf("t: %d\n", t);
+    fp_print(p, "p");
+    fp_print(A_deg->value, "A");
+    fp_print(B_deg->value, "B");
+    printf("f: %d\n", f);
+ 
+    CHECK(fp_equal_str(p, "857571405582925661475572785926367396807744608760560944674331540810187591123796228259362644720409132118983916945795442754508397211727733337046938979806269649383591155750277998320880157855312245874492523686094863130587658379"));
+    CHECK(fp_equal_str(A_deg->value, "37480151047814665439091685161634258866638630169477523209565100266538230879013060067601181882604603923651275420"));
+    CHECK(fp_equal_str(B_deg->value, "251436062458500732842543840100611612168366079689161565071573990525611946403712566989284087642734230643996241279"));
+    CHECK(f == 91);
 }
 
 
