@@ -1,7 +1,7 @@
 #/usr/bin/sage 
 
 from sage.all import EllipticCurve, Primes, randint, gcd, is_prime, prod, GF
-from lib.isogeny import sample_quadratic_root_of_unity, sample_torsion_basis_smooth, mont_coef, check_points_torsion_basis
+from lib.isogeny import sample_quadratic_root_of_unity, sample_torsion_basis_smooth, mont_coef, verify_torsion_basis
 
 class MSIDH:
     def __init__(self, p: int, A: int, B: int, E0, P = None, Q = None, secret: int = None, mask: int = None, is_bob: bool = False, mont_model: bool = False):
@@ -32,7 +32,7 @@ class MSIDH:
         else:
             assert self.P.curve() == self.E0
             assert self.Q.curve() == self.E0
-            assert check_points_torsion_basis(self.P, self.Q, self.A)
+            assert verify_torsion_basis(self.P, self.Q, self.A)
 
         if self.mask is None:
             # print(f"{self.name}: Sampling mask...")
@@ -48,6 +48,7 @@ class MSIDH:
             assert self.secret in range(self.A)
 
         self.phi_ker = self.P + self.secret * self.Q
+        self.phi_ker.set_order(self.A)
         if self.mont_model:
             A_ = mont_coef(self.phi_ker)
             E_ = EllipticCurve(E0.base(), [0, A_, 0, 1, 0])
@@ -87,7 +88,7 @@ class MSIDH:
     def gen_pubkey(self, PB, QB) -> tuple:
         assert PB.curve() == self.E0
         assert QB.curve() == self.E0
-        assert check_points_torsion_basis(PB, QB, self.B)
+        assert verify_torsion_basis(PB, QB, self.B)
 
         # Apply masking
         PB = self.mask * self.phi(PB)
@@ -112,15 +113,15 @@ class MSIDH:
         return self.EK.j_invariant()
 
 if __name__ == '__main__':
-    p, A, B, f = MSIDH.gen_pub_params(10)
+    p, A, B, f = MSIDH.gen_pub_params(30)
 
     F = GF(p**2, names=('i',), modulus=[1, 0, 1])
     (i,) = F._first_ngens(1)
 
     E0 = EllipticCurve(F, [0, 6, 0, 1, 0])
 
-    Alice = MSIDH(p, A, B, E0, is_bob=False)
-    Bob = MSIDH(p, A, B, E0, is_bob=True)
+    Alice = MSIDH(p, A, B, E0, is_bob=False, mont_model=True)
+    Bob = MSIDH(p, A, B, E0, is_bob=True, mont_model=True)
 
     pubkey_alice = Alice.gen_pubkey(*Bob.basis)
     pubkey_bob = Bob.gen_pubkey(*Alice.basis)
