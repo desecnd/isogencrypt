@@ -102,6 +102,7 @@ class MSIDH:
         assert BPA.weil_pairing(BQA, self.A) == self.P.weil_pairing(self.Q, self.A) ** self.B
 
         self.tau_ker = BPA + BQA * self.secret 
+        self.tau_ker.set_order(self.A)
         if self.mont_model:
             A_ = mont_coef(self.tau_ker)
             E_ = EllipticCurve(self.E0.base(), [0, A_, 0, 1, 0])
