@@ -40,7 +40,8 @@ int global_fpchar_setup(fp_t p) {
 
     if (invalid_mod4) {
         fprintf(stderr, "[!] Trying to set prime field characteristic with prime != 3 (mod 4)\n");
-        return -2;
+        assert(0);
+        // return -2;
     }
 
     fp_init(fpchar);
@@ -223,9 +224,9 @@ int fp2_set_str(fp2_t res, const char *x) {
         return 1;
     }
     
-    int n_chars = strlen(x);
+    unsigned long n_chars = strlen(x);
     char * buffer = malloc(sizeof(char) * (n_chars + 1));
-    strncpy(buffer, x, n_chars);
+    memcpy(buffer, x, n_chars);
     buffer[n_chars] = '\0';
     
     char *imag = buffer;
