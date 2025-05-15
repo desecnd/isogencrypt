@@ -51,13 +51,13 @@ make vectors
 ### Technical
 
 - [x] Setup Tests for Sage and [Makefile](https://stackoverflow.com/questions/4927676/implementing-make-check-or-make-test) for comparison with the expected output
-- [ ] Implement benchmark mechanism
-- [ ] Implement `fp2_equal` for comparsion and replace all calls to `mpz_cmp_ui`
-- [ ] Implement **debug** mechanism (when to print specific message of values)
+- [x] Implement benchmark mechanism
+- [x] Implement `fp2_equal` for comparsion and replace all calls to `mpz_cmp_ui`
+- [x] Implement **debug** mechanism (when to print specific message of values)
+- [x] Make prints during tests and verifies as "Debug" and print them on the "error" stream, this way we can compare the results between the Python and C using simple "diff"
 - [ ] Find out the best way to create `const` typedef pointers (make point_t not a const pointer but const point)
 - [ ] Replace `assert` in some functions to "error" checking
 - [ ] Add `two_exp` ? or something that means number of 2 powers into `pprod_t` (simple counter of the power of 2), this will make some of the algorithms easier and more optimized
-- [ ] Make prints during tests and verifies as "Debug" and print them on the "error" stream, this way we can compare the results between the Python and C using simple "diff"
 - [ ] Add variadic function for fp2 init? also for point_init 
 - [ ] Add clangd formating with `.clang-format` 
 

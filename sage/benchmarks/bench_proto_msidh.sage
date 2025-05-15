@@ -36,7 +36,7 @@ def prep_environment(t: int, a: int, basis_P = None, basis_Q = None):
     set_random_seed(0)
     p, A, B, _ = MSIDH.gen_pub_params(t)
 
-    F = GF(p**2, names=('i',))
+    F = GF(p**2, names=('i',), modulus=[1, 0, 1])
     (i,) = F._first_ngens(1)
     # Montgomery Curve with 'a' as x^2 coefficient
     E = EllipticCurve(F, [0, a, 0, 1, 0])
@@ -49,11 +49,12 @@ def prep_environment(t: int, a: int, basis_P = None, basis_Q = None):
     # in the global context should provide deterministic results
     if P is None or Q is None:
         # Create montgomery-friendly basis -> for integration with the .c code
+        set_random_seed(0)
         P, Q = sample_torsion_basis_smooth(E, (p+1), montgomery_basis=True)
-        print("Generated Basis P, Q", file=sys.stderr)
-        print(f"{P.xy() = }", file=sys.stderr)
-        print(f"{Q.xy() = }", file=sys.stderr)
-        print(f"{(P-Q).xy() = }", file=sys.stderr, flush=True)
+        # print("Generated Basis P, Q", file=sys.stderr)
+        # print(f"{P.xy() = } -> \"{P.x()}\"", file=sys.stderr)
+        # print(f"{Q.xy() = } -> \"{Q.x()}\"", file=sys.stderr)
+        # print(f"{(P-Q).xy() = } -> \"{(P-Q).x()}\"", file=sys.stderr, flush=True)
     else:
         P, Q = E(P), E(Q)
 
@@ -61,7 +62,7 @@ def prep_environment(t: int, a: int, basis_P = None, basis_Q = None):
 def run_benchmark():
     global p, A, B, i, E, P, Q
 
-    N_REPS = 10
+    N_REPS = 1
     COL_SEP = ";"
     RUN_PARAMS = [
         {"t": 10, "a": 6, "basis_P": None, "basis_Q": None},
@@ -69,21 +70,6 @@ def run_benchmark():
         {"t": 30, "a": 6, "basis_P": None, "basis_Q": None},
         {"t": 40, "a": 6, "basis_P": None, "basis_Q": None},
         {"t": 50, "a": 6, "basis_P": None, "basis_Q": None},
-        {"t": 60, "a": 6, "basis_P": None, "basis_Q": None},
-        {"t": 70, "a": 6, "basis_P": None, "basis_Q": None},
-        {"t": 80, "a": 6, "basis_P": None, "basis_Q": None},
-        {"t": 90, "a": 6, "basis_P": None, "basis_Q": None},
-        {"t": 100, "a": 6, "basis_P": None, "basis_Q": None},
-        {"t": 110, "a": 6, "basis_P": None, "basis_Q": None},
-        {"t": 120, "a": 6, "basis_P": None, "basis_Q": None},
-        {"t": 130, "a": 6, "basis_P": None, "basis_Q": None},
-        {"t": 140, "a": 6, "basis_P": None, "basis_Q": None},
-        {"t": 150, "a": 6, "basis_P": None, "basis_Q": None},
-        {"t": 160, "a": 6, "basis_P": None, "basis_Q": None},
-        {"t": 170, "a": 6, "basis_P": None, "basis_Q": None},
-        {"t": 180, "a": 6, "basis_P": None, "basis_Q": None},
-        {"t": 190, "a": 6, "basis_P": None, "basis_Q": None},
-        {"t": 200, "a": 6, "basis_P": None, "basis_Q": None},
     ]
 
     print("# Running Benchmark for MSIDH protocol")

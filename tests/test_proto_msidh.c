@@ -15,6 +15,7 @@ point_t PB, QB, PQBd;
 pprod_t A_deg, B_deg;
 mpz_t p, m;
 
+
 void init_test_variables() {
     fp2_init(&A24p);
     fp2_init(&C24);
@@ -176,6 +177,21 @@ void test_msidh_gen_pub_params() {
     CHECK(fp_equal_str(A_deg->value, "37480151047814665439091685161634258866638630169477523209565100266538230879013060067601181882604603923651275420"));
     CHECK(fp_equal_str(B_deg->value, "251436062458500732842543840100611612168366079689161565071573990525611946403712566989284087642734230643996241279"));
     CHECK(f == 91);
+
+
+    t = 170;
+    f = msidh_gen_pub_params(p, A_deg, B_deg, t);
+    assert(f>0);
+    printf("t: %d\n", t);
+    fp_print(p, "p");
+    fp_print(A_deg->value, "A");
+    fp_print(B_deg->value, "B");
+    printf("f: %d\n", f);
+
+    CHECK(fp_equal_str(p, "0x76af20c40b3a9608503c0a977a5aa4b0166b507d7acae27c768f24e70445d8be4e8b28bc0d3e0cac0099671b40de4af52aeb44c481dfa10cd022053fced2df57c0acae54418987d9249919b738514f78cf1ea9fd8229b05e6084e53d5c603fdd373ab00bd558005996240cff9c20701a1b8a6da432ea20b2fc988d5889afb10d27bb55a19f39d71d3a7c45732d6bd265291103266d3b8909b4a1f1a0b1b17cab3c477aa428a5ee13fbf2d896e7b4e777"));
+    CHECK(fp_equal_str(A_deg->value, "0x65cff008b4f1c2198f9588e205714bcf98a8d48a43a17950b50ef9348bb24543d426061ff7ac66d01171762b758a9db7cb8aa493cfe138ad8e8a6b74a2c1f38100b6a3ccaf116f6cb98817202d181d15521848734125df4"));
+    CHECK(fp_equal_str(B_deg->value, "0x3a3a98e20a937f99bec60b3d3f9609b13c9c88cc6db1f40270e1e023752b58a25b4bb6722532c60ca32b3c66f62587003c5462a3dff7d6e0afd455e2e22c69d4167335e99bdbf9d8f84375d7a552fa4d8852951eb3688a63"));
+    CHECK(f == 82);
 }
 
 
@@ -556,6 +572,184 @@ void test_msidh_monte_carlo() {
     msidh_state_clear(&bob);
 }
 
+void setup_params_t30() {
+    int f = msidh_gen_pub_params(p, A_deg, B_deg, 30);
+    assert(f > 0);
+
+    // Clear just to be sure
+    global_fpchar_clear();
+    global_fpchar_setup(p);
+
+    // Elliptic Curve defined by y^2 = x^3 + 6*x^2 + x over Finite Field in i of size 419^2
+    fp2_set_uint(A24p, 6);
+    fp2_set_uint(C24, 1);
+    
+    // Convert to (A+2 : 4) form used in xDBL
+    A24p_from_A(A24p, C24, A24p, C24);
+
+}
+
+void test_msidh_internals_large() {
+
+    point_set_str_x(P, "32381872305678490404833289490608450363172933700*i + 38566570518230924614310417068523536638018699310");
+    point_set_str_x(Q, "29454235622145096109316297773070819902970029047*i + 17242937661247998401353436361850378272505949076");
+    point_set_str_x(PQd,"29746668073241433805825980414131965658693152428*i + 17760541352524573821929254886145960108078787218");
+
+    // Setup Torsion basis
+    struct tors_basis PQ = { .P=P, .Q=Q, .PQd=PQd  };
+
+    pprod_init(&PQ.n);
+    mpz_add_ui(PQ.n->value, p, 1);
+
+    // Constuct Alice Basis (PA, QA) = [n//A](P, Q).
+    struct tors_basis PQA = { .P=PA, .Q=QA, .PQd=PQAd };
+    pprod_init(&PQA.n);
+    tors_basis_get_subgroup(&PQA, A_deg, &PQ, A24p, C24); 
+
+    point_printx(PA, "xPA");
+    point_printx(QA, "xQA");
+    point_printx(PQAd, "xPQAd");
+
+    CHECK(point_equal_str_x(PA, "29699839172659064070785630633025116007167774796*i + 2504062641765751109972582500320053624879816710"));
+    CHECK(point_equal_str_x(QA, "33271862144249447985137496787936923322336452945*i + 61213944166497621905178667109855815871670127212"));
+    CHECK(point_equal_str_x(PQAd, "16754712571370394119457689413046119537544122176*i + 25057305442840430077505557836192648418816321985"));
+
+    // Constuct Bob Basis (PB, QB) = [n//B](P, Q)
+    struct tors_basis PQB = { .P=PB, .Q=QB, .PQd=PQBd };
+    pprod_init(&PQB.n);
+    tors_basis_get_subgroup(&PQB, B_deg, &PQ, A24p, C24); 
+
+    point_printx(PB, "xPB");
+    point_printx(QB, "xQB");
+    point_printx(PQBd, "xPQBd");
+
+    CHECK(point_equal_str_x(PB, "49114309482119019874119284972332462593113788145*i + 4761433153046662093084589855451688595958230559"));
+    CHECK(point_equal_str_x(QB, "30431121762650905008454289312347872723430751013*i + 2343460809488608363031424186950047556179737763"));
+    CHECK(point_equal_str_x(PQBd, "23391135694148403625145265581278108641686825034*i + 26976742350009751812962081032240052720831329725"));
+
+    mpz_t a_sec, a_mask, b_sec, b_mask;
+    mpz_init(a_sec);
+    mpz_init(b_sec);
+    mpz_init(a_mask);
+    mpz_init(b_mask);
+    
+    fp2_t A24p_alice, C24_alice, aE_alice;
+    fp2_init(&A24p_alice);
+    fp2_init(&C24_alice);
+    fp2_init(&aE_alice);
+
+    fp2_t A24p_final, C24_final, aE_final;
+    fp2_init(&A24p_final);
+    fp2_init(&C24_final);
+    fp2_init(&aE_final);
+
+    fp2_t j_inv;
+    fp2_init(&j_inv);
+
+    // 1. --- Testcase 1
+    mpz_set_str(a_sec, "11349330453264090324638", 10);
+    mpz_set_str(a_mask, "131339333569636892083385", 10);
+    mpz_set_str(b_sec, "72593563569111258510719", 10);
+    mpz_set_str(b_mask, "17334875921447289106681", 10);
+    fp_print(a_sec, "A_sec");
+    fp_print(a_mask, "A_mask");
+    fp_print(b_sec, "B_sec");
+    fp_print(b_mask, "B_mask");
+
+    _msidh_gen_pubkey_alice(A24p_alice, C24_alice, &PQA, &PQB, A24p, C24,  a_sec, a_mask); 
+
+    // aφ(E)(24p)
+    fp2_div_unsafe(aE_alice, A24p_alice, C24_alice); 
+    fp2_print(aE_alice, "aφ(E)(24p)");
+    CHECK(fp2_equal_str(aE_alice, "58406864750297447375941148275890126964932964189*i + 60400200391283286845520983845656557221610499288"));
+
+    // xφ(PB)
+    point_printx(PQB.P, "xφ(PB)");
+    CHECK(point_equal_str_x(PQB.P, "61460438692052277410377272364685473376640776051*i + 55514416620914970543945665178326301897479630385"));
+
+    // xφ(QB)
+    point_printx(PQB.Q, "xφ(QB)");
+    CHECK(point_equal_str_x(PQB.Q, "59420147577812126043911530847798020708549199424*i + 45153371532976521708986975584064598899456381726"));
+
+    // xφ(PQBd)
+    point_printx(PQB.PQd, "xφ(PQBd)");
+    CHECK(point_equal_str_x(PQB.PQd, "12338170382935113028682312433735367927625301703*i + 47299240837639061178684012620848485232866182686"));
+
+    _msidh_key_exchange_alice(j_inv, A24p_final, C24_final, A24p_alice, C24_alice, &PQB, b_sec);
+    fp2_div_unsafe(aE_final, A24p_final, C24_final);
+
+    // aτ(φ(E))(24p)
+    fp2_print(aE_final, "aτ(φ(E))(24p)");
+    CHECK(fp2_equal_str(aE_final, "30563038667104601337368965988575062985170253283*i + 22273408037389398982670537391321135761023812334" ));
+
+    // jτ(φ(E))
+    fp2_print(j_inv, "jτ(φ(E))");
+    CHECK(fp2_equal_str(j_inv, "9661335542795285403316671192384434122935976866*i + 5474694925468985143408009855884208752167844644" ));
+
+    // Testcase 2 -----
+    // Reset the second testscase
+    tors_basis_get_subgroup(&PQA, A_deg, &PQ, A24p, C24); 
+    tors_basis_get_subgroup(&PQB, B_deg, &PQ, A24p, C24); 
+
+    mpz_set_str(a_sec, "102959793904566459067664", 10);
+    mpz_set_str(a_mask, "234614427428290727103469", 10);
+    mpz_set_str(b_sec, "271374038831227351065368", 10);
+    mpz_set_str(b_mask, "93531163257802324154959", 10);
+    fp_print(a_sec, "A_sec");
+    fp_print(a_mask, "A_mask");
+    fp_print(b_sec, "B_sec");
+    fp_print(b_mask, "B_mask");
+
+    _msidh_gen_pubkey_alice(A24p_alice, C24_alice, &PQA, &PQB, A24p, C24,  a_sec, a_mask); 
+
+    // aφ(E)(24p)
+    fp2_div_unsafe(aE_alice, A24p_alice, C24_alice); 
+    fp2_print(aE_alice, "aφ(E)(24p)");
+    CHECK(fp2_equal_str(aE_alice, "32721529036899972732279468408471975069661362292*i + 17269325977833293966138407821489567068853821114"));
+
+    // xφ(PB)
+    point_printx(PQB.P, "xφ(PB)");
+    CHECK(point_equal_str_x(PQB.P, "16875856946578546258578008123468502154460718295*i + 38847645774315915434007838296654577037686340296"));
+
+    // xφ(QB)
+    point_printx(PQB.Q, "xφ(QB)");
+    CHECK(point_equal_str_x(PQB.Q, "16054449845823153742619853253831785845856263425*i + 15381476167260289678857731510026166833683607342"));
+
+    // xφ(PQBd)
+    point_printx(PQB.PQd, "xφ(PQBd)");
+    CHECK(point_equal_str_x(PQB.PQd, "51405460425642783842251929023025336502575438127*i + 11702887079976981107716609038554493137279265981"));
+
+    _msidh_key_exchange_alice(j_inv, A24p_final, C24_final, A24p_alice, C24_alice, &PQB, b_sec);
+    fp2_div_unsafe(aE_final, A24p_final, C24_final);
+
+    // aτ(φ(E))(24p)
+    fp2_print(aE_final, "aτ(φ(E))(24p)");
+    CHECK(fp2_equal_str(aE_final, "995903660540748720123956841665787112221678284*i + 52717497346814873517492805505778428959241213199" ));
+
+    // jτ(φ(E))
+    fp2_print(j_inv, "jτ(φ(E))");
+    CHECK(fp2_equal_str(j_inv, "41919959196404182164998159522259445819384604188*i + 46346974086814678100459816796141382648465154561" ));
+
+    fp2_clear(&A24p_alice);
+    fp2_clear(&C24_alice);
+    fp2_clear(&aE_alice);
+
+    fp2_clear(&A24p_final);
+    fp2_clear(&C24_final);
+    fp2_clear(&aE_final);
+
+    fp2_clear(&j_inv);
+
+    mpz_clear(a_sec);
+    mpz_clear(b_sec);
+    mpz_clear(a_mask);
+    mpz_clear(b_mask);
+
+    pprod_clear(&PQ.n);
+    pprod_clear(&PQA.n);
+    pprod_clear(&PQB.n);
+}
+
 
 int main() {
     init_test_variables();
@@ -573,6 +767,11 @@ int main() {
     TEST_RUN(test_msidh_secret_zero());
     TEST_RUN(test_msidh_non_deterministic());
     TEST_RUN(test_msidh_monte_carlo());
+
+    // t = 30 for MSIDH
+    setup_params_t30();
+
+    TEST_RUN(test_msidh_internals_large());
 
     clear_test_variables();
 
