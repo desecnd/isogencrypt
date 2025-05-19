@@ -1,8 +1,8 @@
 #!/usr/bin/sage
 
 from sage.all import EllipticCurve, order_from_multiple, GF
-from lib.isogeny import verify_torsion_basis, sample_quadratic_root_of_unity
-from lib.protocols import MSIDH 
+from lib.isogeny import verify_torsion_basis 
+from lib.msidh import MSIDH 
 
 def verify_test_msidh_gen_pub_params():
     print("---: test_msidh_gen_pub_params()")

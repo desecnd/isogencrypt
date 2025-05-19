@@ -1,7 +1,10 @@
-#/usr/bin/sage 
+#/usr/bin/sage -python
 
 from sage.all import EllipticCurve, Primes, randint, gcd, is_prime, prod, GF
 from lib.isogeny import sample_quadratic_root_of_unity, sample_torsion_basis_smooth, mont_coef, verify_torsion_basis
+from dataclasses import dataclass, asdict
+import json
+
 
 class MSIDH:
     def __init__(self, p: int, A: int, B: int, E0, P = None, Q = None, secret: int = None, mask: int = None, is_bob: bool = False, mont_model: bool = False):
@@ -112,6 +115,42 @@ class MSIDH:
 
         self.EK = self.tau.codomain()
         return self.EK.j_invariant()
+
+@dataclass
+class MSIDHBenchTask:
+    t: int
+    a: str
+    xP: str
+    yP: str
+    xQ: str
+    yQ: str
+    xR: str
+    yR: str
+    
+    @classmethod
+    def from_dict(cls, obj: dict):
+        return MSIDHBenchTask(**obj)
+
+    def to_dict(self) -> dict:
+        return asdict(self) 
+
+def load_msidh_bench_tasks(filename: str) -> list[MSIDHBenchTask]:
+    with open(filename) as in_file:
+        msidh_objs = json.loads(in_file.read())
+    
+    if "bench_tasks" not in msidh_objs.keys():
+        raise ValueError("Loaded JSON object from MSIDH bench tasks does not contain 'bench_tasks' key")
+
+    msidh_objs = msidh_objs["bench_tasks"]
+    msidh_bts = [ MSIDHBenchTask.from_dict(obj) for obj in msidh_objs ]
+    return msidh_bts
+
+def store_msidh_bench_tasks(filename: str, msidh_bts: list[MSIDHBenchTask]): 
+    msidh_objs = { 
+        "bench_tasks": [bt.to_dict() for bt in msidh_bts ]
+    }
+    with open(filename, 'w') as out_file:
+        out_file.write(json.dumps(msidh_objs, indent=4))
 
 if __name__ == '__main__':
     p, A, B, f = MSIDH.gen_pub_params(20)
