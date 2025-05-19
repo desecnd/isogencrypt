@@ -44,8 +44,6 @@ void test_failed_once() {
 }
 
 void test_basic_arithmetic() {
-    printf("[*] Running Fp^2 arithmetic test for char p = 431...\n");
-
     // init characteristic
     CHECK(!global_fpchar_setup_uint(431));
 
@@ -217,18 +215,33 @@ void test_set_str() {
     fp2_t x;
     fp2_init(&x);
 
-    fp2_set_str(x, "416*i + 175");
-    fp2_print(x, "x");
+    // Valid
+    CHECK(0 == fp2_set_str(x, "416*i + 175"));
     CHECK(!mpz_cmp_ui(x->a, 175) && !mpz_cmp_ui(x->b, 416));
 
-    fp2_set_str(x, "416 + 175 * i");
+    CHECK(0 == fp2_set_str(x, "416 + 175 *i"));
     CHECK(!mpz_cmp_ui(x->a, 416) && !mpz_cmp_ui(x->b, 175));
 
-    fp2_set_str(x, "0xff + 23 * i");
+    CHECK(0 == fp2_set_str(x, "0xff + 23 *i"));
     CHECK(!mpz_cmp_ui(x->a, 255) && !mpz_cmp_ui(x->b, 23));
 
-    CHECK(0 != fp2_set_str(x, "10"));
+    CHECK(0 == fp2_set_str(x, "0xff"));
+    CHECK(!mpz_cmp_ui(x->a, 255) && !mpz_cmp_ui(x->b, 0));
+
+    CHECK(0 == fp2_set_str(x, "0xff*i"));
+    CHECK(!mpz_cmp_ui(x->a, 0) && !mpz_cmp_ui(x->b, 255));
+
+    CHECK(0 == fp2_set_str(x, "420      *i"));
+    CHECK(!mpz_cmp_ui(x->a, 0) && !mpz_cmp_ui(x->b, 420));
+
+    CHECK(0 == fp2_set_str(x, "7+5*i"));
+    CHECK(!mpz_cmp_ui(x->a, 7) && !mpz_cmp_ui(x->b, 5));
+
+    // Invalid
+    CHECK(0 != fp2_set_str(x, "i*420"));
+    CHECK(0 != fp2_set_str(x, "10 * i + 10 * i"));
     CHECK(0 != fp2_set_str(x, "10 * i"));
+    CHECK(0 != fp2_set_str(x, "1000; * i"));
 
     fp2_clear(&x);
     CHECK(!global_fpchar_clear());
