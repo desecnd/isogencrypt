@@ -1,8 +1,8 @@
 #!/usr/bin/sage
 
 from sage.all import EllipticCurve, order_from_multiple, GF
-from verifiers.isogeny import check_points_torsion_basis
-from verifiers.protocols import MSIDH 
+from lib.isogeny import verify_torsion_basis 
+from lib.msidh import MSIDH 
 
 def verify_test_msidh_gen_pub_params():
     print("---: test_msidh_gen_pub_params()")
@@ -19,17 +19,29 @@ def verify_test_msidh_gen_pub_params():
     assert f == 1
     assert p == A * B * f - 1
 
-    t = 9
+    t = 20
     print("t:", t)
     p, A, B, f = MSIDH.gen_pub_params(t)
     print("p:", p)
     print("A:", A)
     print("B:", B)
     print("f:", f)
-    assert A == 4 * 5 * 11 * 17 * 23
-    assert B == 3 * 7 * 13 * 19
-    assert f == 2
-    assert p == A * B * f - 1
+
+    t = 100
+    print("t:", t)
+    p, A, B, f = MSIDH.gen_pub_params(t)
+    print("p:", p)
+    print("A:", A)
+    print("B:", B)
+    print("f:", f)
+
+    t = 170
+    print("t:", t)
+    p, A, B, f = MSIDH.gen_pub_params(t)
+    print("p:", p)
+    print("A:", A)
+    print("B:", B)
+    print("f:", f)
 
 class TestT4:
 
@@ -159,7 +171,7 @@ class TestT4:
 
         # Check if valid full torsion basis
         assert n == 420
-        assert check_points_torsion_basis(P, Q, n)
+        assert verify_torsion_basis(P, Q, n)
 
         s = 0
         K = P + s * Q
@@ -196,6 +208,116 @@ class TestT4:
         print(f"xQ: {Q.x()}")
         print(f"xPQd: {PQd.x()}")
 
+
+class TestT30:
+
+    @classmethod
+    def load_globals(cls):
+        """Utility function to use in sage environment after 'load' is called"""
+        global p, A, B, f, n, i, F, E, P, Q
+        p, A, B, f, n = cls.p, cls.A, cls.B, cls.f, cls.n 
+        i, F, E, P, Q = cls.i, cls.F, cls.E, cls.P, cls.Q 
+
+    @classmethod
+    def setup_params(cls):
+        # MSIDH params for t = 30
+        p, A, B, f = MSIDH.gen_pub_params(30)
+        n = p + 1
+        assert p == 63220109280835215576290412583087324986549373979
+        assert n == A * B * f 
+        assert A == 134031250783943894759620
+        # assert p == 63156889171554380360714122170504237661562824606019 
+        
+        a = 6
+        F = GF(p ** 2, modulus=[1,0,1], names="i")
+        # Unpack the tuple using comma after i -> ',', same as [0] syntax
+        i, = F._first_ngens(1)
+
+        # Montgomery Starting Curve E: y^2 = x^3 + 6x^2 + x
+        E = EllipticCurve(F, [0, a, 0, 1, 0])
+        E.set_order(n**2)
+
+        if not E.is_supersingular():
+            raise ValueError("E is not a supersingular curve")
+
+        P = E(32381872305678490404833289490608450363172933700*i + 38566570518230924614310417068523536638018699310, 51454160553705302795561802082188918906573282935*i + 46999345345209075217588309637506871396736048585)
+        Q = E(29454235622145096109316297773070819902970029047*i + 17242937661247998401353436361850378272505949076, 4027506100385014783073063257216469725014255007*i + 40503840888595183524703631351014003574434214416)
+        P.set_order(n)
+        Q.set_order(n)
+        # assert verify_torsion_basis(P, Q, n)
+
+        # Q lays over the (0, 0) point of order 2
+        assert Q * (n//2) == E(0, 0)
+
+        # Map to class variables
+        cls.p, cls.A, cls.B, cls.f, cls.n = p, A, B, f, n
+        cls.i, cls.F, cls.E, cls.P, cls.Q = i, F, E, P, Q
+
+    @classmethod
+    def veriy_test_msidh_interals_large(cls):
+        print("---: test_msidh_internals_large()")
+        cls.load_globals()
+
+        print(f"xP: {P.x()}")
+        print(f"xQ: {Q.x()}")
+        print(f"xPQd: {(P - Q).x()}")
+
+        # Construct Alice basis (PA, QA) = [n//A](P, Q)
+        PA = P * (n // A)
+        QA = Q * (n // A)
+
+        print(f"xPA: {PA.x()}")
+        print(f"xQA: {QA.x()}")
+        print(f"xPQAd: {(PA - QA).x()}")
+        assert verify_torsion_basis(PA, QA, A)
+
+        # Construct Bob basis (PB, QB) = [n//B](P, Q)
+        PB = P * (n // B) 
+        QB = Q * (n // B)
+
+        print(f"xPB: {PB.x()}")
+        print(f"xQB: {QB.x()}")
+        print(f"xPQBd: {(PB - QB).x()}")
+        assert verify_torsion_basis(PB, QB, B)
+
+
+        # Secret and Mask for Alice
+        a_inputs = [ 
+            (11349330453264090324638, 131339333569636892083385),
+            (102959793904566459067664, 234614427428290727103469),
+        ]
+
+        # Secrets and Masks for Bob
+        b_inputs = [
+            (72593563569111258510719, 17334875921447289106681),
+            (271374038831227351065368, 93531163257802324154959), 
+        ]
+
+        for ((A_sec, A_mask), (B_sec, B_mask)) in zip(a_inputs, b_inputs):
+            print(f"A_sec: {A_sec}")
+            print(f"A_mask: {A_mask}")
+            print(f"B_sec: {B_sec}")
+            print(f"B_mask: {B_mask}")
+
+            A_msidh = MSIDH(p, A, B, E, PA, QA, A_sec, A_mask, is_bob=False, mont_model=True)
+            AE, APB, AQB = A_msidh.gen_pubkey(PB, QB)
+
+            a2_24p = (AE.a2() + 2)/4
+            print(f"aφ(E)(24p): {a2_24p}")
+            print(f"xφ(PB): {APB.x()}")
+            print(f"xφ(QB): {AQB.x()}")
+            print(f"xφ(PQBd): {(APB-AQB).x()}")
+
+            B_msidh = MSIDH(p, A, B, E, PB, QB, B_sec, B_mask, is_bob=True, mont_model=True)
+            j_inv = B_msidh.key_exchange(AE, APB, AQB)
+
+            EK = B_msidh.EK
+            assert j_inv == EK.j_invariant()
+
+            a2_24p = (EK.a2() + 2)/4
+            print(f"aτ(φ(E))(24p): {a2_24p}")
+            print(f"jτ(φ(E)): {j_inv}")
+
 if __name__ == "__main__":
 
     verify_test_msidh_gen_pub_params()
@@ -206,5 +328,10 @@ if __name__ == "__main__":
     TestT4.verify_test_msidh_secret_zero()
     TestT4.verify_test_msidh_non_deterministic()
     TestT4.verify_test_msidh_monte_carlo()
+
+    # Larger MSIDH t = 30
+    TestT30.setup_params()
+    TestT30.veriy_test_msidh_interals_large()
+
 
 

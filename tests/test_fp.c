@@ -13,13 +13,16 @@ void test_small_arithmetic() {
 
     fp_set_uint(r, 16); // r == 16
     CHECK(!mpz_cmp_ui(r, 16));
+    CHECK(fp_equal_uint(r, 16));
 
     fp_sqrt(r, r); // r == 4
     // TODO: incosistent api, change later
     CHECK(!mpz_cmp_ui(r, 4));
+    CHECK(fp_equal_uint(r, 4));
 
     fp_add_uint(r, r, 10); // r == 14
     CHECK(!mpz_cmp_ui(r, 14));
+    CHECK(fp_equal_uint(r, 14));
 
     fp_sub_uint(r, r, 15); // r == -1 == 430
     CHECK(!mpz_cmp_ui(r, 430));

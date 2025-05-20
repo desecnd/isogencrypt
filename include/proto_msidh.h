@@ -48,6 +48,7 @@ int sample_quadratic_root_of_unity(mpz_t result, pprod_t modulus);
 /*
  * @brief Given security parameter t, generate public params used in MSIDH: p, A, B, where p = fAB - 1 is prime.
  *  Return cofactor f or -1 if something gone wrong.
+ *  Prime p is always congruent to 3 mod 4 due to the construction of the prime (4 | A => 4 | ABf)
  */
 int msidh_gen_pub_params(mpz_t p, pprod_t A, pprod_t B, unsigned int t);
 

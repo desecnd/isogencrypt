@@ -43,6 +43,20 @@ void point_printx(point_t P, const char* name) {
     fp2_print(P->X, name);
 }
 
+int point_equal_str_x(point_t P, const char* str) {
+    point_t P_str;
+    point_init(&P_str);
+
+    // Make sure that the Point is normalized, i.e: P->Z = 1
+    point_normalize_coords(P);
+
+    point_set_str_x(P_str, str);
+    int equal = fp2_equal(P->X, P_str->X) && fp2_equal(P->Z, P_str->Z);
+
+    point_clear(&P_str);
+    return equal;
+}
+
 
 void A24p_from_A(fp2_t A24p, fp2_t C24, const fp2_t A, const fp2_t C) {
     // Set A24p := A + 2C and C24 := 4C

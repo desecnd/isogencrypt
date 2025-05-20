@@ -2,9 +2,9 @@
 #
 # PoC MSIDH implementation in Weierstrass Curve Model in SageMath
 
-from sage.all import EllipticCurve, factor, Primes, randrange, order_from_multiple, CRT_list, gcd, is_prime, GF, supersingular_j, prod
+from sage.all import EllipticCurve, factor, Primes, randrange, order_from_multiple, CRT_list, gcd, is_prime, GF, prod
 
-def sample_torsion_basis_smooth(E: EllipticCurve, r: int, montgomery_basis: bool = False):
+def sample_torsion_basis_smooth(E, r: int, montgomery_basis: bool = False):
     """Fast method for finding smooth torsion basis on supersingular elliptic curve"""
 
     assert E.is_supersingular()
@@ -110,10 +110,10 @@ def sample_quadratic_root_of_unity(modulus: int):
 
 if __name__ == '__main__':
     # Number of primes to multiply  ~ t/2 bit classical and ~t/4 quantum security
-    t = 32
+    t = 30
     print(f"[%] Running MSIDH with t={t}")
 
-    P = Primes()
+    P = Primes(proof=False)
     ll = [ P.unrank(2 * i) for i in range((t+1)//2) ]
     qq = [ P.unrank(2 * i + 1) for i in range(t//2) ]
     # Alice uses 4 as the first number instead of 2 (probably due to quadratic root -1 = 1 for 2, but not for 4)
@@ -134,13 +134,11 @@ if __name__ == '__main__':
     else:
         raise ValueError("Cannot find cofactor for p")
 
-    # Find Supersingular Elliptic Curve over Fp^2
-
     # Same as: F.<i> = GF(p**2)
-    F = GF(p**2, names=('i',))
+    F = GF(p**2, names=('i',), modulus=[1, 0, 1])
     (i,) = F._first_ngens(1)
 
-    E0 = EllipticCurve(j=supersingular_j(F))
+    E0 = EllipticCurve(F, [0, 6, 0, 1, 0])
     E0.set_order((p+1)**2)
     assert E0.is_supersingular()
 

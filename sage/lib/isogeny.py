@@ -1,6 +1,6 @@
 from sage.all import factor, order_from_multiple, randrange, CRT_list, EllipticCurve, prod
 
-def check_points_torsion_basis(P, Q, n: int) -> bool:
+def verify_torsion_basis(P, Q, n: int) -> bool:
     """Return True if points (P, Q) create valid (non-degenerate) torsion basis of order n"""
     return order_from_multiple(P.weil_pairing(Q, n), n, operation='*') == n
 
@@ -132,18 +132,35 @@ def _mont_coef_odd(K):
     return A_
 
 def mont_coef(K):
-    """Combine odd and even montgomery coeff functions into general formula"""
-    n = K.order()
-    K_ = K 
+    """Return montgomery curve coefficient Ax^2 given kernel of the isogeny of any degree"""
 
-    # Extract even isogeny by combining 2-isogenies
-    while n % 2 == 0:
-        EK = K_.curve()
-        T = K_ * (n//2)
-        A = _mont_coef_2(T)
-        ET = EllipticCurve(EK.base(), [0, A, 0, 1, 0])
-        K_ = EK.isogeny(T, codomain=ET)(K_)
-        n //= 2
+    # If point at inf. return curent curve coeff
+    if K == K.curve()(0):
+        return K.curve().a2()
 
-    # Based on the calculated kernel, solve odd_isogeny
-    return _mont_coef_odd(K_)
+    mul = K.order()
+    K0 = K
+
+    F = K.curve().base()
+    E_ord = (F.characteristic() + 1) ** 2
+
+    # Prime factors with repetition (i.e: 2^2 -> [2, 2])
+    prime_factors = [ p for (p, m) in factor(mul) for _ in range(m) ]
+
+    # For each prime degree of the K order construct isogeny to montgomery model curve
+    for p in prime_factors:
+        EK = K0.curve()
+
+        # Use formulas for 2-isogeny and odd-degree isogeny
+        T = K0 * (mul // p)
+        a = _mont_coef_2(T) if p == 2 else _mont_coef_odd(T)
+
+        # Construct the codomain curve with calculated coefficient
+        ET = EllipticCurve(F, [0, a, 0, 1, 0])
+        ET.set_order(E_ord)
+
+        # Push the point to the next curve
+        K0 = EK.isogeny(T, codomain=ET, algorithm="traditional")(K0)
+        mul //= p
+
+    return a

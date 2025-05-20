@@ -44,8 +44,6 @@ void test_failed_once() {
 }
 
 void test_basic_arithmetic() {
-    printf("[*] Running Fp^2 arithmetic test for char p = 431...\n");
-
     // init characteristic
     CHECK(!global_fpchar_setup_uint(431));
 
@@ -217,18 +215,33 @@ void test_set_str() {
     fp2_t x;
     fp2_init(&x);
 
-    fp2_set_str(x, "416*i + 175");
-    fp2_print(x, "x");
+    // Valid
+    CHECK(0 == fp2_set_str(x, "416*i + 175"));
     CHECK(!mpz_cmp_ui(x->a, 175) && !mpz_cmp_ui(x->b, 416));
 
-    fp2_set_str(x, "416 + 175 * i");
+    CHECK(0 == fp2_set_str(x, "416 + 175 *i"));
     CHECK(!mpz_cmp_ui(x->a, 416) && !mpz_cmp_ui(x->b, 175));
 
-    fp2_set_str(x, "0xff + 23 * i");
+    CHECK(0 == fp2_set_str(x, "0xff + 23 *i"));
     CHECK(!mpz_cmp_ui(x->a, 255) && !mpz_cmp_ui(x->b, 23));
 
-    CHECK(0 != fp2_set_str(x, "10"));
+    CHECK(0 == fp2_set_str(x, "0xff"));
+    CHECK(!mpz_cmp_ui(x->a, 255) && !mpz_cmp_ui(x->b, 0));
+
+    CHECK(0 == fp2_set_str(x, "0xff*i"));
+    CHECK(!mpz_cmp_ui(x->a, 0) && !mpz_cmp_ui(x->b, 255));
+
+    CHECK(0 == fp2_set_str(x, "420      *i"));
+    CHECK(!mpz_cmp_ui(x->a, 0) && !mpz_cmp_ui(x->b, 420));
+
+    CHECK(0 == fp2_set_str(x, "7+5*i"));
+    CHECK(!mpz_cmp_ui(x->a, 7) && !mpz_cmp_ui(x->b, 5));
+
+    // Invalid
+    CHECK(0 != fp2_set_str(x, "i*420"));
+    CHECK(0 != fp2_set_str(x, "10 * i + 10 * i"));
     CHECK(0 != fp2_set_str(x, "10 * i"));
+    CHECK(0 != fp2_set_str(x, "1000; * i"));
 
     fp2_clear(&x);
     CHECK(!global_fpchar_clear());
@@ -261,6 +274,60 @@ void test_fp2_mul_int() {
     CHECK(!global_fpchar_clear());
 }
 
+void test_large_numbers() {
+    mpz_t p;
+    mpz_init(p);
+    mpz_set_str(p, "14475d5aeccf245fce0e61716bd33537235ad8c4a76a401a4eb1a0fb9cb477dfb", 16);
+
+    global_fpchar_setup(p);
+
+    fp2_t x, y, r;
+    fp2_init(&x);
+    fp2_init(&y);
+    fp2_init(&r);
+
+    fp2_set_str(x, "94579799687746926965252261998050766088232049658745702162469909894445951219281*i + 39836810185194070024401365631938781071356172459462816998642032429396657654496");
+    fp2_set_str(y, "71596955964097321089638264126073859217891501550880385776393603069176960285685*i + 6005039997071591805159957858046559317574936997882312151258378710713185921308");
+
+    // r = x + y
+    fp2_add(r, x, y);
+    CHECK(fp2_equal_str(r, "19419196819700907788901412019741448840917441203891366685074144967702566597707*i + 45841850182265661829561323489985340388931109457345129149900411140109843575804"));
+
+    // r = x - y
+    fp2_sub(r, x, y);
+    CHECK(fp2_equal_str(r, "22982843723649605875613997871976906870340548107865316386076306825268990933596*i + 33831770188122478219241407773892221753781235461580504847383653718683471733188"));
+
+    // r = x * y
+    fp2_mul_unsafe(r, x, y);
+    CHECK(fp2_equal_str(r, "143643133666762529271905768435498468336623797700446365668130846446718446017746*i + 87376311329126807534668591296448536610706136584366568663296846757602776963064"));
+
+    // r = x; r *= y
+    fp2_set(r, x);
+    fp2_mul_safe(r, y);
+    CHECK(fp2_equal_str(r, "143643133666762529271905768435498468336623797700446365668130846446718446017746*i + 87376311329126807534668591296448536610706136584366568663296846757602776963064"));
+
+    // r = x / y = x * y^-1
+    fp2_div_unsafe(r, x, y); 
+    CHECK(fp2_equal_str(r, "65466103758765061295109857012386042169348498301553700172743066711782897011018*i + 14327469402166493311065643408383417673951894623189817384874372125280170171495"));
+
+    // r = x^2
+    fp2_sq_unsafe(r, x);
+    CHECK(fp2_equal_str(r, "97160454713256180032332857022443502045185781961919588929542931057357925067882*i + 122888906885422413092835230938250002121611842268753523538473182063181056580234"));
+
+    // r = x; r **= 2
+    fp2_set(r, x);
+    fp2_sq_safe(r);
+    CHECK(fp2_equal_str(r, "97160454713256180032332857022443502045185781961919588929542931057357925067882*i + 122888906885422413092835230938250002121611842268753523538473182063181056580234"));
+
+    fp2_clear(&x);
+    fp2_clear(&y);
+    fp2_clear(&r);
+
+    mpz_clear(p);
+
+    global_fpchar_clear();
+}
+
 int main() {
 
     TEST_RUN(test_set_str());
@@ -269,5 +336,6 @@ int main() {
     TEST_RUN(test_safe_unsafe_mul_sq());
     TEST_RUN(test_inv_div());
     TEST_RUN(test_fp2_mul_int());
+    TEST_RUN(test_large_numbers());
     TEST_RUNS_END;
 }

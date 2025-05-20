@@ -1,3 +1,4 @@
+#include <gmp.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>
@@ -39,7 +40,8 @@ int global_fpchar_setup(fp_t p) {
 
     if (invalid_mod4) {
         fprintf(stderr, "[!] Trying to set prime field characteristic with prime != 3 (mod 4)\n");
-        return -2;
+        assert(0);
+        // return -2;
     }
 
     fp_init(fpchar);
@@ -158,6 +160,26 @@ void fp_sqrt(fp_t res, const fp_t a) {
     mpz_clear(exp);
 }
 
+int fp_equal_uint(fp_t a, unsigned long int b) {
+    return !mpz_cmp_ui(a, b);
+}
+
+int fp_equal(fp_t a, fp_t b) {
+    return !mpz_cmp(a, b);
+}
+
+int fp_equal_str(fp_t a, const char *b_str) {
+    fp_t b; 
+    mpz_init_set_str(b, b_str, 0);
+    int equal = fp_equal(a, b);
+    fp_clear(b);
+    return equal;
+}
+
+void fp_print(fp_t a, const char* name) {
+    gmp_printf("%s: %Zd\n", name, a);
+}
+
 // =========== 
 // FP2 methods
 // ===========
@@ -194,43 +216,63 @@ void fp2_set_uint(fp2_t res, unsigned long int rhs) {
     fp_set_uint(res->b, 0);
 }
 
-// set: result <- a + bi
 int fp2_set_str(fp2_t res, const char *x) {
-    
-    // Allow only for both real and imaginary part
-    if (strstr(x, "+") == NULL || strstr(x, "i") == NULL) {
-        return 1;
+    int two_parts = (int)(strstr(x, "+") != NULL);
+    int imag_part = (int)(strstr(x, "*i") != NULL); 
+
+    int only_real = !two_parts && !imag_part;
+    int only_imag = !two_parts && imag_part;
+
+    // Only a part was passed as argument 
+    if (only_real) {
+        mpz_set_ui(res->b, 0);
+        // "This function returns 0 if the entire string is a valid number in base base. Otherwise it returns −1."
+        return mpz_set_str(res->a, x, 0);
     }
-    
-    int n_chars = strlen(x);
+
+    // Allocate string on the heap to allow for strsep and truncating
+    unsigned long n_chars = strlen(x);
     char * buffer = malloc(sizeof(char) * (n_chars + 1));
-    strncpy(buffer, x, n_chars);
+    memcpy(buffer, x, n_chars);
     buffer[n_chars] = '\0';
+
+    // Only b*i part was passed as argument 
+    if (only_imag) {
+        char * temp = buffer;
+        // "Cut" the string before *i, imag will point to the start of the buffer, "*" will be replaced with "\0"
+        char *imag = strsep(&temp, "*i");
+        mpz_set_ui(res->a, 0);
+        int ret_imag = mpz_set_str(res->b, imag, 0);
+        free(buffer);
+        return ret_imag;
+    }
     
     char *imag = buffer;
     char *real = strsep(&imag, "+");
     char *temp = imag;
     
     // swap imag and real
-    if (strstr(imag, "i") == NULL){
+    if (strstr(imag, "*i") == NULL){
         imag = real;
         real = temp;
         temp = imag;
-    } else if (strstr(real, "i") != NULL) {
+    } else if (strstr(real, "*i") != NULL) {
         // Found i in both real and imag
         free(buffer);
         return 1;
     }
     
-    // Strip the "* i" part
-    imag = strsep(&temp, "*");
+    // Strip the "*i" part
+    imag = strsep(&temp, "*i");
     
     // TODO: change inconsistent API
-    mpz_set_str(res->a, real, 0);
-    mpz_set_str(res->b, imag, 0);
+    int ret_real = mpz_set_str(res->a, real, 0);
+    int ret_imag = mpz_set_str(res->b, imag, 0);
     
     free(buffer);
-    return 0;
+
+    // Return -1 if any errors occured 
+    return (ret_real == 0 && ret_imag == 0) ? 0 : -1;
 }
 
 // fill: set individual fields as FP elements
@@ -401,4 +443,24 @@ void fp2_print(fp2_t x, const char* name) {
     } else {
         gmp_printf("%s: %Zd*i + %Zd\n", name, x->b, x->a);
     }
+}
+
+int fp2_equal_uint(fp2_t x, unsigned long int a) {
+    return fp_equal_uint(x->a, a) && fp_is_zero(x->b);
+}
+
+int fp2_equal(fp2_t x, fp2_t y) {
+    return !!(fp_equal(x->a, y->a) && fp_equal(x->b, y->b));
+}
+
+int fp2_equal_str(fp2_t res, const char * x_str) {
+    fp2_t x;
+    fp2_init(&x);
+
+    fp2_set_str(x, x_str);
+
+    int are_equal = fp2_equal(res, x);
+    fp2_clear(&x);
+
+    return are_equal;
 }

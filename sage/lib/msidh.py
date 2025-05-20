@@ -1,7 +1,10 @@
-#/usr/bin/sage 
+#/usr/bin/sage -python
 
 from sage.all import EllipticCurve, Primes, randint, gcd, is_prime, prod, GF
-from verifiers.isogeny import sample_quadratic_root_of_unity, sample_torsion_basis_smooth, mont_coef, check_points_torsion_basis
+from lib.isogeny import sample_quadratic_root_of_unity, sample_torsion_basis_smooth, mont_coef, verify_torsion_basis
+from dataclasses import dataclass, asdict
+import json
+
 
 class MSIDH:
     def __init__(self, p: int, A: int, B: int, E0, P = None, Q = None, secret: int = None, mask: int = None, is_bob: bool = False, mont_model: bool = False):
@@ -27,26 +30,28 @@ class MSIDH:
             self.name = "Alice"
 
         if self.P is None or self.Q is None:
-            print(f"{self.name}: Sampling Torsion Basis (P, Q)...")
+            # print(f"{self.name}: Sampling Torsion Basis (P, Q)...")
             self.P, self.Q = sample_torsion_basis_smooth(self.E0, self.A)
         else:
             assert self.P.curve() == self.E0
             assert self.Q.curve() == self.E0
+            assert verify_torsion_basis(self.P, self.Q, self.A)
 
         if self.mask is None:
-            print(f"{self.name}: Sampling mask...")
+            # print(f"{self.name}: Sampling mask...")
             self.mask = sample_quadratic_root_of_unity(self.B)
         else:
             # assert pow(self.mask, 2, self.B) == 1
             pass
         
         if self.secret is None:
-            print(f"{self.name}: Generating secret...")
+            # print(f"{self.name}: Generating secret...")
             self.secret = randint(0, self.A)
         else:
             assert self.secret in range(self.A)
 
         self.phi_ker = self.P + self.secret * self.Q
+        self.phi_ker.set_order(self.A)
         if self.mont_model:
             A_ = mont_coef(self.phi_ker)
             E_ = EllipticCurve(E0.base(), [0, A_, 0, 1, 0])
@@ -86,7 +91,7 @@ class MSIDH:
     def gen_pubkey(self, PB, QB) -> tuple:
         assert PB.curve() == self.E0
         assert QB.curve() == self.E0
-        assert check_points_torsion_basis(PB, QB, self.B)
+        assert verify_torsion_basis(PB, QB, self.B)
 
         # Apply masking
         PB = self.mask * self.phi(PB)
@@ -100,6 +105,7 @@ class MSIDH:
         assert BPA.weil_pairing(BQA, self.A) == self.P.weil_pairing(self.Q, self.A) ** self.B
 
         self.tau_ker = BPA + BQA * self.secret 
+        self.tau_ker.set_order(self.A)
         if self.mont_model:
             A_ = mont_coef(self.tau_ker)
             E_ = EllipticCurve(self.E0.base(), [0, A_, 0, 1, 0])
@@ -110,20 +116,57 @@ class MSIDH:
         self.EK = self.tau.codomain()
         return self.EK.j_invariant()
 
-if __name__ == '__main__':
-    p, A, B, f = MSIDH.gen_pub_params(6)
+@dataclass
+class MSIDHBenchTask:
+    t: int
+    a: str
+    xP: str
+    yP: str
+    xQ: str
+    yQ: str
+    xR: str
+    yR: str
+    
+    @classmethod
+    def from_dict(cls, obj: dict):
+        return MSIDHBenchTask(**obj)
 
-    F = GF(p**2, names=('i',))
+    def to_dict(self) -> dict:
+        return asdict(self) 
+
+def load_msidh_bench_tasks(filename: str) -> list[MSIDHBenchTask]:
+    with open(filename) as in_file:
+        msidh_objs = json.loads(in_file.read())
+    
+    if "bench_tasks" not in msidh_objs.keys():
+        raise ValueError("Loaded JSON object from MSIDH bench tasks does not contain 'bench_tasks' key")
+
+    msidh_objs = msidh_objs["bench_tasks"]
+    msidh_bts = [ MSIDHBenchTask.from_dict(obj) for obj in msidh_objs ]
+    return msidh_bts
+
+def store_msidh_bench_tasks(filename: str, msidh_bts: list[MSIDHBenchTask]): 
+    msidh_objs = { 
+        "bench_tasks": [bt.to_dict() for bt in msidh_bts ]
+    }
+    with open(filename, 'w') as out_file:
+        out_file.write(json.dumps(msidh_objs, indent=4))
+
+if __name__ == '__main__':
+    p, A, B, f = MSIDH.gen_pub_params(20)
+
+    F = GF(p**2, names=('i',), modulus=[1, 0, 1])
     (i,) = F._first_ngens(1)
 
     E0 = EllipticCurve(F, [0, 6, 0, 1, 0])
+    assert E0.is_supersingular()
 
-    Alice = MSIDH(p, A, B, E0, is_bob=False)
-    Bob = MSIDH(p, A, B, E0, is_bob=True)
+    Alice = MSIDH(p, A, B, E0, is_bob=False, mont_model=True)
+    Bob = MSIDH(p, A, B, E0, is_bob=True, mont_model=True)
 
     pubkey_alice = Alice.gen_pubkey(*Bob.basis)
     pubkey_bob = Bob.gen_pubkey(*Alice.basis)
 
     jinv_alice = Alice.key_exchange(*pubkey_bob)
     jinv_bob = Bob.key_exchange(*pubkey_alice)
-    print(jinv_alice == jinv_bob)
+    assert jinv_alice == jinv_bob
