@@ -18,10 +18,10 @@ VERIFIERS_SRC_DIR := verifiers
 VECTORS_SRC_DIR := vectors
 VECTORS_DIR := $(BUILD_DIR)/vectors
 
-BENCHES_SRC_DIR := benchmarks
-BENCHES_OBJ_DIR := $(OBJ_DIR)/benchmarks
-BENCHES_BIN_DIR := $(BUILD_DIR)/benchmarks
-BENCHES_OUT_DIR := $(BENCHES_BIN_DIR)/benchmarks
+BENCHES_SRC_DIR := benches
+BENCHES_OBJ_DIR := $(OBJ_DIR)/benches
+BENCHES_BIN_DIR := $(BUILD_DIR)/benches
+BENCHES_OUT_DIR := $(BENCHES_BIN_DIR)/benches
 
 # Variables for general file 
 SRC := $(wildcard $(SRC_DIR)/*.c)
