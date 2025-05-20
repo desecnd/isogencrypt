@@ -1,13 +1,13 @@
 #/usr/bin/sage -python
 
-from sage.all import EllipticCurve, Primes, randint, gcd, is_prime, prod, GF
-from lib.isogeny import sample_quadratic_root_of_unity, sample_torsion_basis_smooth, mont_coef, verify_torsion_basis
 from dataclasses import dataclass, asdict
 import json
 
+from sage.all import EllipticCurve, Primes, randint, gcd, is_prime, prod, GF
+from isogencrypt_sage.isogeny import sample_quadratic_root_of_unity, sample_torsion_basis_smooth, mont_coef, validate_torsion_basis
 
 class MSIDH:
-    def __init__(self, p: int, A: int, B: int, E0, P = None, Q = None, secret: int = None, mask: int = None, is_bob: bool = False, mont_model: bool = False):
+    def __init__(self, p: int, A: int, B: int, E0, P = None, Q = None, secret: int | None = None, mask: int | None = None, is_bob: bool = False, mont_model: bool = False):
         self.p = p
         self.A = A
         self.B = B
@@ -35,7 +35,7 @@ class MSIDH:
         else:
             assert self.P.curve() == self.E0
             assert self.Q.curve() == self.E0
-            assert verify_torsion_basis(self.P, self.Q, self.A)
+            assert validate_torsion_basis(self.P, self.Q, self.A)
 
         if self.mask is None:
             # print(f"{self.name}: Sampling mask...")
@@ -68,7 +68,7 @@ class MSIDH:
     @classmethod
     def gen_pub_params(cls, t: int):
         # Number of primes to multiply  ~ t/2 bit classical and ~t/4 quantum security
-        P = Primes()
+        P = Primes(proof=False)
         ll = [ P.unrank(2 * i) for i in range((t+1)//2) ]
         qq = [ P.unrank(2 * i + 1) for i in range(t//2) ]
         ll[0] = 4
@@ -91,7 +91,7 @@ class MSIDH:
     def gen_pubkey(self, PB, QB) -> tuple:
         assert PB.curve() == self.E0
         assert QB.curve() == self.E0
-        assert verify_torsion_basis(PB, QB, self.B)
+        assert validate_torsion_basis(PB, QB, self.B)
 
         # Apply masking
         PB = self.mask * self.phi(PB)
@@ -102,7 +102,7 @@ class MSIDH:
         assert BPA.curve() == EB
         assert BQA.curve() == EB 
         # Weil pairing property of the curve
-        assert BPA.weil_pairing(BQA, self.A) == self.P.weil_pairing(self.Q, self.A) ** self.B
+        assert BPA.weil_pairing(BQA, self.A) == self.P.weil_pairing(self.Q, self.A) ** self.B # type: ignore
 
         self.tau_ker = BPA + BQA * self.secret 
         self.tau_ker.set_order(self.A)

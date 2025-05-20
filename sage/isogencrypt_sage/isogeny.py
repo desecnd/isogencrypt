@@ -1,11 +1,17 @@
-from sage.all import factor, order_from_multiple, randrange, CRT_list, EllipticCurve, prod
 
-def verify_torsion_basis(P, Q, n: int) -> bool:
+from sage.all import factor, order_from_multiple, randrange, CRT_list, EllipticCurve, prod 
+def validate_torsion_basis(P, Q, n: int) -> bool:
     """Return True if points (P, Q) create valid (non-degenerate) torsion basis of order n"""
     return order_from_multiple(P.weil_pairing(Q, n), n, operation='*') == n
 
-def sample_torsion_basis_smooth(E, r: int, montgomery_basis: bool = False):
-    """Fast method for finding smooth torsion basis on supersingular elliptic curve"""
+# Select P and Q such that "none" of them lays above the (0, 0) point
+def sample_torsion_basis_smooth(E, r: int, point_above_zero: str = ''):
+    """Fast method for finding smooth torsion basis on supersingular elliptic curve
+    
+    Args:
+        point_above_zero: One of ['P', 'Q', 'none'] - determines which point should lay above the (0, 0) point which is important in x-only Montgomery Arithmetic.
+        If value other than any of the 3 values is supplied the checks are ignored
+    """
 
     assert E.is_supersingular()
 
@@ -19,7 +25,7 @@ def sample_torsion_basis_smooth(E, r: int, montgomery_basis: bool = False):
     # Prime factors with repetition (i.e: 2^2 -> [2, 2])
     prime_factors = [ p for (p, m) in factor(r) for _ in range(m) ]
 
-    # we don't care about the case where gcd(coeff, r) != 1 -> this does not matter at all
+    # We don't care about the case where gcd(coeff, r) != 1 -> this does not matter at all
     coeff = (p + 1) / r
 
     def _sample_torsion_point():
@@ -28,6 +34,7 @@ def sample_torsion_basis_smooth(E, r: int, montgomery_basis: bool = False):
             # Get point that order is divided by at least 1 prime divisor li
             while True:
                 X = E.random_point() * coeff
+                # We want to both P and Q be from different torsion subgroup of order 2 than (0, 0)
                 if X != E(0):
                     break
 
@@ -36,13 +43,21 @@ def sample_torsion_basis_smooth(E, r: int, montgomery_basis: bool = False):
                 if X * (r // li) == E(0):
                     break
             else:
+                # P cannot lay above the (0, 0) if we supply "none" as argument
+                if r % 2 == 0 and point_above_zero == 'none' and (X * (r//2)).x() == 0: 
+                    continue
+
                 # Point has full r-torsion for composite r -> break
                 break
 
         return X
 
+
     # Start with P = Q
     P = Q = _sample_torsion_point()
+
+    # True if P is in the same order 2 subgrup as E(0, 0)
+    P_above_zero = (P * (r // 2)).x() == 0
 
     # r is composite, therefore we can by accident sample element which 
     # multiplicative order only divides r and is not r 
@@ -63,14 +78,21 @@ def sample_torsion_basis_smooth(E, r: int, montgomery_basis: bool = False):
             continue
 
         # Montgomery 2-isogeny requires that Q lays above point (0, 0)
-        if montgomery_basis and r % 2 == 0:
-            # Q lays above the point (0, 0), we can break
-            if (Q * (r // 2)).x() == 0:
+        if r % 2 == 0:
+            Q_above_zero = (Q * (r // 2)).x() == 0
+
+            # Select another Q 
+            if point_above_zero == 'none' and not Q_above_zero:
+                # We should mark this earlier
+                assert not P_above_zero
                 break
 
-            # P lays above the point (0, ), we can swap the points
-            if (P * (r // 2)).x() == 0:
-                P, Q = Q, P
+            if P_above_zero or Q_above_zero:
+                if point_above_zero == 'P' and not P_above_zero:
+                    P, Q = Q, P
+                if point_above_zero == 'Q' and not Q_above_zero:
+                    P, Q = Q, P
+
                 break
 
             # We need to search further
@@ -80,6 +102,7 @@ def sample_torsion_basis_smooth(E, r: int, montgomery_basis: bool = False):
         break
 
     return P, Q
+
 
 def sample_quadratic_root_of_unity(modulus: int):
     """
@@ -164,3 +187,10 @@ def mont_coef(K):
         mul //= p
 
     return a
+
+def mont_isog(K):
+    """Construct isogeny with codomain equal to the montgomery x-only arithmetic (internally using Weierstrass model)"""
+    E0 = K.curve()
+    A = mont_coef(K)
+    E1 = EllipticCurve(E0.base(), [0, A, 0, 1, 0])
+    return E0.isogeny(K, codomain=E1)

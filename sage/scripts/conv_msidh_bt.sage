@@ -1,8 +1,10 @@
+#/usr/bin/python
+
 import argparse
 import pathlib
 
-from lib.msidh import load_msidh_bench_tasks
-from lib.utils import print_error_and_exit, print_info, print_ok
+from isogencrypt_sage.msidh import load_msidh_bench_tasks
+from isogencrypt_sage.utils import print_error_and_exit, print_info, print_ok
 
 TEMPLATE_C_PREFIX = """// Auto-generated code using conv_msidh_bt.sage script
 struct bench_task {{

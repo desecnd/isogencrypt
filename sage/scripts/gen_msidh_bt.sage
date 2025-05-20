@@ -1,8 +1,8 @@
 import argparse
 
-from lib.utils import print_error_and_exit, print_ok, print_info, print_run
-from lib.isogeny import sample_torsion_basis_smooth
-from lib.msidh import MSIDH, MSIDHBenchTask, load_msidh_bench_tasks, store_msidh_bench_tasks
+from isogencrypt_sage.utils import print_error_and_exit, print_ok, print_info, print_run
+from isogencrypt_sage.isogeny import sample_torsion_basis_smooth
+from isogencrypt_sage.msidh import MSIDH, MSIDHBenchTask, load_msidh_bench_tasks, store_msidh_bench_tasks
 from sage.all import set_random_seed, GF, EllipticCurve
 
 if __name__ == "__main__":
@@ -56,7 +56,7 @@ if __name__ == "__main__":
             assert E.is_supersingular()
 
             set_random_seed(args.seed)
-            P, Q = sample_torsion_basis_smooth(E, p + 1, True)
+            P, Q = sample_torsion_basis_smooth(E, p + 1, 'Q')
             R = P - Q
 
             bt = MSIDHBenchTask(
