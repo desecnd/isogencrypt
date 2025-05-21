@@ -7,21 +7,25 @@ SRC_DIR := src
 
 BUILD_DIR := build
 OBJ_DIR := $(BUILD_DIR)/obj
+OUT_DIR := $(BUILD_DIR)/out
+TMP_DIR := $(BUILD_DIR)/tmp
 
 TESTS_SRC_DIR := tests
 TESTS_OBJ_DIR := $(OBJ_DIR)/tests
 TESTS_BIN_DIR := $(BUILD_DIR)/tests
-TESTS_OUT_DIR := $(TESTS_BIN_DIR)/out
+TESTS_OUT_DIR := $(OUT_DIR)/tests
 
 VERIFIERS_SRC_DIR := verifiers
 
-VECTORS_SRC_DIR := vectors
+VECTORS_SRC_DIR := assets/test_vectors
 VECTORS_DIR := $(BUILD_DIR)/vectors
 
 BENCHES_SRC_DIR := benches
 BENCHES_OBJ_DIR := $(OBJ_DIR)/benches
 BENCHES_BIN_DIR := $(BUILD_DIR)/benches
-BENCHES_OUT_DIR := $(BENCHES_BIN_DIR)/benches
+BENCHES_OUT_DIR := $(OUT_DIR)/benches
+
+DIFFS_OUT_DIR := $(OUT_DIR)/diffs
 
 # Variables for general file 
 SRC := $(wildcard $(SRC_DIR)/*.c)
@@ -32,6 +36,10 @@ TESTS := $(wildcard $(TESTS_SRC_DIR)/test_*.c)
 TESTS_BIN := $(patsubst $(TESTS_SRC_DIR)/%.c,$(TESTS_BIN_DIR)/%,$(TESTS))
 TESTS_OBJ := $(patsubst $(TESTS_SRC_DIR)/%.c,$(TESTS_OBJ_DIR)/%.o,$(TESTS))
 TESTS_OUT := $(patsubst $(TESTS_SRC_DIR)/%.c,$(TESTS_OUT_DIR)/%.out,$(TESTS))
+TESTS_TMP := $(patsubst $(TESTS_SRC_DIR)/%.c,$(TESTS_OUT_DIR)/%.tmp,$(TESTS))
+
+DIFFS_OUT := $(patsubst $(TESTS_SRC_DIR)/%.c,$(DIFFS_OUT_DIR)/%.diff,$(TESTS))
+DIFFS_TMP := $(patsubst $(TESTS_SRC_DIR)/%.c,$(TMP_DIR)/%.tmp,$(TESTS))
 
 # Same for benchmarks
 BENCHES := $(wildcard $(BENCHES_SRC_DIR)/bench_*.c)
@@ -49,7 +57,9 @@ CFLAGS   := -Wall -Wextra -O2
 LDFLAGS  := -Llib
 LDLIBS   := -lgmp
 
-.PHONY: all clean check vectors
+.PHONY: all clean run-tests run-diffs sage-vectors
+# This allows for calling run-diffs without running run-tests
+.NOTINTERMEDIATE: $(TESTS_OUT)
 
 all: tests benches
 
@@ -59,7 +69,7 @@ $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c | $(OBJ_DIR)
 	@$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
 
 # Create the directories if they do not exist
-$(TESTS_BIN_DIR) $(OBJ_DIR) $(TESTS_OBJ_DIR) $(TESTS_OUT_DIR) $(VECTORS_DIR) $(BENCHES_OBJ_DIR) $(BENCHES_BIN_DIR):
+$(TESTS_BIN_DIR) $(OBJ_DIR) $(TESTS_OBJ_DIR) $(TESTS_OUT_DIR) $(VECTORS_DIR) $(BENCHES_OBJ_DIR) $(BENCHES_BIN_DIR) $(DIFFS_OUT_DIR):
 	@echo "Creating Directory: '$@'"
 	@mkdir -p $@
 
@@ -90,17 +100,34 @@ $(BENCHES_BIN_DIR)/%: $(BENCHES_OBJ_DIR)/%.o $(OBJ) | $(BENCHES_BIN_DIR)
 	@echo "Linking benchmark: '$@'"
 	@$(CC) $(LDFLAGS) $^ $(LDLIBS) -o $@
 
-# Run unit tests to see if return codes are 0 
-check: $(TESTS_OUT)
+# Ephemeral target to "always" run
+run-tests: $(TESTS_TMP)
 
-# Run each of the tests, send output to .out file
-$(TESTS_OUT_DIR)/%.out: $(TESTS_BIN_DIR)/% FORCE | $(TESTS_OUT_DIR)
+# Target for "temporary" files, but actually crate .out files
+# It must be this way, ohterwise: run-diff will always rerun the tests (run-tests) (not wanted)
+$(TESTS_OUT_DIR)/%.tmp: $(TESTS_BIN_DIR)/% FORCE | $(TESTS_OUT_DIR)
 	@echo "------------------------------------"
 	@echo "> Run: $(notdir $<)"
 	@echo "------------------------------------"
-	@$< 1> $@ 
+	@$< > $(patsubst $(TESTS_OUT_DIR)/%.tmp,$(TESTS_OUT_DIR)/%.out,$@)
 
-vectors: $(VECTORS) | $(VECTORS_DIR)
+run-diffs: $(DIFFS_OUT) 
+
+# Target for real "out" files, in order to recreate them as neccessary 
+$(TESTS_OUT_DIR)/%.out: $(TESTS_BIN_DIR)/%  | $(TESTS_OUT_DIR)
+	@echo "------------------------------------"
+	@echo "> Run for diffs: $(notdir $<)"
+	@echo "------------------------------------"
+	$< > $@
+
+# Run each of the tests, send output to .out file
+# @echo "> $(notdir $@)"
+# && echo "Check diff: $(notdir $@) (\033[0;32mPASSED\033[0m)" || (echo "[\033[0;31mFAILED\033[0m]: $(notdir $@) (see: $@)")
+$(DIFFS_OUT_DIR)/%.diff: $(TESTS_OUT_DIR)/%.out $(VECTORS_SRC_DIR)/%.out $(TESTS_BIN_DIR)/% FORCE | $(DIFFS_OUT_DIR)
+	@diff $< $(patsubst $(DIFFS_OUT_DIR)/%.diff,$(VECTORS_SRC_DIR)/%.out,$@) --color=always > $@ \
+	&& echo "Check diff: $(notdir $@) (\033[0;32mPASSED\033[0m)" || (echo "Check diff: $(notdir $@) (\033[0;31mFAILED\033[0m) - see: $@")
+
+sage-vectors: $(VECTORS) | $(VECTORS_DIR)
 
 # Run sage scripts to generate the test vectors
 $(VECTORS_DIR)/%.out: $(VERIFIERS_SRC_DIR)/%.sage FORCE | $(VECTORS_DIR)
