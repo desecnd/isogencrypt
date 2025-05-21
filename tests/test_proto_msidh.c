@@ -595,6 +595,10 @@ void test_msidh_internals_large() {
     point_set_str_x(Q, "29454235622145096109316297773070819902970029047*i + 17242937661247998401353436361850378272505949076");
     point_set_str_x(PQd,"29746668073241433805825980414131965658693152428*i + 17760541352524573821929254886145960108078787218");
 
+    point_printx(P, "xP");
+    point_printx(Q, "xQ");
+    point_printx(PQd, "xPQd");
+
     // Setup Torsion basis
     struct tors_basis PQ = { .P=P, .Q=Q, .PQd=PQd  };
 
@@ -755,9 +759,9 @@ int main() {
     init_test_variables();
 
     // General Functions
-    TEST_RUN(test_pprod_init());
-    TEST_RUN(test_random_unit_sampling_small());
-    TEST_RUN(test_random_unit_sampling_large());
+    TEST_RUN_SILENT(test_pprod_init());
+    TEST_RUN_SILENT(test_random_unit_sampling_small());
+    TEST_RUN_SILENT(test_random_unit_sampling_large());
     TEST_RUN(test_msidh_gen_pub_params());
 
     // t = 4 for MSIDH
