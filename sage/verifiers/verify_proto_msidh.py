@@ -1,11 +1,11 @@
 #!/usr/bin/sage
 
 from sage.all import EllipticCurve, order_from_multiple, GF
-from lib.isogeny import verify_torsion_basis 
-from lib.msidh import MSIDH 
+from isogencrypt_sage.isogeny import validate_torsion_basis 
+from isogencrypt_sage.msidh import MSIDH 
 
-def verify_test_msidh_gen_pub_params():
-    print("---: test_msidh_gen_pub_params()")
+def test_msidh_gen_pub_params():
+    print(f"---: test_msidh_gen_pub_params()")
 
     t = 4
     print("t:", t)
@@ -58,7 +58,7 @@ class TestT4:
         f = cls.f
 
     @classmethod
-    def setup_params(cls):
+    def setup_class(cls):
         """Prepare variables for running tests"""
         # i is used for constructing fp2 elements: a + b * i
 
@@ -82,7 +82,7 @@ class TestT4:
             raise ValueError("E is not a supersingular curve")
 
     @classmethod
-    def verify_test_msidh_internals(cls):
+    def test_msidh_internals(cls):
         print("---: test_msidh_internals()")
         i, E, A, B, n = cls.i, cls.E, cls.A, cls.B, cls.n
 
@@ -156,7 +156,7 @@ class TestT4:
 
 
     @classmethod
-    def verify_test_msidh_secret_zero(cls):
+    def test_msidh_secret_zero(cls):
         print("---: test_msidh_secret_zero()")
         i, E, n = cls.i, cls.E, cls.n
 
@@ -171,7 +171,7 @@ class TestT4:
 
         # Check if valid full torsion basis
         assert n == 420
-        assert verify_torsion_basis(P, Q, n)
+        assert validate_torsion_basis(P, Q, n)
 
         s = 0
         K = P + s * Q
@@ -181,7 +181,7 @@ class TestT4:
         print(f"xK: {K.x()}")
 
     @classmethod
-    def verify_test_msidh_non_deterministic(cls):
+    def test_msidh_non_deterministic(cls):
         print("---: test_msidh_non_deterministic()")
         i, E, = cls.i, cls.E
 
@@ -195,7 +195,7 @@ class TestT4:
         print(f"xPQd: {PQd.x()}")
 
     @classmethod
-    def verify_test_msidh_monte_carlo(cls):
+    def test_msidh_monte_carlo(cls):
         print("---: test_msidh_monte_carlo()")
         i, E, = cls.i, cls.E
 
@@ -219,7 +219,7 @@ class TestT30:
         i, F, E, P, Q = cls.i, cls.F, cls.E, cls.P, cls.Q 
 
     @classmethod
-    def setup_params(cls):
+    def setup_class(cls):
         # MSIDH params for t = 30
         p, A, B, f = MSIDH.gen_pub_params(30)
         n = p + 1
@@ -244,7 +244,7 @@ class TestT30:
         Q = E(29454235622145096109316297773070819902970029047*i + 17242937661247998401353436361850378272505949076, 4027506100385014783073063257216469725014255007*i + 40503840888595183524703631351014003574434214416)
         P.set_order(n)
         Q.set_order(n)
-        # assert verify_torsion_basis(P, Q, n)
+        # assert validate_torsion_basis(P, Q, n)
 
         # Q lays over the (0, 0) point of order 2
         assert Q * (n//2) == E(0, 0)
@@ -254,7 +254,7 @@ class TestT30:
         cls.i, cls.F, cls.E, cls.P, cls.Q = i, F, E, P, Q
 
     @classmethod
-    def veriy_test_msidh_interals_large(cls):
+    def test_msidh_internals_large(cls):
         print("---: test_msidh_internals_large()")
         cls.load_globals()
 
@@ -269,7 +269,7 @@ class TestT30:
         print(f"xPA: {PA.x()}")
         print(f"xQA: {QA.x()}")
         print(f"xPQAd: {(PA - QA).x()}")
-        assert verify_torsion_basis(PA, QA, A)
+        assert validate_torsion_basis(PA, QA, A)
 
         # Construct Bob basis (PB, QB) = [n//B](P, Q)
         PB = P * (n // B) 
@@ -278,7 +278,7 @@ class TestT30:
         print(f"xPB: {PB.x()}")
         print(f"xQB: {QB.x()}")
         print(f"xPQBd: {(PB - QB).x()}")
-        assert verify_torsion_basis(PB, QB, B)
+        assert validate_torsion_basis(PB, QB, B)
 
 
         # Secret and Mask for Alice
@@ -318,20 +318,23 @@ class TestT30:
             print(f"aτ(φ(E))(24p): {a2_24p}")
             print(f"jτ(φ(E)): {j_inv}")
 
-if __name__ == "__main__":
 
-    verify_test_msidh_gen_pub_params()
+def main():
+    test_msidh_gen_pub_params()
 
     # Small MSIDH t = 4
-    TestT4.setup_params()
-    TestT4.verify_test_msidh_internals()
-    TestT4.verify_test_msidh_secret_zero()
-    TestT4.verify_test_msidh_non_deterministic()
-    TestT4.verify_test_msidh_monte_carlo()
+    TestT4.setup_class()
+    TestT4.test_msidh_internals()
+    TestT4.test_msidh_secret_zero()
+    TestT4.test_msidh_non_deterministic()
+    TestT4.test_msidh_monte_carlo()
 
-    # Larger MSIDH t = 30
-    TestT30.setup_params()
-    TestT30.veriy_test_msidh_interals_large()
+    # # Larger MSIDH t = 30
+    TestT30.setup_class()
+    TestT30.test_msidh_internals_large()
+
+if __name__ == "__main__":
+    main()
 
 
 

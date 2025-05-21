@@ -1,7 +1,7 @@
-#!/usr/bin/sage
+#!/usr/bin/sage -python
 
-from msidh import MSIDH, MSIDHBenchTask
 from sage.all import GF, EllipticCurve, proof, set_random_seed, order_from_multiple
+from isogencrypt_sage.msidh import MSIDH, MSIDHBenchTask
 # https://stackoverflow.com/a/25823885
 from timeit import default_timer as timer
 import sys

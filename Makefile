@@ -7,21 +7,22 @@ SRC_DIR := src
 
 BUILD_DIR := build
 OBJ_DIR := $(BUILD_DIR)/obj
+OUT_DIR := $(BUILD_DIR)/out
+TMP_DIR := $(BUILD_DIR)/tmp
 
 TESTS_SRC_DIR := tests
 TESTS_OBJ_DIR := $(OBJ_DIR)/tests
 TESTS_BIN_DIR := $(BUILD_DIR)/tests
-TESTS_OUT_DIR := $(TESTS_BIN_DIR)/out
+TESTS_OUT_DIR := $(OUT_DIR)/tests
 
-VERIFIERS_SRC_DIR := verifiers
 
-VECTORS_SRC_DIR := vectors
-VECTORS_DIR := $(BUILD_DIR)/vectors
+BENCHES_SRC_DIR := benches
+BENCHES_OBJ_DIR := $(OBJ_DIR)/benches
+BENCHES_BIN_DIR := $(BUILD_DIR)/benches
+BENCHES_OUT_DIR := $(OUT_DIR)/benches
 
-BENCHES_SRC_DIR := benchmarks
-BENCHES_OBJ_DIR := $(OBJ_DIR)/benchmarks
-BENCHES_BIN_DIR := $(BUILD_DIR)/benchmarks
-BENCHES_OUT_DIR := $(BENCHES_BIN_DIR)/benchmarks
+VECTORS_SRC_DIR := assets/test_vectors
+DIFFS_OUT_DIR := $(OUT_DIR)/diffs
 
 # Variables for general file 
 SRC := $(wildcard $(SRC_DIR)/*.c)
@@ -32,6 +33,11 @@ TESTS := $(wildcard $(TESTS_SRC_DIR)/test_*.c)
 TESTS_BIN := $(patsubst $(TESTS_SRC_DIR)/%.c,$(TESTS_BIN_DIR)/%,$(TESTS))
 TESTS_OBJ := $(patsubst $(TESTS_SRC_DIR)/%.c,$(TESTS_OBJ_DIR)/%.o,$(TESTS))
 TESTS_OUT := $(patsubst $(TESTS_SRC_DIR)/%.c,$(TESTS_OUT_DIR)/%.out,$(TESTS))
+TESTS_TMP := $(patsubst $(TESTS_SRC_DIR)/%.c,$(TESTS_OUT_DIR)/%.tmp,$(TESTS))
+
+# Diffs must match up with each of the test_vectors
+VECTORS := $(wildcard $(VECTORS_SRC_DIR)/*.out)
+DIFFS_OUT := $(patsubst $(VECTORS_SRC_DIR)/%.out,$(DIFFS_OUT_DIR)/%.diff,$(VECTORS))
 
 # Same for benchmarks
 BENCHES := $(wildcard $(BENCHES_SRC_DIR)/bench_*.c)
@@ -39,17 +45,15 @@ BENCHES_BIN := $(patsubst $(BENCHES_SRC_DIR)/%.c,$(BENCHES_BIN_DIR)/%,$(BENCHES)
 BENCHES_OBJ := $(patsubst $(BENCHES_SRC_DIR)/%.c,$(BENCHES_OBJ_DIR)/%.o,$(BENCHES))
 BENCHES_OUT := $(patsubst $(BENCHES_SRC_DIR)/%.c,$(BENCHES_OUT_DIR)/%.out,$(BENCHES))
 
-# List of .sage scripts for verification
-VERIFIERS := $(wildcard $(VERIFIERS_SRC_DIR)/verify_*.sage)
-VECTORS := $(patsubst $(VERIFIERS_SRC_DIR)/%.sage,$(VECTORS_DIR)/%.out,$(VERIFIERS))
-
 # Optional CPP flags: -MMD -MP 
 CPPFLAGS := -Iinclude 
 CFLAGS   := -Wall -Wextra -O2
 LDFLAGS  := -Llib
 LDLIBS   := -lgmp
 
-.PHONY: all clean check vectors
+.PHONY: tests benches all clean run-tests run-diffs
+# This allows for calling run-diffs without running run-tests
+.NOTINTERMEDIATE: $(TESTS_OUT)
 
 all: tests benches
 
@@ -59,7 +63,7 @@ $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c | $(OBJ_DIR)
 	@$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
 
 # Create the directories if they do not exist
-$(TESTS_BIN_DIR) $(OBJ_DIR) $(TESTS_OBJ_DIR) $(TESTS_OUT_DIR) $(VECTORS_DIR) $(BENCHES_OBJ_DIR) $(BENCHES_BIN_DIR):
+$(TESTS_BIN_DIR) $(OBJ_DIR) $(TESTS_OBJ_DIR) $(TESTS_OUT_DIR) $(VECTORS_DIR) $(BENCHES_OBJ_DIR) $(BENCHES_BIN_DIR) $(DIFFS_OUT_DIR):
 	@echo "Creating Directory: '$@'"
 	@mkdir -p $@
 
@@ -90,24 +94,32 @@ $(BENCHES_BIN_DIR)/%: $(BENCHES_OBJ_DIR)/%.o $(OBJ) | $(BENCHES_BIN_DIR)
 	@echo "Linking benchmark: '$@'"
 	@$(CC) $(LDFLAGS) $^ $(LDLIBS) -o $@
 
-# Run unit tests to see if return codes are 0 
-check: $(TESTS_OUT)
+# Ephemeral target to "always" run
+run-tests: $(TESTS_TMP)
+
+# Target for "temporary" files, but actually crate .out files
+# It must be this way, ohterwise: run-diff will always rerun the tests (run-tests) (not wanted)
+$(TESTS_OUT_DIR)/%.tmp: $(TESTS_BIN_DIR)/% FORCE | $(TESTS_OUT_DIR)
+	@echo "------------------------------------"
+	@echo "> Run: $(notdir $<)"
+	@echo "------------------------------------"
+	@$< > $(patsubst $(TESTS_OUT_DIR)/%.tmp,$(TESTS_OUT_DIR)/%.out,$@)
+
+run-diffs: $(DIFFS_OUT) 
+
+# Target for real "out" files, in order to recreate them as neccessary 
+$(TESTS_OUT_DIR)/%.out: $(TESTS_BIN_DIR)/%  | $(TESTS_OUT_DIR)
+	@echo "------------------------------------"
+	@echo "> Run for diffs: $(notdir $<)"
+	@echo "------------------------------------"
+	$< > $@
 
 # Run each of the tests, send output to .out file
-$(TESTS_OUT_DIR)/%.out: $(TESTS_BIN_DIR)/% FORCE | $(TESTS_OUT_DIR)
-	@echo "------------------------------------"
-	@echo "> Run: $(notdir $<)"
-	@echo "------------------------------------"
-	@$< 1> $@ 
-
-vectors: $(VECTORS) | $(VECTORS_DIR)
-
-# Run sage scripts to generate the test vectors
-$(VECTORS_DIR)/%.out: $(VERIFIERS_SRC_DIR)/%.sage FORCE | $(VECTORS_DIR)
-	@echo "------------------------------------"
-	@echo "> Run: $(notdir $<)"
-	@echo "------------------------------------"
-	@(sage $< > $@ && diff -q $@ $(subst $(VECTORS_DIR),$(VECTORS_SRC_DIR),$@) --color && echo "OK: Output equal to Test Vectors") || echo "ERROR: Output differ from Test Vectors"
+# @echo "> $(notdir $@)"
+# && echo "Check diff: $(notdir $@) (\033[0;32mPASSED\033[0m)" || (echo "[\033[0;31mFAILED\033[0m]: $(notdir $@) (see: $@)")
+$(DIFFS_OUT_DIR)/%.diff: $(TESTS_OUT_DIR)/%.out $(VECTORS_SRC_DIR)/%.out $(TESTS_BIN_DIR)/% FORCE | $(DIFFS_OUT_DIR)
+	@diff $< $(patsubst $(DIFFS_OUT_DIR)/%.diff,$(VECTORS_SRC_DIR)/%.out,$@) --color=always > $@ \
+	&& echo "Check diff: $(notdir $@) (\033[0;32mPASSED\033[0m)" || (echo "Check diff: $(notdir $@) (\033[0;31mFAILED\033[0m) - see: $@")
 
 clean:
 	@echo "Removing: $(BUILD_DIR)"

@@ -633,9 +633,10 @@ void test_j_invariant() {
 int main() {
     init_test_variables();
 
-    // integrity tests
-    TEST_RUN(test_point_set_is_immutable());
-    TEST_RUN(test_A_A24p_conversion());
+    // Unit tests not related to isogeny - diff with SageMath is not required,
+    // therefore tests are run in "SILENT" mode (funciton name is not printed)
+    TEST_RUN_SILENT(test_point_set_is_immutable());
+    TEST_RUN_SILENT(test_A_A24p_conversion());
 
     // p = 431 tests
     set_params_testp431();
