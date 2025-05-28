@@ -464,3 +464,21 @@ int fp2_equal_str(fp2_t res, const char * x_str) {
 
     return are_equal;
 }
+
+size_t fp2_write_size(fp2_t x) {
+    // Calculate buffer size required before calling "fp2_write"
+
+    // TODO: Maybe store as hex in the future to save space?
+    size_t size_a = mpz_sizeinbase(x->a, 10);
+    size_t size_b = mpz_sizeinbase(x->b, 10);
+    size_t size_mid = 5; // "*i + "
+    
+    // Add +1 for null termination
+    size_t size_sum = size_a + size_mid + size_b + 1;
+    return size_sum;
+}
+
+void fp2_write(fp2_t x, char* buffer) {
+    // Use GMP sprintf to store the fp2 value in format respected by fp2_set_str
+    gmp_sprintf(buffer, "%Zd*i + %Zd", x->b, x->a);
+}
