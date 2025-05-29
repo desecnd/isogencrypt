@@ -166,7 +166,7 @@ void msidh_state_reset(struct msidh_state *msidh) {
     msidh->status = MSIDH_STATUS_INITIALIZED;
 }
 
-void msidh_key_exchange(struct msidh_state *msidh, const fp2_t A24p, const fp2_t C24, const struct tors_basis* BPQA) {
+void msidh_key_exchange(struct msidh_state *msidh, const fp2_t A24p_other, const fp2_t C24_other, const struct tors_basis* PQ_masked) {
     assert(msidh->status == MSIDH_STATUS_PREPARED);
 
     fp2_t A24p_final, C24_final;
@@ -177,12 +177,12 @@ void msidh_key_exchange(struct msidh_state *msidh, const fp2_t A24p, const fp2_t
     // TODO: add verification of the pairing
 
     // Update my torsion basis (it will be destroyed during the key_exchange process)
-    assert(!mpz_cmp(msidh->PQ_me.n->value, BPQA->n->value));
-    point_set(msidh->PQ_me.P, BPQA->P);
-    point_set(msidh->PQ_me.Q, BPQA->Q);
-    point_set(msidh->PQ_me.PQd, BPQA->PQd);
+    assert(!mpz_cmp(msidh->PQ_self.n->value, PQ_masked->n->value));
+    point_set(msidh->PQ_self.P, PQ_masked->P);
+    point_set(msidh->PQ_self.Q, PQ_masked->Q);
+    point_set(msidh->PQ_self.PQd, PQ_masked->PQd);
 
-    _msidh_key_exchange_alice(msidh->sk_jinv, A24p_final, C24_final, A24p, C24, &msidh->PQ_me, msidh->secret);
+    _msidh_key_exchange_alice(msidh->j_inv, A24p_final, C24_final, A24p_other, C24_other, &msidh->PQ_self, msidh->secret);
 
     fp2_clear(&A24p_final);
     fp2_clear(&C24_final);
@@ -190,29 +190,44 @@ void msidh_key_exchange(struct msidh_state *msidh, const fp2_t A24p, const fp2_t
     msidh->status = MSIDH_STATUS_EXCHANGED;
 }
 
-void msidh_state_prepare(struct msidh_state *msidh, const fp2_t A24p, const fp2_t C24, const struct tors_basis *PQ, pprod_t A_deg, pprod_t B_deg, int is_bob) {
+void msidh_state_prepare(struct msidh_state *msidh, unsigned int t, const fp2_t a, const struct tors_basis *PQ, int is_bob) {
     // TODO: what about the seed?
-    // TODO: pass gmp_randstate to sample methods
     assert(msidh->status == MSIDH_STATUS_INITIALIZED);
+    // `a = 2` is invalid in montgomery model
+    assert(!fp2_equal_uint(a, 2));
+
+    // Generate public protocol params: p, A, B given t;
+    int ret = msidh_gen_pub_params(msidh->p, msidh->A, msidh->B, t);
+    assert(ret > 0);
+
+    // TODO: Make sure that the global arithmetic is set to FP
+    // Initialize global characteristic if its not set
+    ret = global_fpchar_clear();
+    ret = global_fpchar_setup(msidh->p);
 
     mpz_t mask;
     mpz_init(mask);
 
+    // Initalize starting Ellitptic Curve: y^2 = x^3 + ax^2 + x
+    fp2_set(msidh->A24p_start, a);
+    fp2_set_uint(msidh->C24_start, 1); 
+    A24p_from_A(msidh->A24p_start, msidh->C24_start, msidh->A24p_start, msidh->C24_start);
+
     if (is_bob) {
-        tors_basis_get_subgroup(&msidh->PQ_me, B_deg, PQ, A24p, C24); 
-        tors_basis_get_subgroup(&msidh->PQ_other, A_deg, PQ, A24p, C24); 
-        // Generate random secret s in range [0, B_deg)
-        mpz_urandomm(msidh->secret, msidh->randstate, B_deg->value);
-        sample_quadratic_root_of_unity(mask, A_deg); 
+        tors_basis_get_subgroup(&msidh->PQ_self, msidh->B, PQ, msidh->A24p_start, msidh->C24_start); 
+        tors_basis_get_subgroup(&msidh->PQ_pubkey, msidh->A, PQ, msidh->A24p_start, msidh->C24_start); 
+        // Generate random secret s in range [0, msidh->B)
+        mpz_urandomm(msidh->secret, msidh->randstate, msidh->B->value);
+        sample_quadratic_root_of_unity(mask, msidh->A); 
     } else {
-        tors_basis_get_subgroup(&msidh->PQ_me, A_deg, PQ, A24p, C24); 
-        tors_basis_get_subgroup(&msidh->PQ_other, B_deg, PQ, A24p, C24); 
-        // Generate random secret s in range [0, B_deg)
-        mpz_urandomm(msidh->secret, msidh->randstate, A_deg->value);
-        sample_quadratic_root_of_unity(mask, B_deg); 
+        tors_basis_get_subgroup(&msidh->PQ_self, msidh->A, PQ, msidh->A24p_start, msidh->C24_start); 
+        tors_basis_get_subgroup(&msidh->PQ_pubkey, msidh->B, PQ, msidh->A24p_start, msidh->C24_start); 
+        // Generate random secret s in range [0, msidh->B)
+        mpz_urandomm(msidh->secret, msidh->randstate, msidh->A->value);
+        sample_quadratic_root_of_unity(mask, msidh->B); 
     }
 
-    _msidh_gen_pubkey_alice(msidh->pk_A24p, msidh->pk_C24, &msidh->PQ_me, &msidh->PQ_other, A24p, C24, msidh->secret, mask);
+    _msidh_gen_pubkey_alice(msidh->A24p_pubkey, msidh->C24_pubkey, &msidh->PQ_self, &msidh->PQ_pubkey, msidh->A24p_start, msidh->C24_start, msidh->secret, mask);
 
     mpz_clear(mask);
 
@@ -276,19 +291,27 @@ void _msidh_key_exchange_alice(fp2_t j_inv, fp2_t A24p_final, fp2_t C24_final, c
 void msidh_state_init(struct msidh_state* msidh) {
     gmp_randinit_mt(msidh->randstate);
 
-    point_init(&msidh->PQ_me.P);
-    point_init(&msidh->PQ_me.Q);
-    point_init(&msidh->PQ_me.PQd);
-    pprod_init(&msidh->PQ_me.n);
+    mpz_init(msidh->p);
+    pprod_init(&msidh->A);
+    pprod_init(&msidh->B);
 
-    point_init(&msidh->PQ_other.P);
-    point_init(&msidh->PQ_other.Q);
-    point_init(&msidh->PQ_other.PQd);
-    pprod_init(&msidh->PQ_other.n);
+    point_init(&msidh->PQ_self.P);
+    point_init(&msidh->PQ_self.Q);
+    point_init(&msidh->PQ_self.PQd);
+    pprod_init(&msidh->PQ_self.n);
 
-    fp2_init(&msidh->pk_A24p);
-    fp2_init(&msidh->pk_C24);
-    fp2_init(&msidh->sk_jinv);
+    point_init(&msidh->PQ_pubkey.P);
+    point_init(&msidh->PQ_pubkey.Q);
+    point_init(&msidh->PQ_pubkey.PQd);
+    pprod_init(&msidh->PQ_pubkey.n);
+
+    fp2_init(&msidh->A24p_start);
+    fp2_init(&msidh->C24_start);
+
+    fp2_init(&msidh->A24p_pubkey);
+    fp2_init(&msidh->C24_pubkey);
+
+    fp2_init(&msidh->j_inv);
     mpz_init(msidh->secret);
 
     msidh->status = MSIDH_STATUS_INITIALIZED;
@@ -297,19 +320,27 @@ void msidh_state_init(struct msidh_state* msidh) {
 void msidh_state_clear(struct msidh_state* msidh) {
     gmp_randclear(msidh->randstate);
 
-    point_clear(&msidh->PQ_me.P);
-    point_clear(&msidh->PQ_me.Q);
-    point_clear(&msidh->PQ_me.PQd);
-    pprod_clear(&msidh->PQ_me.n);
+    mpz_clear(msidh->p);
+    pprod_clear(&msidh->A);
+    pprod_clear(&msidh->B);
 
-    point_clear(&msidh->PQ_other.P);
-    point_clear(&msidh->PQ_other.Q);
-    point_clear(&msidh->PQ_other.PQd);
-    pprod_clear(&msidh->PQ_other.n);
+    point_clear(&msidh->PQ_self.P);
+    point_clear(&msidh->PQ_self.Q);
+    point_clear(&msidh->PQ_self.PQd);
+    pprod_clear(&msidh->PQ_self.n);
 
-    fp2_clear(&msidh->pk_A24p);
-    fp2_clear(&msidh->pk_C24);
-    fp2_clear(&msidh->sk_jinv);
+    point_clear(&msidh->PQ_pubkey.P);
+    point_clear(&msidh->PQ_pubkey.Q);
+    point_clear(&msidh->PQ_pubkey.PQd);
+    pprod_clear(&msidh->PQ_pubkey.n);
+
+    fp2_clear(&msidh->A24p_start);
+    fp2_clear(&msidh->C24_start);
+
+    fp2_clear(&msidh->A24p_pubkey);
+    fp2_clear(&msidh->C24_pubkey);
+
+    fp2_clear(&msidh->j_inv);
     mpz_clear(msidh->secret);
 
     msidh->status = MSIDH_STATUS_UNINITIALIZED;

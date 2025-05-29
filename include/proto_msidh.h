@@ -22,25 +22,37 @@ enum {
 struct msidh_state {
     gmp_randstate_t randstate;
 
-    struct tors_basis PQ_me, PQ_other;
-    // Public Key
-    fp2_t pk_A24p, pk_C24;
+    mpz_t p;
+    pprod_t A, B;
+
+    // Torsion basis for Alice and for Bob
+    struct tors_basis PQ_self, PQ_pubkey;
+
+    // Starting Elliptic Curve coefficient a = A/C in xDBL form
+    fp2_t A24p_start, C24_start;
+
+    // Public Key Elliptic Curve
+    fp2_t A24p_pubkey, C24_pubkey;
+
     // Private Key
     mpz_t secret;
-    // Shared Key -> j_invariant
-    fp2_t sk_jinv;
 
+    // Shared Key -> j_invariant
+    fp2_t j_inv;
+
+    // Current state of the protocol
     int status; 
 };
 
-// TODO: Make sure that the global arithmetic is set to FP
 void msidh_state_init(struct msidh_state* msidh);
 
 void msidh_state_clear(struct msidh_state* msidh);
 
 void msidh_state_reset(struct msidh_state *msidh);
 
-void msidh_state_prepare(struct msidh_state *msidh, const fp2_t A24p, const fp2_t C24, const struct tors_basis *PQ, pprod_t A_deg, pprod_t B_deg, int is_bob);
+void msidh_state_prepare(struct msidh_state *msidh, unsigned int t, const fp2_t a, const struct tors_basis *PQ, int is_bob);
+
+void msidh_key_exchange(struct msidh_state *msidh, const fp2_t A24p_other, const fp2_t C24_other, const struct tors_basis* PQ_masked);
 
 // TODO: add gmp_randstate instead of random
 int sample_quadratic_root_of_unity(mpz_t result, pprod_t modulus);
@@ -63,7 +75,6 @@ void _msidh_gen_pubkey_alice(fp2_t A24p_alice, fp2_t C24_alice, struct tors_basi
  */
 void _msidh_key_exchange_alice(fp2_t j_inv, fp2_t A24p_final, fp2_t C24_final, const fp2_t A24p_bob, const fp2_t C24_bob, struct tors_basis * BPQA, const mpz_t A_sec);
 
-void msidh_key_exchange(struct msidh_state *msidh, const fp2_t A24p, const fp2_t C24, const struct tors_basis* BPQA);
 
 /*
  * @brief Calculate subgroup basis of the torsion basis (Pn, Qn) = [N/n](P, Q) of order n, where N is the order of (P, Q)

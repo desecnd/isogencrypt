@@ -8,17 +8,19 @@
 #include "proto_msidh.h"
 #include "pprod.h"
 
-fp2_t A24p, C24;
+fp2_t A24p, C24, a0;
 point_t P, Q, PQd, K;
 point_t PA, QA, PQAd;
 point_t PB, QB, PQBd;
 pprod_t A_deg, B_deg;
 mpz_t p, m;
+unsigned int g_t;
 
 
 void init_test_variables() {
     fp2_init(&A24p);
     fp2_init(&C24);
+    fp2_init(&a0);
     point_init(&P);
     point_init(&Q);
     point_init(&PQd);
@@ -38,6 +40,7 @@ void init_test_variables() {
 void clear_test_variables() {
     fp2_clear(&A24p);
     fp2_clear(&C24);
+    fp2_clear(&a0);
     point_clear(&P);
     point_clear(&Q);
     point_clear(&PQd);
@@ -197,7 +200,8 @@ void test_msidh_gen_pub_params() {
 
 void setup_params_t4() {
     // p + 1 = 420 = 4 * 3 * 5 * 7
-    int f = msidh_gen_pub_params(p, A_deg, B_deg, 4);
+    g_t = 4;
+    int f = msidh_gen_pub_params(p, A_deg, B_deg, g_t);
     CHECK(f==1);
 
     // Clear just to be sure
@@ -205,16 +209,14 @@ void setup_params_t4() {
     global_fpchar_setup(p);
 
     // Elliptic Curve defined by y^2 = x^3 + 6*x^2 + x over Finite Field in i of size 419^2
-    fp2_t A, C;
-    fp2_init(&A); fp2_init(&C);
+    fp2_set_uint(a0, 6);
 
-    fp2_set_uint(A, 6);
-    fp2_set_uint(C, 1);
+    fp2_set(A24p, a0);
+    fp2_set_uint(C24, 1);
     
     // Convert to (A+2 : 4) form used in xDBL
-    A24p_from_A(A24p, C24, A, C);
-
-    fp2_clear(&A); fp2_clear(&C);
+    // Function is safe to call with self-args
+    A24p_from_A(A24p, C24, A24p, C24);
 }
 
 void test_msidh_secret_zero() {
@@ -518,9 +520,9 @@ void test_msidh_non_deterministic() {
     point_set_str_x(PQd, "98*i + 199");
     point_printx(PQd, "xPQd");
 
-    msidh_state_prepare(&m1, A24p, C24, &PQ, A_deg, B_deg, 0);
-    msidh_state_prepare(&m2, A24p, C24, &PQ, A_deg, B_deg, 0);
-    msidh_state_prepare(&m3, A24p, C24, &PQ, A_deg, B_deg, 0);
+    msidh_state_prepare(&m1, g_t, a0, &PQ,0);
+    msidh_state_prepare(&m2, g_t, a0, &PQ, 0);
+    msidh_state_prepare(&m3, g_t, a0, &PQ, 0);
 
     // At least one has to be different -> extremally low chance for false test
     CHECK(m1.secret != m2.secret || m2.secret == m3.secret || m3.secret == m1.secret);
@@ -555,14 +557,15 @@ void test_msidh_monte_carlo() {
 
     // Test is not deterministic - we try many different combinations of (secret/mask) for both parties
     for (int iter = 0; iter < 100; iter++) {
-        msidh_state_prepare(&alice, A24p, C24, &PQ, A_deg, B_deg, 0);
-        msidh_state_prepare(&bob, A24p, C24, &PQ, A_deg, B_deg, 1);
+        msidh_state_prepare(&alice, g_t, a0, &PQ,  0);
+        msidh_state_prepare(&bob, g_t, a0, &PQ,  1);
 
-        msidh_key_exchange(&alice, bob.pk_A24p, bob.pk_C24, &bob.PQ_other);
-        msidh_key_exchange(&bob, alice.pk_A24p, alice.pk_C24, &alice.PQ_other);
+        msidh_key_exchange(&alice, bob.A24p_pubkey, bob.C24_pubkey, &bob.PQ_pubkey);
+        msidh_key_exchange(&bob, alice.A24p_pubkey, alice.C24_pubkey, &alice.PQ_pubkey);
 
         // Make sure that the computed shared secret is the same for both parties
-        CHECK(!mpz_cmp(alice.sk_jinv->a, bob.sk_jinv->a) && !mpz_cmp(alice.sk_jinv->b, bob.sk_jinv->b));
+        CHECK(fp2_equal(alice.j_inv, bob.j_inv));
+        // CHECK(!mpz_cmp(alice.j_inv->a, bob.j_inv->a) && !mpz_cmp(alice.j_inv->b, bob.j_inv->b));
 
         msidh_state_reset(&alice);
         msidh_state_reset(&bob);
@@ -573,7 +576,8 @@ void test_msidh_monte_carlo() {
 }
 
 void setup_params_t30() {
-    int f = msidh_gen_pub_params(p, A_deg, B_deg, 30);
+    g_t = 30;
+    int f = msidh_gen_pub_params(p, A_deg, B_deg, g_t);
     assert(f > 0);
 
     // Clear just to be sure
@@ -581,12 +585,14 @@ void setup_params_t30() {
     global_fpchar_setup(p);
 
     // Elliptic Curve defined by y^2 = x^3 + 6*x^2 + x over Finite Field in i of size 419^2
-    fp2_set_uint(A24p, 6);
+    fp2_set_uint(a0, 6);
+
+    fp2_set(A24p, a0);
     fp2_set_uint(C24, 1);
     
     // Convert to (A+2 : 4) form used in xDBL
+    // Function is safe to call with self-args
     A24p_from_A(A24p, C24, A24p, C24);
-
 }
 
 void test_msidh_internals_large() {
