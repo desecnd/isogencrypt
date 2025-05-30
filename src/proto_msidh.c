@@ -8,7 +8,6 @@
 #include "ec_mont.h"
 #include "proto_msidh.h"
 
-
 /*
  * @brief Calculate subgroup basis of the torsion basis (Pn, Qn) = [N/n](P, Q) of order n, where N is the order of (P, Q)
  */
@@ -155,6 +154,8 @@ int msidh_gen_pub_params(mpz_t p, pprod_t A, pprod_t B, unsigned int t) {
     return f;
 }
 
+
+
 void msidh_state_reset(struct msidh_state *msidh) {
     assert(
         msidh->status == MSIDH_STATUS_PREPARED || 
@@ -166,38 +167,75 @@ void msidh_state_reset(struct msidh_state *msidh) {
     msidh->status = MSIDH_STATUS_INITIALIZED;
 }
 
-void msidh_key_exchange(struct msidh_state *msidh, const fp2_t A24p_other, const fp2_t C24_other, const struct tors_basis* PQ_masked) {
+void msidh_key_exchange(struct msidh_state *msidh, const struct msidh_data *pk_other) {
     assert(msidh->status == MSIDH_STATUS_PREPARED);
 
-    fp2_t A24p_final, C24_final;
-    fp2_init(&A24p_final);
-    fp2_init(&C24_final);
+    fp2_t A24p_final, C24_final, A24p_other, C24_other;
+    fp2_init(&A24p_final); fp2_init(&C24_final); fp2_init(&A24p_other); fp2_init(&C24_other);
 
     // TODO: Copy the point into my own torsion, to not discard the original one
     // TODO: add verification of the pairing
+    assert(msidh->t == pk_other->t);
 
     // Update my torsion basis (it will be destroyed during the key_exchange process)
-    assert(!mpz_cmp(msidh->PQ_self.n->value, PQ_masked->n->value));
-    point_set(msidh->PQ_self.P, PQ_masked->P);
-    point_set(msidh->PQ_self.Q, PQ_masked->Q);
-    point_set(msidh->PQ_self.PQd, PQ_masked->PQd);
+    point_set_fp2_x(msidh->PQ_self.P, pk_other->xP);
+    point_set_fp2_x(msidh->PQ_self.Q, pk_other->xQ);
+    point_set_fp2_x(msidh->PQ_self.PQd, pk_other->xR);
+   // Order should not change from previous iteration
 
+    if (msidh->is_bob) {
+        assert(0 == mpz_cmp(msidh->PQ_self.n->value, msidh->B->value));
+        // pprod_set(msidh->PQ_self.n, msidh->B);
+    } else {
+        assert(0 == mpz_cmp(msidh->PQ_self.n->value, msidh->A->value));
+     }
+
+    // Reconstruct the Elliptic Curve given by pk_other
+    fp2_set(A24p_other, pk_other->a);
+    fp2_set_uint(C24_other, 1);
+    A24p_from_A(A24p_other, C24_other, A24p_other, C24_other); 
+
+    // Run the key exchange
     _msidh_key_exchange_alice(msidh->j_inv, A24p_final, C24_final, A24p_other, C24_other, &msidh->PQ_self, msidh->secret);
 
-    fp2_clear(&A24p_final);
-    fp2_clear(&C24_final);
+    fp2_clear(&A24p_final); fp2_clear(&C24_final); fp2_clear(&A24p_other); fp2_clear(&C24_other);
     
     msidh->status = MSIDH_STATUS_EXCHANGED;
 }
 
-void msidh_state_prepare(struct msidh_state *msidh, unsigned int t, const fp2_t a, const struct tors_basis *PQ, int is_bob) {
-    // TODO: what about the seed?
+void msidh_get_pubkey(const struct msidh_state *msidh, struct msidh_data *pk_self) {
+    // Point have to be normalized, otherwise we will get false results
+    assert(point_is_normalized(msidh->PQ_pubkey.P));
+    assert(point_is_normalized(msidh->PQ_pubkey.Q));
+    assert(point_is_normalized(msidh->PQ_pubkey.PQd));
+
+    pk_self->t = msidh->t;
+
+    fp2_set(pk_self->xP, msidh->PQ_pubkey.P->X);
+    fp2_set(pk_self->xQ, msidh->PQ_pubkey.Q->X);
+    fp2_set(pk_self->xR, msidh->PQ_pubkey.PQd->X);
+
+    // Calculate the a coefficient
+    // TODO: use A:C inside MSIDH state instead of converting
+    fp2_t A, C;
+    fp2_init(&A); fp2_init(&C);
+    A_from_A24p(A, C, msidh->A24p_pubkey, msidh->C24_pubkey);
+    assert(!fp2_is_zero(C));
+
+    fp2_div_unsafe(pk_self->a, A, C);
+    fp2_clear(&A); fp2_clear(&C);
+}
+
+void msidh_state_prepare(struct msidh_state *msidh, const struct msidh_data *params, int is_bob) {
     assert(msidh->status == MSIDH_STATUS_INITIALIZED);
+
     // `a = 2` is invalid in montgomery model
-    assert(!fp2_equal_uint(a, 2));
+    assert(!fp2_equal_uint(params->a, 2));
 
     // Generate public protocol params: p, A, B given t;
-    int ret = msidh_gen_pub_params(msidh->p, msidh->A, msidh->B, t);
+    msidh->is_bob = is_bob;
+    msidh->t = params->t;
+    int ret = msidh_gen_pub_params(msidh->p, msidh->A, msidh->B, msidh->t);
     assert(ret > 0);
 
     // TODO: Make sure that the global arithmetic is set to FP
@@ -209,19 +247,27 @@ void msidh_state_prepare(struct msidh_state *msidh, unsigned int t, const fp2_t 
     mpz_init(mask);
 
     // Initalize starting Ellitptic Curve: y^2 = x^3 + ax^2 + x
-    fp2_set(msidh->A24p_start, a);
+    fp2_set(msidh->A24p_start, params->a);
     fp2_set_uint(msidh->C24_start, 1); 
     A24p_from_A(msidh->A24p_start, msidh->C24_start, msidh->A24p_start, msidh->C24_start);
 
+    // Convert xP, xQ and xR to torsion basis
+    struct tors_basis PQ;
+    tors_basis_init(&PQ);
+    point_set_fp2_x(PQ.P, params->xP); 
+    point_set_fp2_x(PQ.Q, params->xQ); 
+    point_set_fp2_x(PQ.PQd, params->xR); 
+    mpz_add_ui(PQ.n->value, msidh->p, 1);
+
     if (is_bob) {
-        tors_basis_get_subgroup(&msidh->PQ_self, msidh->B, PQ, msidh->A24p_start, msidh->C24_start); 
-        tors_basis_get_subgroup(&msidh->PQ_pubkey, msidh->A, PQ, msidh->A24p_start, msidh->C24_start); 
+        tors_basis_get_subgroup(&msidh->PQ_self, msidh->B, &PQ, msidh->A24p_start, msidh->C24_start); 
+        tors_basis_get_subgroup(&msidh->PQ_pubkey, msidh->A, &PQ, msidh->A24p_start, msidh->C24_start); 
         // Generate random secret s in range [0, msidh->B)
         mpz_urandomm(msidh->secret, msidh->randstate, msidh->B->value);
         sample_quadratic_root_of_unity(mask, msidh->A); 
     } else {
-        tors_basis_get_subgroup(&msidh->PQ_self, msidh->A, PQ, msidh->A24p_start, msidh->C24_start); 
-        tors_basis_get_subgroup(&msidh->PQ_pubkey, msidh->B, PQ, msidh->A24p_start, msidh->C24_start); 
+        tors_basis_get_subgroup(&msidh->PQ_self, msidh->A, &PQ, msidh->A24p_start, msidh->C24_start); 
+        tors_basis_get_subgroup(&msidh->PQ_pubkey, msidh->B, &PQ, msidh->A24p_start, msidh->C24_start); 
         // Generate random secret s in range [0, msidh->B)
         mpz_urandomm(msidh->secret, msidh->randstate, msidh->A->value);
         sample_quadratic_root_of_unity(mask, msidh->B); 
@@ -229,6 +275,12 @@ void msidh_state_prepare(struct msidh_state *msidh, unsigned int t, const fp2_t 
 
     _msidh_gen_pubkey_alice(msidh->A24p_pubkey, msidh->C24_pubkey, &msidh->PQ_self, &msidh->PQ_pubkey, msidh->A24p_start, msidh->C24_start, msidh->secret, mask);
 
+    // Normalize for further access
+    point_normalize_coords(msidh->PQ_pubkey.P);
+    point_normalize_coords(msidh->PQ_pubkey.Q);
+    point_normalize_coords(msidh->PQ_pubkey.PQd);
+
+    tors_basis_clear(&PQ);
     mpz_clear(mask);
 
     msidh->status = MSIDH_STATUS_PREPARED;
@@ -288,6 +340,20 @@ void _msidh_key_exchange_alice(fp2_t j_inv, fp2_t A24p_final, fp2_t C24_final, c
     fp2_clear(&A); fp2_clear(&C);
 }
 
+void msidh_data_init(struct msidh_data *md) {
+    fp2_init(&md->a);
+    fp2_init(&md->xP);
+    fp2_init(&md->xQ);
+    fp2_init(&md->xR);
+}
+
+void msidh_data_clear(struct msidh_data *md) {
+    fp2_clear(&md->a);
+    fp2_clear(&md->xP);
+    fp2_clear(&md->xQ);
+    fp2_clear(&md->xR);
+}
+
 void msidh_state_init(struct msidh_state* msidh) {
     gmp_randinit_mt(msidh->randstate);
 
@@ -295,15 +361,8 @@ void msidh_state_init(struct msidh_state* msidh) {
     pprod_init(&msidh->A);
     pprod_init(&msidh->B);
 
-    point_init(&msidh->PQ_self.P);
-    point_init(&msidh->PQ_self.Q);
-    point_init(&msidh->PQ_self.PQd);
-    pprod_init(&msidh->PQ_self.n);
-
-    point_init(&msidh->PQ_pubkey.P);
-    point_init(&msidh->PQ_pubkey.Q);
-    point_init(&msidh->PQ_pubkey.PQd);
-    pprod_init(&msidh->PQ_pubkey.n);
+    tors_basis_init(&msidh->PQ_self);
+    tors_basis_init(&msidh->PQ_pubkey);
 
     fp2_init(&msidh->A24p_start);
     fp2_init(&msidh->C24_start);
@@ -324,15 +383,8 @@ void msidh_state_clear(struct msidh_state* msidh) {
     pprod_clear(&msidh->A);
     pprod_clear(&msidh->B);
 
-    point_clear(&msidh->PQ_self.P);
-    point_clear(&msidh->PQ_self.Q);
-    point_clear(&msidh->PQ_self.PQd);
-    pprod_clear(&msidh->PQ_self.n);
-
-    point_clear(&msidh->PQ_pubkey.P);
-    point_clear(&msidh->PQ_pubkey.Q);
-    point_clear(&msidh->PQ_pubkey.PQd);
-    pprod_clear(&msidh->PQ_pubkey.n);
+    tors_basis_clear(&msidh->PQ_self);
+    tors_basis_clear(&msidh->PQ_pubkey);
 
     fp2_clear(&msidh->A24p_start);
     fp2_clear(&msidh->C24_start);
@@ -344,4 +396,18 @@ void msidh_state_clear(struct msidh_state* msidh) {
     mpz_clear(msidh->secret);
 
     msidh->status = MSIDH_STATUS_UNINITIALIZED;
+}
+
+void tors_basis_init(struct tors_basis *tb) {
+    point_init(&tb->P);
+    point_init(&tb->Q);
+    point_init(&tb->PQd);
+    pprod_init(&tb->n);
+}
+
+void tors_basis_clear(struct tors_basis *tb) {
+    point_clear(&tb->P);
+    point_clear(&tb->Q);
+    point_clear(&tb->PQd);
+    pprod_clear(&tb->n);
 }

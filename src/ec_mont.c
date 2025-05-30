@@ -46,6 +46,13 @@ void point_set_fp2_x(point_t P, fp2_t x) {
 
 void point_printx(point_t P, const char* name) {
     // Make sure that the coordinate is normalized, otherwise we get false results when Z != 1: x = (X : Z)
+    assert(point_is_normalized(P));
+    fp2_print(P->X, name);
+}
+
+
+void point_printx_normalized(point_t P, const char* name) {
+    // Make sure that the coordinate is normalized, otherwise we get false results when Z != 1: x = (X : Z)
     point_normalize_coords(P);
     fp2_print(P->X, name);
 }

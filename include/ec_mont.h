@@ -27,7 +27,12 @@ void point_set_str_x(point_t P, const char *x);
 void point_set_fp2_x(point_t P, fp2_t x); 
 
 /*
- * @brief Print the nomrliazed (Z = 1) x-coordinate of the point P = (X : Z)
+ * @brief Print the normalized (Z = 1) x-coordinate of the point P = (X : Z)
+ */
+void point_printx_normalized(point_t P, const char* name);
+
+/*
+ * @brief Print the x-coordinate of the point P = (X : Z) with assertion that Z == 1
  */
 void point_printx(point_t P, const char* name);
 

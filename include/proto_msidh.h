@@ -22,6 +22,9 @@ enum {
 struct msidh_state {
     gmp_randstate_t randstate;
 
+    unsigned int t;
+    int is_bob;
+
     mpz_t p;
     pprod_t A, B;
 
@@ -44,15 +47,26 @@ struct msidh_state {
     int status; 
 };
 
+struct msidh_data {
+    unsigned int t;
+    fp2_t a, xP, xQ, xR;
+};
+
+void msidh_data_init(struct msidh_data *md);
+
+void msidh_data_clear(struct msidh_data *md);
+
 void msidh_state_init(struct msidh_state* msidh);
 
 void msidh_state_clear(struct msidh_state* msidh);
 
 void msidh_state_reset(struct msidh_state *msidh);
 
-void msidh_state_prepare(struct msidh_state *msidh, unsigned int t, const fp2_t a, const struct tors_basis *PQ, int is_bob);
+void msidh_state_prepare(struct msidh_state *msidh, const struct msidh_data *params, int is_bob);
 
-void msidh_key_exchange(struct msidh_state *msidh, const fp2_t A24p_other, const fp2_t C24_other, const struct tors_basis* PQ_masked);
+void msidh_key_exchange(struct msidh_state *msidh, const struct msidh_data *pk_other);
+
+void msidh_get_pubkey(const struct msidh_state *msidh, struct msidh_data *pk_self);
 
 // TODO: add gmp_randstate instead of random
 int sample_quadratic_root_of_unity(mpz_t result, pprod_t modulus);
@@ -75,10 +89,11 @@ void _msidh_gen_pubkey_alice(fp2_t A24p_alice, fp2_t C24_alice, struct tors_basi
  */
 void _msidh_key_exchange_alice(fp2_t j_inv, fp2_t A24p_final, fp2_t C24_final, const fp2_t A24p_bob, const fp2_t C24_bob, struct tors_basis * BPQA, const mpz_t A_sec);
 
-
 /*
  * @brief Calculate subgroup basis of the torsion basis (Pn, Qn) = [N/n](P, Q) of order n, where N is the order of (P, Q)
  */
 void tors_basis_get_subgroup(struct tors_basis *PQsub, pprod_t n, const struct tors_basis *PQ, const fp2_t A24p, const fp2_t C24);
+void tors_basis_init(struct tors_basis *tb);
+void tors_basis_clear(struct tors_basis *tb);
 
 #endif
