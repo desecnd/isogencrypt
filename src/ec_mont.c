@@ -37,6 +37,13 @@ void point_set_str_x(point_t P, const char *x) {
     fp2_set_uint(P->Z, 1);
 }
 
+
+// Set: x(P) = x, and z(P) = 1
+void point_set_fp2_x(point_t P, fp2_t x) {
+    fp2_set(P->X, x);
+    fp2_set_uint(P->Z, 1);
+}
+
 void point_printx(point_t P, const char* name) {
     // Make sure that the coordinate is normalized, otherwise we get false results when Z != 1: x = (X : Z)
     point_normalize_coords(P);
@@ -55,6 +62,10 @@ int point_equal_str_x(point_t P, const char* str) {
 
     point_clear(&P_str);
     return equal;
+}
+
+int point_is_normalized(point_t P) {
+    return fp2_equal_uint(P->Z, 1);
 }
 
 

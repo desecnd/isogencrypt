@@ -20,8 +20,11 @@ void point_init(point_t *P);
 
 void point_clear(point_t *P);
 
-// Set: x(P) = x, and z(P) = 1
+// Set: X(P) = x, and Z(P) = 1
 void point_set_str_x(point_t P, const char *x); 
+
+// Set: X(P) = x, and Z(P) = 1
+void point_set_fp2_x(point_t P, fp2_t x); 
 
 /*
  * @brief Print the nomrliazed (Z = 1) x-coordinate of the point P = (X : Z)
@@ -30,6 +33,11 @@ void point_printx(point_t P, const char* name);
 
 // Normalize: P = (X : Z) -> (X' : 1) with X' = X/Z
 void point_normalize_coords(point_t P);
+
+/*
+ * @brief Return 1 if point is normalized (P->Z == 1), 0 if P->Z != 1
+ */
+int point_is_normalized(point_t P);
 
 /* 
  * @brief Compare the x-only coordinate of point by normalization of P and initalization of the const char* str.
