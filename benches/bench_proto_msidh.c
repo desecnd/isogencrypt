@@ -191,18 +191,26 @@ const struct bench_task BENCH_TASKS[N_BENCHMARKS] = {
 };
 
 
-void run_msidh_exchange(struct msidh_state* alice, struct msidh_state *bob, fp2_t A24p, fp2_t C24, struct tors_basis* PQ, pprod_t A_deg, pprod_t B_deg)  {
+void run_double_msidh(struct msidh_state* alice, struct msidh_state *bob, struct msidh_data *params)  {
 
-    msidh_state_prepare(alice, A24p, C24, PQ, A_deg, B_deg, 0);
-    msidh_state_prepare(bob, A24p, C24, PQ, A_deg, B_deg, 1);
+    struct msidh_data alice_pk, bob_pk;
+    msidh_data_init(&alice_pk);
+    msidh_data_init(&bob_pk);
 
-    msidh_key_exchange(alice, bob->pk_A24p, bob->pk_C24, &bob->PQ_other);
-    msidh_key_exchange(bob, alice->pk_A24p, alice->pk_C24, &alice->PQ_other);
+    msidh_state_prepare(alice, params, 0);
+    msidh_state_prepare(bob, params, 1);
+
+    msidh_get_pubkey(alice, &alice_pk);
+    msidh_get_pubkey(bob, &bob_pk);
+
+    msidh_key_exchange(alice, &bob_pk);
+    msidh_key_exchange(bob, &alice_pk);
 
     // Make sure that the computed shared secret is the same for both parties
-    // fp2_print(alice->sk_jinv, "j(A)");
-    // fp2_print(bob->sk_jinv, "j(B)");
-    assert(fp2_equal(alice->sk_jinv, bob->sk_jinv));
+    assert(fp2_equal(alice->j_inv, bob->j_inv));
+
+    msidh_data_clear(&alice_pk);
+    msidh_data_clear(&bob_pk);
 }
 
 void prep_environment(const struct bench_task* bt, fp2_t A24p, fp2_t C24, struct tors_basis* PQ, mpz_t p, pprod_t A_deg, pprod_t B_deg) {
@@ -244,22 +252,8 @@ int main() {
     msidh_state_init(&alice);
     msidh_state_init(&bob);
 
-    mpz_t p;
-    mpz_init(p);
-
-    pprod_t A_deg, B_deg;
-    pprod_init(&A_deg);
-    pprod_init(&B_deg);
-
-    fp2_t A24p, C24;
-    fp2_init(&A24p);
-    fp2_init(&C24);
-
-    struct tors_basis PQ;
-    point_init(&PQ.P);
-    point_init(&PQ.Q);
-    point_init(&PQ.PQd);
-    pprod_init(&PQ.n);
+    struct msidh_data params;
+    msidh_data_init(&params);
 
     float timings[N_REPS] = { 0 };
 
@@ -269,13 +263,20 @@ int main() {
 
     for (int bench_id = 0; bench_id < n_benchmarks; bench_id++) {
 
+        // Copy the params from const "bt_array"
+        params.t = bt_array[bench_id].t;
+        fp2_set_str(params.a, bt_array[bench_id].a_str);
+        fp2_set_str(params.xP, bt_array[bench_id].xP_str);
+        fp2_set_str(params.xQ, bt_array[bench_id].xQ_str);
+        fp2_set_str(params.xR, bt_array[bench_id].xPQd_str);
+
         float time_sum = 0.0;
         for (int j = 0; j < N_REPS; j++) {
 
-            prep_environment(&bt_array[bench_id], A24p, C24, &PQ, p, A_deg, B_deg);
+            // prep_environment(&bt_array[bench_id], A24p, C24, &PQ, p, A_deg, B_deg);
 
             clock_t tic = clock();
-            run_msidh_exchange(&alice, &bob, A24p, C24, &PQ, A_deg, B_deg);
+            run_double_msidh(&alice, &bob, &params);
             clock_t toc = clock();
             timings[j] = ((double)toc - tic)/CLOCKS_PER_SEC;
             fprintf(stderr,"[%d/%d][t=%d][%d/%d]: took %f seconds to execute \n", bench_id + 1, n_benchmarks, bt_array[bench_id].t, j + 1, N_REPS, timings[j]); 
@@ -294,19 +295,10 @@ int main() {
         fflush(stdout);
     }
 
+    msidh_data_clear(&params);
 
-    mpz_clear(p);
-
-    pprod_clear(&A_deg);
-    pprod_clear(&B_deg);
-
-    fp2_clear(&A24p);
-    fp2_clear(&C24);
-
-    point_clear(&PQ.P);
-    point_clear(&PQ.Q);
-    point_clear(&PQ.PQd);
-    pprod_clear(&PQ.n);
+    msidh_state_clear(&alice);
+    msidh_state_clear(&bob);
 
     return 0;
 }
