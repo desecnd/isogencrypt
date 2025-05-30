@@ -43,7 +43,8 @@ int point_equal_str_x(point_t P, const char* str);
 void A24p_from_A(fp2_t A24p, fp2_t C24, const fp2_t A, const fp2_t C);
 
 /* 
- * @brief Transform (A' : C') = (a + 2 : 4) into (A : C) = (a : 1) 
+ * @brief Transform (A' : C') = (a + 2 : 4) into (A : C) = (a : 1). 
+ * Function is argument safe for A = A24p and C = C24
  */
 void A_from_A24p(fp2_t A, fp2_t C, const fp2_t A24p, const fp2_t C24);
 
