@@ -33,9 +33,10 @@ void clear_test_variables() {
 
 void set_params_testp431() {
     // Clear just to be sure
-    global_fpchar_clear();
+    fpchar_clear_if_set();
+    
     // p + 1 = 432 = 2^4 * 3^3
-    assert(0 == global_fpchar_setup_uint(431));
+    assert(0 == fpchar_setup_uint(431));
 
     // Initialize the Elliptic Curve E: y^2 = x^3 + 6x^2 + x
     // (A : C) are projective coordinates of (a : 1) = (6 : 1)
@@ -55,8 +56,8 @@ void set_params_testp431() {
 
 void set_params_testp139() {
     // p + 1 = 140 = 2^2 * 5 * 7
-    global_fpchar_clear();
-    assert(0 == global_fpchar_setup_uint(139));
+    fpchar_clear_if_set();
+    assert(0 == fpchar_setup_uint(139));
 
     // E: y^2 = x^3 + x
     // A = 0 => Ax^2 = 0
@@ -74,7 +75,7 @@ void test_A_A24p_conversion_in_place() {
     fp2_init(&At); fp2_init(&Ct); fp2_init(&at);
 
     // p + 1 = 432 = 2^4 * 3^3
-    global_fpchar_setup_uint(431);
+    fpchar_setup_uint(431);
 
     int a = 410;
     fp2_set_uint(At, a);
@@ -103,14 +104,14 @@ void test_A_A24p_conversion_in_place() {
     fp2_div_unsafe(at, At, Ct);
     CHECK(fp2_equal_uint(at, a));
 
-    global_fpchar_clear();
+    fpchar_clear();
     fp2_clear(&At); fp2_clear(&Ct); fp2_clear(&at);
 }
 
 void test_A_A24p_conversion() {
     // Clear just to be sure
     // p + 1 = 432 = 2^4 * 3^3
-    global_fpchar_setup_uint(431);
+    fpchar_setup_uint(431);
 
     fp2_t a;
     fp2_init(&a);
@@ -137,7 +138,7 @@ void test_A_A24p_conversion() {
     CHECK(fp2_equal_uint(a, 6));
 
     fp2_clear(&a);
-    global_fpchar_clear();
+    fpchar_clear();
 }
 
 void test_point_set_is_immutable() {

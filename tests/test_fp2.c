@@ -6,7 +6,7 @@
 #include "testing.h"
 
 void test_failed_once() {
-    CHECK(!global_fpchar_setup_uint(431));
+    CHECK(!fpchar_setup_uint(431));
 
     fp2_t x, y;
     fp2_init(&x);
@@ -42,12 +42,12 @@ void test_failed_once() {
         fp2_clear(&r);
     }
 
-    CHECK(!global_fpchar_clear());
+    CHECK(!fpchar_clear());
 }
 
 void test_basic_arithmetic() {
     // init characteristic
-    CHECK(!global_fpchar_setup_uint(431));
+    CHECK(!fpchar_setup_uint(431));
 
     fp2_t x, y;
     fp2_init(&x);
@@ -106,13 +106,13 @@ void test_basic_arithmetic() {
     fp2_clear(&y);
     fp2_clear(&r);
 
-    CHECK(!global_fpchar_clear());
+    CHECK(!fpchar_clear());
 }
 
 void test_safe_unsafe_mul_sq() {
 
     // init characteristic
-    CHECK(!global_fpchar_setup_uint(431));
+    CHECK(!fpchar_setup_uint(431));
 
     fp2_t r, x;
     fp2_init(&r); fp2_init(&x);
@@ -159,11 +159,11 @@ void test_safe_unsafe_mul_sq() {
     fp2_clear(&x);
     fp2_clear(&r);
 
-    CHECK(!global_fpchar_clear());
+    CHECK(!fpchar_clear());
 }
 
 void test_inv_div() {
-    CHECK(!global_fpchar_setup_uint(431));
+    CHECK(!fpchar_setup_uint(431));
 
     fp2_t x, r;
     fp2_init(&x);
@@ -208,11 +208,11 @@ void test_inv_div() {
     fp2_clear(&x);
     fp2_clear(&r);
 
-    CHECK(!global_fpchar_clear());
+    CHECK(!fpchar_clear());
 }
 
 void test_set_str() {
-    CHECK(!global_fpchar_setup_uint(431));
+    CHECK(!fpchar_setup_uint(431));
 
     fp2_t x;
     fp2_init(&x);
@@ -246,11 +246,11 @@ void test_set_str() {
     CHECK(0 != fp2_set_str(x, "1000; * i"));
 
     fp2_clear(&x);
-    CHECK(!global_fpchar_clear());
+    CHECK(!fpchar_clear());
 }
 
 void test_write() {
-    CHECK(!global_fpchar_setup_uint(431));
+    CHECK(!fpchar_setup_uint(431));
     fp2_t x;
     fp2_init(&x);
 
@@ -270,11 +270,11 @@ void test_write() {
 
     fp2_clear(&y);
     fp2_clear(&x);
-    CHECK(!global_fpchar_clear());
+    CHECK(!fpchar_clear());
 }
 
 void test_fp2_mul_int() {
-    CHECK(!global_fpchar_setup_uint(431));
+    CHECK(!fpchar_setup_uint(431));
 
     fp2_t r, x;
     fp2_init(&r); fp2_init(&x);
@@ -297,7 +297,7 @@ void test_fp2_mul_int() {
     CHECK(!mpz_cmp_ui(r->a, 309) && !mpz_cmp_ui(r->b, 145));
 
     fp2_clear(&r); fp2_clear(&x);
-    CHECK(!global_fpchar_clear());
+    CHECK(!fpchar_clear());
 }
 
 void test_large_numbers() {
@@ -305,7 +305,7 @@ void test_large_numbers() {
     mpz_init(p);
     mpz_set_str(p, "14475d5aeccf245fce0e61716bd33537235ad8c4a76a401a4eb1a0fb9cb477dfb", 16);
 
-    global_fpchar_setup(p);
+    fpchar_setup(p);
 
     fp2_t x, y, r;
     fp2_init(&x);
@@ -351,7 +351,7 @@ void test_large_numbers() {
 
     mpz_clear(p);
 
-    global_fpchar_clear();
+    fpchar_clear();
 }
 
 int main() {
