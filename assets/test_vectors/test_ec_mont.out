@@ -1,78 +1,75 @@
-VERIFY ---: test_xDBL_small
-VERIFY ---: test_xADD_small
-xP: 271*i + 259
-xQ: 335*i + 262
-xP-Q: 411*i + 143
-xP+Q: 106*i + 416
-VERIFY ---: test_criss_cross_small
+---: test_point_normalize_coords()
+X: 395*i + 201
+Y: 272*i + 286
+x: 12*i + 95
+---: test_criss_cross_small()
 x: 416*i + 175
 y: 112*i + 179
 z: 235*i + 107
 w: 183*i + 197
 xw+yz: 367*i + 314
 xw-yz: 19*i + 425
-VERIFY ---: test_xLADDER3PT
+---: test_xDBL_small()
+xP: 15*i + 292
+x[2]P: 184*i + 61
+---: test_xDBLe()
+xP: 387*i + 387
+x[2]P: 400*i + 311
+x[4]P: 13*i + 67
+x[8]P: 213*i + 105
+x[2^12345]P: 304*i + 223
+---: test_xADD_small()
+xP: 271*i + 259
+xQ: 335*i + 262
+xP-Q: 411*i + 143
+xP+Q: 106*i + 416
+---: test_xLADDER3PT()
 xP: 271*i + 259
 xQ: 335*i + 262
 xP-Q: 411*i + 143
 n: 87
 x(P+nQ): 45*i + 360
-x(P-nQ): 411*i + 73
-VERIFY ---: test_point_normalize_coords()
-X: 395*i + 201
-Y: 272*i + 286
-X': 12*i + 95
-VERIFY ---: test_xDBLe
-xP: 387*i + 387
-x[2]P: 400*i + 311
-x[4]P: 13*i + 67
-x[8]P: 213*i + 105
-x[2^1235]P: 304*i + 223
-VERIFY ---: test_ISOG2e
+---: test_ISOG2e()
 xK: 33*i + 429
 xP: 158*i + 183
 xφ(P): 69*i + 48
 aφ(E): 201
-VERIFY ---: test_KPS()
+---: test_KPS()
 xK: 101*i + 20
 xK1: 101*i + 20
 xK2: 82*i + 16
 xK3: 106*i + 124
-VERIFY ---: test_xISOG_and_aISOG()
+---: test_xISOG_and_aISOG()
 xK: 77*i + 38
 xP: 32*i + 42
-aφ(E): 76*i + 85
+deg: 5
+n: 2
+aφ(K): 76*i + 85
 xφ(P): 88*i + 46
-VERIFY ---: test_xLADDER_int()
+---: test_xLADDER_int()
 xP: 108*i + 136
-x[1]P = 108*i + 136
-x[2]P = 113*i + 131
-x[3]P = 42*i + 83
-x[4]P = 47*i + 107
-VERIFY ---: test_xLADDER()
+x[1]P: 108*i + 136
+x[2]P: 113*i + 131
+x[3]P: 42*i + 83
+x[4]P: 47*i + 107
+---: test_xLADDER()
 xP: 7*i + 97
 x[2^80]P: 98*i + 43
 x[2^80-1]P: 56*i + 96
 x[0xf5697b000f01c17d4c5e]P: 94*i + 31
-VERIFY ---: test_ISOG_chain_odd()
+---: test_ISOG_chain_odd()
 xK: 108*i + 136
-xK5: 96*i + 71
-aE5: 76*i + 85
-xφ(K): 30*i + 60
-aE7: 102*i + 73
-VERIFY ---: test_xISOG2_and_aISOG2()
+aφ(K): 102*i + 73
+---: test_xISOG2_and_aISOG2()
 xK2: 100*i + 136
 xP: 70*i + 36
 aE2: 37*i + 73
 aE2(24p): 44*i + 123
 xφ(P): 128*i
-VERIFY ---: test_ISOG2_bad_point_error()
-xK: 0
-aφ(K): 2
-VERIFY ---: test_ISOG_chain()
+---: test_ISOG_chain()
 xK: 34*i + 99
 xP: 8*i + 137
-aφ(E): 49*i
+aφ(K): 49*i
 xφ(P): 114*i + 68
 ---: test_j_invariant()
 a(E): 92*i + 25

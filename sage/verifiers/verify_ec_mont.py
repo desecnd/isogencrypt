@@ -29,43 +29,22 @@ class TestP431:
         cls.p, cls.F, cls.i, cls.E = p, F, i, E
 
     @classmethod
-    def test_xDBL_small(cls):
-        print("---: test_xDBL_small")
+    def test_point_normalize_coords(cls):
+        print("---: test_point_normalize_coords()")
         cls.load_globals()
 
-        # Point with order 432
-        P = E(292 + 15 * i, 281 + 235 * i)
-        Q = E(61 + 184 * i, 395 + 90 * i)
+        X = 395*i + 201
+        print(f"X: {X}")
+        Y = 272*i + 286
+        print(f"Y: {Y}")
 
-        # Q = [2]P
-        assert 2 * P == Q
-        assert Q.x() == 61 + 184 * i
-
-    @classmethod
-    def test_xADD_small(cls):
-        print("---: test_xADD_small")
-        cls.load_globals()
-
-        P = E(271*i + 259, 422*i + 97)
-        print(f"xP: {P.x()}")
-
-        Q = E(335*i + 262, 69*i + 198)
-        print(f"xQ: {Q.x()}")
-
-        PQdiff = E(411*i + 143, 245*i + 213)
-        assert PQdiff == P - Q
-
-        print(f"xP-Q: {PQdiff.x()}")
-        PQsum = P + Q
-
-        assert PQsum == E(106*i + 416 , 111*i + 405)
-        print(f"xP+Q: {PQsum.x()}")
-
-        assert PQsum.x() == 416 + 106 * i
+        x = X / Y
+        print(f"x: {x}")
+        assert x == 12*i + 95
 
     @classmethod
     def test_criss_cross_small(cls):
-        print("---: test_criss_cross_small")
+        print("---: test_criss_cross_small()")
         cls.load_globals()
 
         x = F(416*i + 175)
@@ -86,45 +65,22 @@ class TestP431:
         print(f"xw+yz: {e}")
         print(f"xw-yz: {f}")
 
+    @classmethod
+    def test_xDBL_small(cls):
+        print("---: test_xDBL_small()")
+        cls.load_globals()
+
+        # Point with order 432
+        P = E(292 + 15 * i, 281 + 235 * i)
+        Q = E(61 + 184 * i, 395 + 90 * i)
+        print(f"xP: {P.x()}")
+
+        assert 2 * P == Q
+        print(f"x[2]P: {Q.x()}")
         
     @classmethod
-    def test_xLADDER3PT(cls):
-        print("---: test_xLADDER3PT")
-        cls.load_globals()
-
-        P = E(271*i + 259, 422*i + 97)
-        print(f"xP: {P.x()}")
-        Q = E(335*i + 262, 69*i + 198)
-        print(f"xQ: {Q.x()}")
-        PQd = P - Q
-        print(f"xP-Q: {PQd.x()}")
-        n = 87
-        print(f"n: {n}")
-
-        R = P + n * Q
-        print(f"x(P+nQ): {R.x()}")
-        assert R == E(45*i + 360, 249*i + 429)
-
-        T = P - n * Q
-        print(f"x(P-nQ): {T.x()}")
-
-    @classmethod
-    def test_point_normalize_coords(cls):
-        print("---: test_point_normalize_coords()")
-        cls.load_globals()
-
-        X = 395*i + 201
-        print(f"X: {X}")
-        Y = 272*i + 286
-        print(f"Y: {Y}")
-
-        X_ = X / Y
-        print(f"X': {X_}")
-        assert X_ == 12*i + 95
-
-    @classmethod
     def test_xDBLe(cls):
-        print("---: test_xDBLe")
+        print("---: test_xDBLe()")
         cls.load_globals()
 
         P = E(387*i + 387, 325*i + 125)
@@ -144,13 +100,53 @@ class TestP431:
         assert P8 == P * 8
 
         P2_12345 = E(304*i + 223, 134*i + 11)
-        print(f"x[2^1235]P: {P2_12345.x()}")
+        print(f"x[2^12345]P: {P2_12345.x()}")
         assert P2_12345 == P * (2 ** 12345)
+
+    @classmethod
+    def test_xADD_small(cls):
+        print("---: test_xADD_small()")
+        cls.load_globals()
+
+        P = E(271*i + 259, 422*i + 97)
+        print(f"xP: {P.x()}")
+
+        Q = E(335*i + 262, 69*i + 198)
+        print(f"xQ: {Q.x()}")
+
+        PQdiff = E(411*i + 143, 245*i + 213)
+        assert PQdiff == P - Q
+
+        print(f"xP-Q: {PQdiff.x()}")
+        PQsum = P + Q
+
+        assert PQsum == E(106*i + 416 , 111*i + 405)
+        print(f"xP+Q: {PQsum.x()}")
+
+        assert PQsum.x() == 416 + 106 * i
 
 
     @classmethod
+    def test_xLADDER3PT(cls):
+        print("---: test_xLADDER3PT()")
+        cls.load_globals()
+
+        P = E(271*i + 259, 422*i + 97)
+        print(f"xP: {P.x()}")
+        Q = E(335*i + 262, 69*i + 198)
+        print(f"xQ: {Q.x()}")
+        PQd = P - Q
+        print(f"xP-Q: {PQd.x()}")
+        n = 87
+        print(f"n: {n}")
+
+        R = P + n * Q
+        print(f"x(P+nQ): {R.x()}")
+        assert R == E(45*i + 360, 249*i + 429)
+
+    @classmethod
     def test_ISOG2e(cls):
-        print("---: test_ISOG2e")
+        print("---: test_ISOG2e()")
         cls.load_globals()
 
         K0 = E(33*i + 429, 205*i + 374)
@@ -247,9 +243,12 @@ class TestP139:
         assert P.order() == 140
         print(f"xP: {P.x()}")
 
+        print(f"deg: {K.order()}")
+        print(f"n: {K.order()//2}")
+
         # Montgomery Curve with A_ coefficient
         A_ = _mont_coef_odd(K)
-        print(f"aφ(E): {A_}")
+        print(f"aφ(K): {A_}")
 
         E_ = EllipticCurve(F, [0, A_, 0, 1, 0])
         assert E_.j_invariant() == 100
@@ -259,7 +258,7 @@ class TestP139:
         print(f"xφ(P): {phi_P.x()}")
 
         # Order of the point did not change
-        # assert phi_P.order() == 140
+        assert phi_P.order() == 140
 
     @classmethod
     def test_xLADDER(cls): 
@@ -294,7 +293,7 @@ class TestP139:
         assert muls == [108*i + 136, 113*i + 131, 42*i + 83, 47*i + 107]
 
         for m, mulx in enumerate(muls):
-            print(f"x[{m + 1}]P = {mulx}")
+            print(f"x[{m + 1}]P: {mulx}")
 
     @classmethod
     def test_ISOG_chain_odd(cls):
@@ -302,23 +301,23 @@ class TestP139:
         cls.load_globals()
 
         K = E(108*i + 136, 68*i + 134)
-        assert K.order() == 35
         print(f"xK: {K.x()}")
+        assert K.order() == 35
 
         K5 = E(96*i + 71, 15*i + 87) 
+        # print(f"xK5: {K5.xy()}")
         assert K5.order() == 5
         assert K5 == K * 7
-        print(f"xK5: {K5.x()}")
 
-        # K5.isogeny()
+        # Construct next montgomery curve from calculated codomain coefficient
         A5 = _mont_coef_odd(K5)
         E5 = EllipticCurve(F, [0, A5, 0, 1, 0])
-        print(f"aE5: {A5}")
+        assert A5 == 76*i + 85
 
         phi5 = E.isogeny(K5, codomain=E5)
         K7 = phi5(K)
-        print(f"xφ(K): {K7.x()}")
-
+        # print(f"xφ(K): {K7.xy()}")
+        assert K7 == E5((30*i + 60, 125*i + 136))
         assert K7.order() == 7
 
         A7 = _mont_coef_odd(K7)
@@ -326,7 +325,7 @@ class TestP139:
         phi7 = E5.isogeny(K7, codomain=E7)
 
         assert phi7(K7).is_zero()
-        print(f"aE7: {A7}")
+        print(f"aφ(K): {A7}")
 
     @classmethod
     def test_xISOG2_and_aISOG2(cls):
@@ -352,26 +351,6 @@ class TestP139:
         
         P_ = phi2(P)
         print(f"xφ(P): {P_.x()}")
-
-    @classmethod
-    def test_ISOG2_bad_point_error(cls):
-        print("---: test_ISOG2_bad_point_error()")
-        cls.load_globals()
-
-        K2 = E(0, 0)
-        assert K2.order() == 2
-        print(f"xK: {K2.x()}")
-
-        # Formula for obtaining the A' for 2-isogeny
-        # This will give value 2 which is incorrect (singular curve)
-        A2 = 2 * (1 - 2 * K2.x() ** 2)
-        print(f"aφ(K): {A2}")
-
-        try:
-            EllipticCurve(F, [0, A2, 0, 1, 0])
-            assert False and "Constructed curve should be singular"
-        except ArithmeticError:
-            pass
 
     @classmethod
     def test_ISOG_chain(cls):
@@ -463,7 +442,7 @@ class TestP139:
         assert P == P_ or P == -P_ 
         assert A == mont_coef(K0)
 
-        print(f"aφ(E): {A}")
+        print(f"aφ(K): {A}")
         print(f"xφ(P): {P.x()}")
 
     @classmethod
@@ -497,12 +476,12 @@ class TestP139:
 def main():
     # SIDH-like prime: 
     TestP431.setup_class()
-    TestP431.test_xDBL_small()
-    TestP431.test_xADD_small()
-    TestP431.test_criss_cross_small()
-    TestP431.test_xLADDER3PT()
     TestP431.test_point_normalize_coords()
+    TestP431.test_criss_cross_small()
+    TestP431.test_xDBL_small()
     TestP431.test_xDBLe()
+    TestP431.test_xADD_small()
+    TestP431.test_xLADDER3PT()
     TestP431.test_ISOG2e()
 
     # Odd-degree prime:
@@ -513,7 +492,6 @@ def main():
     TestP139.test_xLADDER()
     TestP139.test_ISOG_chain_odd()
     TestP139.test_xISOG2_and_aISOG2()
-    TestP139.test_ISOG2_bad_point_error()
     TestP139.test_ISOG_chain()
     TestP139.test_j_invariant()
 

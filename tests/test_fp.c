@@ -4,7 +4,7 @@
 #include "fp2.h"
 
 void test_small_arithmetic() {
-    CHECK(!global_fpchar_setup_uint(431));
+    CHECK(!fpchar_setup_uint(431));
 
     fp_t r;
     fp_init(r);
@@ -32,11 +32,11 @@ void test_small_arithmetic() {
 
     fp_clear(r);
 
-    CHECK(!global_fpchar_clear());
+    CHECK(!fpchar_clear());
 }
 
 void test_modulo_arithmetic() {
-    CHECK(!global_fpchar_setup_uint(431));
+    CHECK(!fpchar_setup_uint(431));
 
     fp_t a, b;
     fp_init(a);
@@ -72,7 +72,7 @@ void test_modulo_arithmetic() {
     fp_clear(a);
     fp_clear(b);
 
-    CHECK(!global_fpchar_clear());
+    CHECK(!fpchar_clear());
 }
 
 int main() {

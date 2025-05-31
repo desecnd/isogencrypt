@@ -205,8 +205,8 @@ void setup_params_t4() {
     CHECK(f==1);
 
     // Clear just to be sure
-    global_fpchar_clear();
-    global_fpchar_setup(p);
+    fpchar_clear_if_set();
+    fpchar_setup(p);
 
     // Elliptic Curve defined by y^2 = x^3 + 6*x^2 + x over Finite Field in i of size 419^2
     fp2_set_uint(a0, 6);
@@ -582,8 +582,8 @@ void setup_params_t30() {
     assert(f > 0);
 
     // Clear just to be sure
-    global_fpchar_clear();
-    global_fpchar_setup(p);
+    fpchar_clear_if_set();
+    fpchar_setup(p);
 
     // Elliptic Curve defined by y^2 = x^3 + 6*x^2 + x over Finite Field in i of size 419^2
     fp2_set_uint(a0, 6);
@@ -777,6 +777,8 @@ int main() {
     TEST_RUN(test_msidh_internals());
     TEST_RUN(test_msidh_secret_zero());
     TEST_RUN(test_msidh_non_deterministic());
+
+    // This test will "override" the characteristic
     TEST_RUN(test_msidh_monte_carlo());
 
     // t = 30 for MSIDH

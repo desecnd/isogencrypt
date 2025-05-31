@@ -21,11 +21,11 @@ typedef union {
 // ------ FP Methods
 
 // set the global static field characteristic to p
-// TODO: add check for valid modulus x^2 + 1 == 0
-// prime should be select such that x^2 + 1 is irreducible over Fp^2
-int global_fpchar_setup(fp_t p); 
-int global_fpchar_setup_uint(unsigned int p); 
-int global_fpchar_clear();
+int fpchar_setup(fp_t p); 
+int fpchar_setup_uint(unsigned int p); 
+int fpchar_clear();
+int fpchar_clear_if_set();
+int fpchar_check();
 
 // init memory for variable
 void fp_init(fp_t res); 

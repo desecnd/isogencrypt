@@ -163,6 +163,11 @@ void msidh_state_reset(struct msidh_state *msidh) {
         msidh->status == MSIDH_STATUS_EXCHANGED
     );
 
+    // state_prepare" initializes global fpchar
+    if (msidh->status != MSIDH_STATUS_INITIALIZED) {
+        fpchar_clear_if_set();
+    }
+
     // We dont deallocate the variables - simply change the status so "prepare" can be called
     msidh->status = MSIDH_STATUS_INITIALIZED;
 }
@@ -236,12 +241,18 @@ void msidh_state_prepare(struct msidh_state *msidh, const struct msidh_data *par
     msidh->is_bob = is_bob;
     msidh->t = params->t;
     int ret = msidh_gen_pub_params(msidh->p, msidh->A, msidh->B, msidh->t);
-    assert(ret > 0);
+    assert(ret > 0 && "MSIDH cannot generate public params");
 
-    // TODO: Make sure that the global arithmetic is set to FP
     // Initialize global characteristic if its not set
-    ret = global_fpchar_setup(msidh->p);
-    assert(ret == 0);
+
+    // int cleared = fpchar_clear_if_set();
+    // if (cleared) {
+    //     // fprintf(stderr, "MSIDH cleared previous fpchar in state_prepare.\n");
+    // }
+
+    fpchar_clear_if_set();
+    ret = fpchar_setup(msidh->p);
+    assert(ret == 0 && "MSIDH cannot work properly if global characteristic is invalid");
 
     mpz_t mask;
     mpz_init(mask);
