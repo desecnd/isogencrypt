@@ -31,7 +31,8 @@ class MSIDH:
 
         if self.P is None or self.Q is None:
             # print(f"{self.name}: Sampling Torsion Basis (P, Q)...")
-            self.P, self.Q = sample_torsion_basis_smooth(self.E0, self.A)
+            point_above_zero = 'Q' if mont_model and not is_bob else ''
+            self.P, self.Q = sample_torsion_basis_smooth(self.E0, self.A, point_above_zero)
         else:
             assert self.P.curve() == self.E0
             assert self.Q.curve() == self.E0
@@ -40,9 +41,9 @@ class MSIDH:
         if self.mask is None:
             # print(f"{self.name}: Sampling mask...")
             self.mask = sample_quadratic_root_of_unity(self.B)
-        else:
-            # assert pow(self.mask, 2, self.B) == 1
-            pass
+
+        if pow(self.mask, 2, self.B) != 1:
+            raise ValueError("Incorrect mask value - not a square root of unity mod B")
         
         if self.secret is None:
             # print(f"{self.name}: Generating secret...")
