@@ -213,31 +213,6 @@ void run_double_msidh(struct msidh_state* alice, struct msidh_state *bob, struct
     msidh_data_clear(&bob_pk);
 }
 
-void prep_environment(const struct bench_task* bt, fp2_t A24p, fp2_t C24, struct tors_basis* PQ, mpz_t p, pprod_t A_deg, pprod_t B_deg) {
-
-    // Prepare the isogeny degrees and MSIDH parameters
-    int f = msidh_gen_pub_params(p, A_deg, B_deg, bt->t);
-    assert(f > 0);
-
-    global_fpchar_clear();
-    global_fpchar_setup(p);
-    // int n_bits = mpz_sizeinbase(p, 2);
-    // gmp_printf("log2(p): %d\n", n_bits);
-
-    // Prepare the Elliptic Curve E: y^2 = x^3 + (A/C)x^2 + x
-    assert(0 == fp2_set_str(A24p, bt->a_str));
-    fp2_set_uint(C24, 1);
-    A24p_from_A(A24p, C24, A24p, C24); 
-
-    // Prepare the Torsion Basis
-    point_set_str_x(PQ->P, bt->xP_str); 
-    point_set_str_x(PQ->Q, bt->xQ_str); 
-    point_set_str_x(PQ->PQd, bt->xPQd_str); 
-
-    // pprod_set_array(PQ->n, NULL, 0);
-    mpz_add_ui(PQ->n->value, p, 1);
-}
-
 int comp_times(const void *a, const void *b) {
     return (*(float *)a) < (*(float *)b) ? -1 : 1;
 }
@@ -272,8 +247,6 @@ int main() {
 
         float time_sum = 0.0;
         for (int j = 0; j < N_REPS; j++) {
-
-            // prep_environment(&bt_array[bench_id], A24p, C24, &PQ, p, A_deg, B_deg);
 
             clock_t tic = clock();
             run_double_msidh(&alice, &bob, &params);
