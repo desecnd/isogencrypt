@@ -134,8 +134,15 @@ def sample_quadratic_root_of_unity(modulus: int):
     return res
 
 def _mont_coef_2(K):
-    """Return 2-isogeny codomain coefficient A in Montgomery Model"""
-    assert K.order() == 2 and K.x() != 0
+    """Return 2-isogeny codomain coefficient A in Montgomery Model
+    
+    Raises:
+        ValueError: Given kernel is point (0,0) of order 2 leading to singular curve.
+    """
+
+    if K.order() != 2 or K.x() == 0:
+        raise ValueError("Kernel is invalid - will land on singular curve")
+
     return 2 * (1 - 2 * K.x() ** 2)
 
 def _mont_coef_odd(K):
