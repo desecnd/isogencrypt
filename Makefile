@@ -15,7 +15,6 @@ TESTS_OBJ_DIR := $(OBJ_DIR)/tests
 TESTS_BIN_DIR := $(BUILD_DIR)/tests
 TESTS_OUT_DIR := $(OUT_DIR)/tests
 
-
 BENCHES_SRC_DIR := benches
 BENCHES_OBJ_DIR := $(OBJ_DIR)/benches
 BENCHES_BIN_DIR := $(BUILD_DIR)/benches
@@ -23,6 +22,10 @@ BENCHES_OUT_DIR := $(OUT_DIR)/benches
 
 VECTORS_SRC_DIR := assets/test_vectors
 DIFFS_OUT_DIR := $(OUT_DIR)/diffs
+
+EXAMPLE_SRC_DIR := example
+EXAMPLE_OBJ_DIR := $(OBJ_DIR)/example
+EXAMPLE_BIN_DIR := $(BUILD_DIR)/example
 
 # Variables for general file 
 SRC := $(wildcard $(SRC_DIR)/*.c)
@@ -45,17 +48,22 @@ BENCHES_BIN := $(patsubst $(BENCHES_SRC_DIR)/%.c,$(BENCHES_BIN_DIR)/%,$(BENCHES)
 BENCHES_OBJ := $(patsubst $(BENCHES_SRC_DIR)/%.c,$(BENCHES_OBJ_DIR)/%.o,$(BENCHES))
 BENCHES_OUT := $(patsubst $(BENCHES_SRC_DIR)/%.c,$(BENCHES_OUT_DIR)/%.out,$(BENCHES))
 
+# Build example
+EXAMPLE := $(wildcard $(EXAMPLE_SRC_DIR)/*.c)
+EXAMPLE_BIN := $(patsubst $(EXAMPLE_SRC_DIR)/%.c,$(EXAMPLE_BIN_DIR)/%,$(EXAMPLE))
+EXAMPLE_OBJ := $(patsubst $(EXAMPLE_SRC_DIR)/%.c,$(EXAMPLE_OBJ_DIR)/%.o,$(EXAMPLE))
+
 # Optional CPP flags: -MMD -MP 
 CPPFLAGS := -Iinclude 
 CFLAGS   := -Wall -Wextra -O2
 LDFLAGS  := -Llib
 LDLIBS   := -lgmp
 
-.PHONY: tests benches all clean run-tests run-diffs
+.PHONY: tests benches example all clean run-tests run-diffs
 # This allows for calling run-diffs without running run-tests
 .NOTINTERMEDIATE: $(TESTS_OUT)
 
-all: tests benches
+all: tests benches example
 
 # Create object files based on the 'src/*.c' files
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c | $(OBJ_DIR)
@@ -63,9 +71,19 @@ $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c | $(OBJ_DIR)
 	@$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
 
 # Create the directories if they do not exist
-$(TESTS_BIN_DIR) $(OBJ_DIR) $(TESTS_OBJ_DIR) $(TESTS_OUT_DIR) $(VECTORS_DIR) $(BENCHES_OBJ_DIR) $(BENCHES_BIN_DIR) $(DIFFS_OUT_DIR):
+$(TESTS_BIN_DIR) $(OBJ_DIR) $(TESTS_OBJ_DIR) $(TESTS_OUT_DIR) $(VECTORS_DIR) $(BENCHES_OBJ_DIR) $(BENCHES_BIN_DIR) $(DIFFS_OUT_DIR) $(EXAMPLE_BIN_DIR) $(EXAMPLE_OBJ_DIR):
 	@echo "Creating Directory: '$@'"
 	@mkdir -p $@
+
+example: $(EXAMPLE_BIN)
+
+$(EXAMPLE_OBJ_DIR)/%.o: $(EXAMPLE_SRC_DIR)/%.c | $(EXAMPLE_OBJ_DIR)
+	@echo "Compiling example: '$@'"
+	@$(CC) $(CFLAGS) $(CPPFLAGS) -c -o $@ $<
+
+$(EXAMPLE_BIN_DIR)/%: $(EXAMPLE_OBJ_DIR)/%.o $(OBJ) | $(EXAMPLE_BIN_DIR)
+	@echo "Linking example: '$@'"
+	@$(CC) $(LDFLAGS) $^ $(LDLIBS) -lcrypto -lssl -o $@
 
 tests: $(TESTS_BIN)
 

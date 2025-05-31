@@ -52,6 +52,11 @@ struct msidh_data {
     fp2_t a, xP, xQ, xR;
 };
 
+struct msidh_const_data {
+    unsigned int t; 
+    const char *a_str, *xP_str, *xQ_str, *xR_str;
+};
+
 void msidh_data_init(struct msidh_data *md);
 
 void msidh_data_clear(struct msidh_data *md);

@@ -240,8 +240,8 @@ void msidh_state_prepare(struct msidh_state *msidh, const struct msidh_data *par
 
     // TODO: Make sure that the global arithmetic is set to FP
     // Initialize global characteristic if its not set
-    ret = global_fpchar_clear();
     ret = global_fpchar_setup(msidh->p);
+    assert(ret == 0);
 
     mpz_t mask;
     mpz_init(mask);
