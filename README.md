@@ -127,7 +127,7 @@ Short recording shows the example usage of the executables*:
 
 Detailed specification of the `isogencrypt_sage` python package, can be found in [sage](./sage/README.md) directory. Below is a short summary of what was done in order to generate the available static assets.
 
-> ![NOTE]
+> [!NOTE]
 > SageMath is built on top of Python, but it is not fully compatible - there are many ways to launch sage code with python and python code with sage, but each can have its own weird quirks. For simplicity the recommended setup is to add `./sage` to `PYTHONPATH` to allow importing `isogencrypt_sage` in every called `.sage` script and run scripts with `sage -python`. Refer to package README for more details. 
 
 ### 3.1 Generate Test Vectors 
