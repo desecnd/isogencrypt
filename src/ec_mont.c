@@ -656,8 +656,6 @@ void ISOG_chain(fp2_t A24p, fp2_t C24, const fp2_t A24p_init, const fp2_t C24_in
         // TODO: For now we assume that every component can be 'even'
         // In the future we can store "power_of_two" inside the number
         // We could "prepare" the kernel points if it is required more than once?
-        //
-        // TODO: Move it as "power2" isogeny function
         if (div % 2 == 0) {
             assert(i == 0 && "Only first number can be a power of 2");
             int log2 = 0;

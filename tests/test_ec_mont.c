@@ -153,63 +153,29 @@ void test_point_set_is_immutable() {
     CHECK(!mpz_cmp_ui(P->X->a, 2) && !mpz_cmp_ui(P->X->b, 5));
 }
 
-void test_xADD_small() {
 
-    // x(P) = XP/1 = 259 + 271i
-    point_set_str_x(P, "271*i + 259");
-    fp2_print(P->X, "xP");
+// ------------------------------
+// | SIDH-like prime tests p431
+// ------------------------------
 
-    // x(Q) = XQ/1 = 262 + 335i
-    point_set_str_x(Q, "335*i + 262");
-    fp2_print(Q->X, "xQ");
+void test_point_normalize_coords() {
+    fp2_set_str(P->X, "395*i + 201");
+    fp2_set_str(P->Z, "272*i + 286");
 
-    // x(P - Q) = xPQdiff = 143 + 411i
-    point_set_str_x(PQd, "411*i + 143");
-    fp2_print(PQd->X, "xP-Q");
+    fp2_print(P->X, "X");
+    fp2_print(P->Z, "Y");
 
-    point_t PQsum;
-    point_init(&PQsum);
+    CHECK(!point_is_normalized(P));
 
-    // Perform the addition:
-    xADD(PQsum, P, Q, PQd);
+    // XP = XP / ZP; ZP = 1
+    point_normalize_coords(P);
+    CHECK(point_is_normalized(P));
 
-    // x = X(P+Q)/Z(P+Q) = 61 + 184 * i = x(PQ+)
-    point_normalize_coords(PQsum);
-    fp2_print(PQsum->X, "xP+Q");
-
-    CHECK(!mpz_cmp_ui(PQsum->X->a, 416) && !mpz_cmp_ui(PQsum->X->b, 106));
-
-    point_clear(&PQsum);
+    fp2_print(P->X, "x");
+    CHECK(fp2_equal_str(P->X, "12*i + 95"));
 }
 
-void test_xDBL_small() {
 
-    // PX = 292 + 15i, zP = 1
-    point_set_str_x(P, "15*i + 292");
-
-    fp2_print(P->X, "xP");
-    fp2_print(P->Z, "zP");
-
-    // Q = [2]P
-    { 
-        xDBL(Q, P, A24p, C24);
-
-        // Answer in affine coordinates: x(Q) = 61 + 184 * i
-        // Which is equal to projective coordinates (this implementation)
-        // X(Q) = 157 + 180 * i
-        // Z(Q) = 65 + 358 * i
-        fp2_print(Q->X, "XQ");
-        fp2_print(Q->Z, "ZQ");
-
-        CHECK(!mpz_cmp_ui(Q->X->a, 157) && !mpz_cmp_ui(Q->X->b, 180));
-        CHECK(!mpz_cmp_ui(Q->Z->a, 65) && !mpz_cmp_ui(Q->Z->b, 358));
-
-        // X(Q)/Z(Q) = 61 + 184 * i = x(Q)
-        point_normalize_coords(Q);
-        fp2_print(Q->X, "xQ");
-        CHECK(!mpz_cmp_ui(Q->X->a, 61) && !mpz_cmp_ui(Q->X->b, 184));
-    }
-}
 
 void test_criss_cross_small() {
     fp2_t x, y, z, w, sum, diff;
@@ -227,8 +193,8 @@ void test_criss_cross_small() {
     
     criss_cross(sum, diff, x, y, z, w);
 
-    fp2_print(sum, "sum");
-    fp2_print(diff, "diff");
+    fp2_print(sum, "xw+yz");
+    fp2_print(diff, "xw-yz");
 
     // ad+bc: 367*i + 314
     CHECK(!mpz_cmp_ui(sum->a, 314) && !mpz_cmp_ui(sum->b, 367));
@@ -279,75 +245,125 @@ void test_criss_cross_argsafe() {
     fp2_clear(&x); fp2_init(&y); fp2_init(&z); fp2_init(&w);
 }
 
+void test_xDBL_small() {
+
+    // PX = 292 + 15i, zP = 1
+    point_set_str_x(P, "15*i + 292");
+    point_printx(P, "xP");
+
+    // Q = [2]P
+    xDBL(Q, P, A24p, C24);
+
+    // Answer in affine coordinates: x(Q) = 61 + 184 * i
+    // Which is equal to projective coordinates (in this implementation)
+    // X(Q) = 157 + 180 * i
+    // Z(Q) = 65 + 358 * i
+    CHECK(fp2_equal_str(Q->X, "180*i + 157"));
+    CHECK(fp2_equal_str(Q->Z, "358*i + 65"));
+
+    // X(Q)/Z(Q) = 61 + 184 * i = x(Q)
+    point_normalize_coords(Q);
+    fp2_print(Q->X, "x[2]P");
+    
+    CHECK(fp2_equal_str(Q->X, "184*i + 61"));
+}
+
+void test_xDBLe() {
+    point_set_str_x(P, "387*i + 387");
+    point_printx(P, "xP");
+
+    // x[2]P: 400*i + 311
+    xDBLe(Q, P, A24p, C24, 1);
+    point_normalize_coords(Q);
+
+    point_printx(Q, "x[2]P");
+    CHECK(!mpz_cmp_ui(Q->X->a, 311) && !mpz_cmp_ui(Q->X->b, 400));
+
+    // x[4]P: 13*i + 67
+    xDBLe(Q, P, A24p, C24, 2);
+    point_normalize_coords(Q);
+
+    point_printx(Q, "x[4]P");
+    CHECK(!mpz_cmp_ui(Q->X->a, 67) && !mpz_cmp_ui(Q->X->b, 13));
+
+    // x[8]P: 213*i + 105
+    xDBLe(Q, P, A24p, C24, 3);
+    point_normalize_coords(Q);
+
+    point_printx(Q, "x[8]P");
+    CHECK(!mpz_cmp_ui(Q->X->a, 105) && !mpz_cmp_ui(Q->X->b, 213));
+
+    // x[2^1235]P: 304*i + 223
+    xDBLe(Q, P, A24p, C24, 12345);
+    point_normalize_coords(Q);
+
+    point_printx(Q, "x[2^12345]P");
+    CHECK(!mpz_cmp_ui(Q->X->a, 223) && !mpz_cmp_ui(Q->X->b, 304));
+}
+
+void test_xADD_small() {
+
+    // x(P) = XP/1 = 259 + 271i
+    point_set_str_x(P, "271*i + 259");
+    fp2_print(P->X, "xP");
+
+    // x(Q) = XQ/1 = 262 + 335i
+    point_set_str_x(Q, "335*i + 262");
+    fp2_print(Q->X, "xQ");
+
+    // x(P - Q) = xPQdiff = 143 + 411i
+    point_set_str_x(PQd, "411*i + 143");
+    fp2_print(PQd->X, "xP-Q");
+
+    point_t PQsum;
+    point_init(&PQsum);
+
+    // Perform the addition:
+    xADD(PQsum, P, Q, PQd);
+
+    // x = X(P+Q)/Z(P+Q) = 61 + 184 * i = x(PQ+)
+    point_normalize_coords(PQsum);
+    fp2_print(PQsum->X, "xP+Q");
+
+    CHECK(!mpz_cmp_ui(PQsum->X->a, 416) && !mpz_cmp_ui(PQsum->X->b, 106));
+
+    point_clear(&PQsum);
+}
+
 void test_xLADDER3PT() {
     point_set_str_x(P, "271*i + 259");
     point_set_str_x(Q, "335*i + 262");
     point_set_str_x(PQd, "411*i + 143");
     long int n = 87;
 
+    // Print the init variables
+    point_printx(P, "xP");
+    point_printx(Q, "xQ");
+    point_printx(PQd, "xP-Q");
+    printf("n: %ld\n", n);
+
     // P contains the result, other points modified
     xLADDER3PT_int(P, Q, PQd, n, A24p, C24);
     point_normalize_coords(P);
     
-    fp2_print(P->X, "xP");
+    point_printx(P, "x(P+nQ)");
     CHECK(!mpz_cmp_ui(P->X->a, 360) && !mpz_cmp_ui(P->X->b, 45));
 
     point_set_str_x(P, "271*i + 259");
     point_set_str_x(Q, "335*i + 262");
     point_set_str_x(PQd, "411*i + 143");
 
+    // Make sure that result is the same for not general xLADDER3PT
     mpz_t m;
     mpz_init_set_ui(m, n);
     xLADDER3PT(P, Q, PQd, m, A24p, C24);
-    point_normalize_coords(P);
 
-    fp2_print(P->X, "xP");
+    point_normalize_coords(P);
     CHECK(!mpz_cmp_ui(P->X->a, 360) && !mpz_cmp_ui(P->X->b, 45));
 
     mpz_clear(m);
 }
 
-void test_point_normalize_coords() {
-    fp2_set_str(P->X, "395*i + 201");
-    fp2_set_str(P->Z, "272*i + 286");
-    CHECK(!point_is_normalized(P));
-
-    // XP = XP / ZP; ZP = 1
-    point_normalize_coords(P);
-    CHECK(point_is_normalized(P));
-
-    fp2_print(P->X, "XP");
-    fp2_print(P->Z, "ZP");
-    CHECK(fp2_equal_str(P->X, "12*i + 95"));
-}
-
-void test_xDBLe() {
-    point_set_str_x(P, "387*i + 387");
-
-    // x[2]P: 400*i + 311
-    xDBLe(Q, P, A24p, C24, 1);
-    fp2_print(Q->Z, "z[2]P");
-    point_normalize_coords(Q);
-    CHECK(!mpz_cmp_ui(Q->X->a, 311) && !mpz_cmp_ui(Q->X->b, 400));
-
-    // x[4]P: 13*i + 67
-    xDBLe(Q, P, A24p, C24, 2);
-    point_normalize_coords(Q);
-    fp2_print(Q->X, "x[4]P");
-    CHECK(!mpz_cmp_ui(Q->X->a, 67) && !mpz_cmp_ui(Q->X->b, 13));
-
-    // x[8]P: 213*i + 105
-    xDBLe(Q, P, A24p, C24, 3);
-    point_normalize_coords(Q);
-    fp2_print(Q->X, "x[8]P");
-    CHECK(!mpz_cmp_ui(Q->X->a, 105) && !mpz_cmp_ui(Q->X->b, 213));
-
-    // x[2^1235]P: 304*i + 223
-    xDBLe(Q, P, A24p, C24, 12345);
-    point_normalize_coords(Q);
-    fp2_print(Q->X, "x[2^12345]P");
-    CHECK(!mpz_cmp_ui(Q->X->a, 223) && !mpz_cmp_ui(Q->X->b, 304));
-}
 
 void test_ISOG2e() {
     // Point of order 16, does not lay above (0, 0)
@@ -421,11 +437,11 @@ void test_KPS() {
 void test_xISOG_and_aISOG() {
     // K is the kernel generator of the isogeny
     point_set_str_x(K, "77*i + 38");
-    fp2_print(K->X, "xK");
+    point_printx(K, "xK");
 
     // P is the point sent through the isogeny
     point_set_str_x(P, "32*i + 42");
-    fp2_print(P->X, "xP");
+    point_printx(P, "xP");
 
     // isogeny of degree 5 for kernel <K>
     const int degree = 5;
@@ -443,13 +459,12 @@ void test_xISOG_and_aISOG() {
     // Check codomain Curve value
     aISOG_curve_KPS(phiA, phiC, A24p, C24, kpts, n);
     fp2_div_unsafe(phi_a, phiA, phiC);
-    fp2_print(phi_a, "aφ(E)");
+    fp2_print(phi_a, "aφ(K)");
     CHECK(!mpz_cmp_ui(phi_a->a, 85) && !mpz_cmp_ui(phi_a->b, 76));
 
     // Run the same computation, make sure the result is equal
     aISOG_curve(phiA, phiC, A24p, C24, K, degree);
     fp2_div_unsafe(phi_a, phiA, phiC);
-    fp2_print(phi_a, "aφ(E)");
     CHECK(!mpz_cmp_ui(phi_a->a, 85) && !mpz_cmp_ui(phi_a->b, 76));
 
     fp2_clear(&phiA); fp2_clear(&phiC); fp2_clear(&phi_a);
@@ -461,7 +476,6 @@ void test_xISOG_and_aISOG() {
 
     CHECK(!mpz_cmp_ui(Q->X->a, 46) && !mpz_cmp_ui(Q->X->b, 88));
 
-
     for (size_t i = 0; i < n; i++) point_clear(&kpts[i]);
 }
 
@@ -469,25 +483,34 @@ void test_xISOG_and_aISOG() {
 void test_xLADDER_int() {
 
     point_set_str_x(P, "108*i + 136");
+    point_printx(P, "xP");
 
     // x[1]P = 108*i + 136
     xLADDER_int(Q, P, 1, A24p, C24);
     point_normalize_coords(Q);
+
+    point_printx(Q, "x[1]P");
     CHECK(!mpz_cmp_ui(Q->X->a, 136) && !mpz_cmp_ui(Q->X->b, 108));
 
     // x[2]P = 113*i + 131
     xLADDER_int(Q, P, 2, A24p, C24);
     point_normalize_coords(Q);
+
+    point_printx(Q, "x[2]P");
     CHECK(!mpz_cmp_ui(Q->X->a, 131) && !mpz_cmp_ui(Q->X->b, 113));
 
     // x[3]P = 42*i + 83 
     xLADDER_int(Q, P, 3, A24p, C24);
     point_normalize_coords(Q);
+
+    point_printx(Q, "x[3]P");
     CHECK(!mpz_cmp_ui(Q->X->a, 83) && !mpz_cmp_ui(Q->X->b, 42));
 
     // x[4]P = 47*i + 107 
     xLADDER_int(Q, P, 4, A24p, C24);
     point_normalize_coords(Q);
+
+    point_printx(Q, "x[4]P");
     CHECK(!mpz_cmp_ui(Q->X->a, 107) && !mpz_cmp_ui(Q->X->b, 47));
 }
 
@@ -528,7 +551,6 @@ void test_xLADDER() {
 
 // TODO: reform the test
 void test_ISOG_chain_odd() {
-    return;
 
     // Point of order 35 on the curve E
     point_set_str_x(K, "108*i + 136");
@@ -543,9 +565,11 @@ void test_ISOG_chain_odd() {
     unsigned int primes[2] = {5, 7};
     pprod_set_array(deg, primes, 2);
 
-    // ISOG_chain(A_, C_, A24_plus, C24, K, deg); 
+    point_t push_points[] = { NULL, NULL};
+    ISOG_chain(A_, C_, A24p, C24, K, deg, push_points); 
 
-    // A(E') = 102*i + 73
+    // aφ(K): 102*i + 73
+    A_from_A24p(A_, C_, A_, C_); 
     fp2_div_unsafe(a_, A_, C_);
     fp2_print(a_, "aφ(K)");
     CHECK(!mpz_cmp_ui(a_->a, 73) && !mpz_cmp_ui(a_->b, 102));
@@ -557,10 +581,11 @@ void test_ISOG_chain_odd() {
 void test_xISOG2_and_aISOG2() {
     // Point of order 2, x != 0
     point_set_str_x(K, "100*i + 136");
-    fp2_print(K->X, "xK");
+    point_printx(K, "xK2");
 
     // Point of order 140
     point_set_str_x(P, "70*i + 36");
+    point_printx(P, "xP");
 
     fp2_t A_, C_, a_;
     fp2_init(&A_); fp2_init(&C_), fp2_init(&a_);
@@ -583,14 +608,13 @@ void test_xISOG2_and_aISOG2() {
     // xP' = 128*i
     xISOG2_unsafe(Q, K, P);
     point_normalize_coords(Q);
-    fp2_print(Q->X, "xφ(P)");
+    point_printx(Q, "xφ(P)");
     CHECK(!mpz_cmp_ui(Q->X->a, 0) && !mpz_cmp_ui(Q->X->b, 128));
 
     // Calculate the x-coordinate using prepared Kernel
     prepare_isog2_kernel(K);
     xISOG2_prep(Q, K, P);
     point_normalize_coords(Q);
-    fp2_print(Q->X, "xφ(P)");
     CHECK(!mpz_cmp_ui(Q->X->a, 0) && !mpz_cmp_ui(Q->X->b, 128));
 
     fp2_clear(&A_); fp2_clear(&C_), fp2_clear(&a_);
@@ -600,11 +624,10 @@ void test_xISOG2_and_aISOG2() {
 void test_ISOG_chain() {
     // Point of order 140, does not lay over (0, 0)
     point_set_str_x(K, "34*i + 99");
-    fp2_print(K->X, "xK");
-
+    point_printx(K, "xK");
 
     point_set_str_x(P, "8*i + 137");
-    fp2_print(P->X, "xP");
+    point_printx(P, "xP");
 
     fp2_t A_, C_, a_, A24p_, C24_; 
     fp2_init(&A24p_); fp2_init(&C24_); fp2_init(&A_); fp2_init(&C_), fp2_init(&a_);
@@ -627,7 +650,7 @@ void test_ISOG_chain() {
     CHECK(!mpz_cmp_ui(a_->a, 0) && !mpz_cmp_ui(a_->b, 49));
 
     point_normalize_coords(P);
-    fp2_print(P->X, "xφ(P)");
+    point_printx(P, "xφ(P)");
     CHECK(!mpz_cmp_ui(P->X->a, 68) && !mpz_cmp_ui(P->X->b, 114));
 
     fp2_clear(&A24p_); fp2_clear(&C24_); fp2_clear(&A_); fp2_clear(&C_), fp2_clear(&a_);
@@ -681,23 +704,24 @@ int main() {
     // p = 431 tests
     set_params_testp431();
 
+    TEST_RUN_SILENT(test_criss_cross_argsafe());
+
     TEST_RUN(test_point_normalize_coords());
-    TEST_RUN(test_xDBL_small());
-    TEST_RUN(test_xADD_small());
     TEST_RUN(test_criss_cross_small());
-    TEST_RUN(test_criss_cross_argsafe());
-    TEST_RUN(test_xLADDER3PT());
+    TEST_RUN(test_xDBL_small());
     TEST_RUN(test_xDBLe());
+    TEST_RUN(test_xADD_small());
+    TEST_RUN(test_xLADDER3PT());
     TEST_RUN(test_ISOG2e());
 
-    // p = 139
+    // p = 139 tests
     set_params_testp139();
 
     TEST_RUN(test_KPS());
     TEST_RUN(test_xISOG_and_aISOG());
     TEST_RUN(test_xLADDER_int());
     TEST_RUN(test_xLADDER());
-    // TEST_RUN(test_ISOG_chain_odd());
+    TEST_RUN(test_ISOG_chain_odd());
     TEST_RUN(test_xISOG2_and_aISOG2());
     TEST_RUN(test_ISOG_chain());
     TEST_RUN(test_j_invariant());
