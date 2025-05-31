@@ -102,18 +102,18 @@ Generated static benchmark data is stored in `assets` directory. Additional benc
 
 ### 🔐 2.3 Example
 
-In order to see possible integration and future deployment of the protocols inside **Isogencrypt**, a proof-of-concept demo of the **MSIDH Handshake** (see: [Cryptographic Details](#4-cryptographic-details)) is available in `example` folder. Inside 2 executables (`isog_server` and `isog_client`) are located, which allow to send encrypted data over the network using socket interface.
+In order to see possible integration and future deployment of the protocols inside **Isogencrypt**, a proof-of-concept demo of the **MSIDH Handshake** (see: [Cryptographic Details](#4-cryptographic-details)) is available in `example` folder. Inside 2 executables (`isog_server` and `isog_client`) are located, which allow `isog_client` to send encrypted data over the network using socket interface to `isog_server` which will print the decrypted messages. 
 
 ```bash
 # Compile 'isog_client' and 'isog_server' 
 # Require -lssl and -lcrypto to be available (see: Dependencies)
 $ make example
 
-# Listen on port 9999 for the connection 
+# Listen on port 9999 for the connection and decrypt traffic
 $ ./build/example/isog_server 127.0.0.1 9999
 
 # [In another terminal]
-# Connect to the listening server
+# Connect to the listening server and send encrypted traffic
 $ ./build/example/isog_client 127.0.0.1 9999
 ```
 
@@ -127,7 +127,7 @@ Short recording shows the example usage of the executables*:
 
 Detailed specification of the `isogencrypt_sage` python package, can be found in [sage](./sage/README.md) directory. Below is a short summary of what was done in order to generate the available static assets.
 
-> !NOTE
+> ![NOTE]
 > SageMath is built on top of Python, but it is not fully compatible - there are many ways to launch sage code with python and python code with sage, but each can have its own weird quirks. For simplicity the recommended setup is to add `./sage` to `PYTHONPATH` to allow importing `isogencrypt_sage` in every called `.sage` script and run scripts with `sage -python`. Refer to package README for more details. 
 
 ### 3.1 Generate Test Vectors 
@@ -168,5 +168,3 @@ Most of the used algorithms can be found in the publications from isogeny-based 
 - https://eprint.iacr.org/2017/504.pdf 
 
 Currently the library implements only [MSIDH](https://eprint.iacr.org/2023/013.pdf) key-exchange protocol. There is an ongoing effort of implementing [terSIDH](https://eprint.iacr.org/2023/791.pdf), however it is still in progress.
-
-
