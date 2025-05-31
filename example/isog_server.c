@@ -74,8 +74,6 @@ int main(int argc, char *argv[]) {
         exit(1);
     }
 
-    printf("%s Client connected\n", PREFIX_INFO);
-
     // Read the Initialization Vector obtained from client to use in AES-CTR
     unsigned char iv[IV_SIZE];
     if (IV_SIZE != read(client_fd, iv, IV_SIZE)) {
