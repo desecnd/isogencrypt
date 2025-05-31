@@ -1,7 +1,6 @@
 # Isogencrypt SageMath Package
 
-
-SageMath package and executable scripts for isogencrypt - isogeny-based cryptographic research library.
+SageMath auxiliary package and collection of tools for isogencrypt - isogeny-based cryptographic research library.
 
 ## SageMath
 
@@ -51,5 +50,5 @@ Both unit tests in `tests` and `verifiers` can be executed with `pytest` module 
 
 ```bash
 # Run the pytest module with sagemath's python executable
-$ sage -python -m pytest sage -v
+$ sage -python -m pytest
 ```
