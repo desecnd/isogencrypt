@@ -193,4 +193,17 @@ static inline void fp2_div_unsafe(fp2_t res, const fp2_t lhs, const fp2_t rhs) {
  */
 void fp2_print(fp2_t x, const char* name);
 
+
+/*
+ * @brief Calculate size required to store fp2 in character buffer, used by fp2_write
+ */
+size_t fp2_write_size(fp2_t x);
+
+/*
+ * @brief Write fp2 element x into character buffer adding NULL-termination '\0'. 
+ * X is stored in decimal format.
+ */
+void fp2_write(fp2_t x, char* buffer);
+
+
 #endif

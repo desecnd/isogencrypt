@@ -35,14 +35,13 @@ void set_params_testp431() {
     // Clear just to be sure
     global_fpchar_clear();
     // p + 1 = 432 = 2^4 * 3^3
-    global_fpchar_setup_uint(431);
+    assert(0 == global_fpchar_setup_uint(431));
 
     // Initialize the Elliptic Curve E: y^2 = x^3 + 6x^2 + x
     // (A : C) are projective coordinates of (a : 1) = (6 : 1)
-    // We additionally define A24+, C24 and A24- as:
+    // We additionally define A24+, C24:
     // A24+: A + 2C
     // C24:  4C
-    // A24-: A - 2C
     // This constants are used to speed up the calculations inside 
     // certain functions e.g. xDBL algorithm
     fp2_set_uint(A, 6);
@@ -55,9 +54,9 @@ void set_params_testp431() {
 }
 
 void set_params_testp139() {
-    global_fpchar_clear();
     // p + 1 = 140 = 2^2 * 5 * 7
-    global_fpchar_setup_uint(139);
+    global_fpchar_clear();
+    assert(0 == global_fpchar_setup_uint(139));
 
     // E: y^2 = x^3 + x
     // A = 0 => Ax^2 = 0
@@ -67,9 +66,49 @@ void set_params_testp139() {
     A24p_from_A(A24p, C24, A, C);
 }
 
+/*
+ * @brief Make sure that calling A24p_from_A and A_from_A24p is safe with 'same' arguments: func(A, C, A, C)
+ */
+void test_A_A24p_conversion_in_place() {
+    fp2_t At, Ct, at;
+    fp2_init(&At); fp2_init(&Ct); fp2_init(&at);
+
+    // p + 1 = 432 = 2^4 * 3^3
+    global_fpchar_setup_uint(431);
+
+    int a = 410;
+    fp2_set_uint(At, a);
+    fp2_set_uint(Ct, 1);
+
+    // Multiply by random scalar
+    fp2_mul_int(At, At, 12341234);
+    fp2_mul_int(Ct, Ct, 12341234);
+
+    fp2_div_unsafe(at, At, Ct);
+    CHECK(fp2_equal_uint(at, a));
+
+    int a24p = 103;
+    CHECK(a24p * 4 - 2 == a);
+
+    // Convert to (a + 2)/4 form
+    A24p_from_A(At, Ct, At, Ct);
+    fp2_div_unsafe(at, At, Ct);
+    CHECK(fp2_equal_uint(at, a24p));
+
+    fp2_mul_int(At, At, 98769876);
+    fp2_mul_int(Ct, Ct, 98769876);
+
+    // Convert from (a + 2)/4 form
+    A_from_A24p(At, Ct, At, Ct);
+    fp2_div_unsafe(at, At, Ct);
+    CHECK(fp2_equal_uint(at, a));
+
+    global_fpchar_clear();
+    fp2_clear(&At); fp2_clear(&Ct); fp2_clear(&at);
+}
+
 void test_A_A24p_conversion() {
     // Clear just to be sure
-    global_fpchar_clear();
     // p + 1 = 432 = 2^4 * 3^3
     global_fpchar_setup_uint(431);
 
@@ -81,27 +120,24 @@ void test_A_A24p_conversion() {
     fp2_set_uint(C, 1);
 
     // Multiply by random scalar
-    fp2_mul_int(A, A, 259);
-    fp2_mul_int(C, C, 259);
+    fp2_mul_int(A, A, 1000);
+    fp2_mul_int(C, C, 1000);
 
     A24p_from_A(A24p, C24, A, C);
 
     // normalize to affine: a = A24p / C24
     fp2_div_unsafe(a, A24p, C24);
-    fp2_print(a, "A24/C24");
 
     // (A24p : C24) = (a + 2 : 4) = 2
-    CHECK(!mpz_cmp_ui(a->a, 2) && !mpz_cmp_ui(a->b, 0));
+    CHECK(fp2_equal_uint(a, 2));
 
     // Retrieve back (A : C) given (A24p : C24)
     A_from_A24p(A, C, A24p, C24);
-
     fp2_div_unsafe(a, A, C);
-    fp2_print(a, "A/C");
-
-    CHECK(!mpz_cmp_ui(a->a, 6) && !mpz_cmp_ui(a->b, 0));
+    CHECK(fp2_equal_uint(a, 6));
 
     fp2_clear(&a);
+    global_fpchar_clear();
 }
 
 void test_point_set_is_immutable() {
@@ -273,13 +309,15 @@ void test_xLADDER3PT() {
 void test_point_normalize_coords() {
     fp2_set_str(P->X, "395*i + 201");
     fp2_set_str(P->Z, "272*i + 286");
+    CHECK(!point_is_normalized(P));
 
     // XP = XP / ZP; ZP = 1
     point_normalize_coords(P);
+    CHECK(point_is_normalized(P));
+
     fp2_print(P->X, "XP");
     fp2_print(P->Z, "ZP");
-
-    CHECK(!mpz_cmp_ui(P->X->a, 95) && !mpz_cmp_ui(P->X->b, 12));
+    CHECK(fp2_equal_str(P->X, "12*i + 95"));
 }
 
 void test_xDBLe() {
@@ -636,6 +674,7 @@ int main() {
     // Unit tests not related to isogeny - diff with SageMath is not required,
     // therefore tests are run in "SILENT" mode (funciton name is not printed)
     TEST_RUN_SILENT(test_point_set_is_immutable());
+    TEST_RUN_SILENT(test_A_A24p_conversion_in_place());
     TEST_RUN_SILENT(test_A_A24p_conversion());
 
     // p = 431 tests

@@ -37,7 +37,21 @@ void point_set_str_x(point_t P, const char *x) {
     fp2_set_uint(P->Z, 1);
 }
 
+
+// Set: x(P) = x, and z(P) = 1
+void point_set_fp2_x(point_t P, fp2_t x) {
+    fp2_set(P->X, x);
+    fp2_set_uint(P->Z, 1);
+}
+
 void point_printx(point_t P, const char* name) {
+    // Make sure that the coordinate is normalized, otherwise we get false results when Z != 1: x = (X : Z)
+    assert(point_is_normalized(P));
+    fp2_print(P->X, name);
+}
+
+
+void point_printx_normalized(point_t P, const char* name) {
     // Make sure that the coordinate is normalized, otherwise we get false results when Z != 1: x = (X : Z)
     point_normalize_coords(P);
     fp2_print(P->X, name);
@@ -57,6 +71,10 @@ int point_equal_str_x(point_t P, const char* str) {
     return equal;
 }
 
+int point_is_normalized(point_t P) {
+    return fp2_equal_uint(P->Z, 1);
+}
+
 
 void A24p_from_A(fp2_t A24p, fp2_t C24, const fp2_t A, const fp2_t C) {
     // Set A24p := A + 2C and C24 := 4C
@@ -68,18 +86,14 @@ void A24p_from_A(fp2_t A24p, fp2_t C24, const fp2_t A, const fp2_t C) {
 
 void A_from_A24p(fp2_t A, fp2_t C, const fp2_t A24p, const fp2_t C24) {
     // Set A := 4*A24p - 2*C24 and C := C24
+    fp2_set(C, C24);
 
     // A = 4A'
-    fp_mul_int(A->a, A24p->a, 4);
-    fp_mul_int(A->b, A24p->b, 4);
+    fp2_mul_int(A, A24p, 4);
 
-    // C = C' (use C as register)
-    fp2_add(C, C24, C24);
     // A = 4A' - 2C'
     fp2_sub(A, A, C);
-
-    // C = C'
-    fp2_set(C, C24);
+    fp2_sub(A, A, C);
 }
 
 // Normalize: P = (X : Z) -> (X' : 1) with X' = X/Z

@@ -8,17 +8,19 @@
 #include "proto_msidh.h"
 #include "pprod.h"
 
-fp2_t A24p, C24;
+fp2_t A24p, C24, a0;
 point_t P, Q, PQd, K;
 point_t PA, QA, PQAd;
 point_t PB, QB, PQBd;
 pprod_t A_deg, B_deg;
 mpz_t p, m;
+unsigned int g_t;
 
 
 void init_test_variables() {
     fp2_init(&A24p);
     fp2_init(&C24);
+    fp2_init(&a0);
     point_init(&P);
     point_init(&Q);
     point_init(&PQd);
@@ -38,6 +40,7 @@ void init_test_variables() {
 void clear_test_variables() {
     fp2_clear(&A24p);
     fp2_clear(&C24);
+    fp2_clear(&a0);
     point_clear(&P);
     point_clear(&Q);
     point_clear(&PQd);
@@ -197,7 +200,8 @@ void test_msidh_gen_pub_params() {
 
 void setup_params_t4() {
     // p + 1 = 420 = 4 * 3 * 5 * 7
-    int f = msidh_gen_pub_params(p, A_deg, B_deg, 4);
+    g_t = 4;
+    int f = msidh_gen_pub_params(p, A_deg, B_deg, g_t);
     CHECK(f==1);
 
     // Clear just to be sure
@@ -205,41 +209,39 @@ void setup_params_t4() {
     global_fpchar_setup(p);
 
     // Elliptic Curve defined by y^2 = x^3 + 6*x^2 + x over Finite Field in i of size 419^2
-    fp2_t A, C;
-    fp2_init(&A); fp2_init(&C);
+    fp2_set_uint(a0, 6);
 
-    fp2_set_uint(A, 6);
-    fp2_set_uint(C, 1);
+    fp2_set(A24p, a0);
+    fp2_set_uint(C24, 1);
     
     // Convert to (A+2 : 4) form used in xDBL
-    A24p_from_A(A24p, C24, A, C);
-
-    fp2_clear(&A); fp2_clear(&C);
+    // Function is safe to call with self-args
+    A24p_from_A(A24p, C24, A24p, C24);
 }
 
 void test_msidh_secret_zero() {
     point_set_str_x(P, "295*i + 398");
-    fp2_print(P->X, "xP");
+    point_printx(P, "xP");
 
     point_set_str_x(Q, "314*i + 149");
-    fp2_print(Q->X, "xQ");
+    point_printx(Q, "xQ");
 
     point_set_str_x(PQd, "29*i + 395");
-    fp2_print(PQd->X, "xPQd");
+    point_printx(PQd, "xPQd");
 
     mpz_set_ui(m, 0);
     xLADDER3PT(P,  Q, PQd, m, A24p, C24);
 
     // P should not change
     // xP: 295*i + 398
-    point_printx(P, "xK");
+    point_printx_normalized(P, "xK");
     CHECK(!mpz_cmp_ui(P->X->a, 398) && !mpz_cmp_ui(P->X->b, 295));
 
     xLADDER3PT_int(P, Q, PQd, 0, A24p, C24);
 
     // P should not change
     // xP: 295*i + 398
-    point_printx(P, "xK");
+    point_printx_normalized(P, "xK");
     CHECK(!mpz_cmp_ui(P->X->a, 398) && !mpz_cmp_ui(P->X->b, 295));
 }
 
@@ -267,19 +269,18 @@ void test_msidh_internals() {
     pprod_init(&PQA.n);
     tors_basis_get_subgroup(&PQA, A_deg, &PQ, A24p, C24); 
 
-
-    point_printx(PA, "xPA");
-    point_printx(QA, "xQA");
-    point_printx(PQAd, "xPQAd");
+    point_printx_normalized(PA, "xPA");
+    point_printx_normalized(QA, "xQA");
+    point_printx_normalized(PQAd, "xPQAd");
 
     // Constuct Bob Basis (PB, QB) = [n//B](P, Q)
     struct tors_basis PQB = { .P=PB, .Q=QB, .PQd=PQBd };
     pprod_init(&PQB.n);
     tors_basis_get_subgroup(&PQB, B_deg, &PQ, A24p, C24); 
 
-    point_printx(PB, "xPB");
-    point_printx(QB, "xQB");
-    point_printx(PQBd, "xPQBd");
+    point_printx_normalized(PB, "xPB");
+    point_printx_normalized(QB, "xQB");
+    point_printx_normalized(PQBd, "xPQBd");
 
 
     mpz_t a_sec, a_mask, b_sec, b_mask;
@@ -319,15 +320,15 @@ void test_msidh_internals() {
     CHECK(!mpz_cmp_ui(aE_alice->a, 111) && !mpz_cmp_ui(aE_alice->b, 271));
 
     // xφ(PB): 363*i + 349
-    point_printx(PB, "xφ(PB)");
+    point_printx_normalized(PB, "xφ(PB)");
     CHECK(!mpz_cmp_ui(PQB.P->X->a, 349) && !mpz_cmp_ui(PB->X->b, 363));
 
     // xφ(QB): 303*i + 391
-    point_printx(QB, "xφ(QB)");
+    point_printx_normalized(QB, "xφ(QB)");
     CHECK(!mpz_cmp_ui(PQB.Q->X->a, 391) && !mpz_cmp_ui(QB->X->b, 303));
 
     // xφ(PB-QB): 239*i + 90
-    point_printx(PQBd, "xφ(PQBd)");
+    point_printx_normalized(PQBd, "xφ(PQBd)");
     CHECK(!mpz_cmp_ui(PQBd->X->a, 90) && !mpz_cmp_ui(PQBd->X->b, 239));
 
     _msidh_key_exchange_alice(j_inv, A24p_final, C24_final, A24p_alice, C24_alice, &PQB, b_sec);
@@ -363,15 +364,15 @@ void test_msidh_internals() {
     CHECK(!mpz_cmp_ui(aE_alice->a, 332) && !mpz_cmp_ui(aE_alice->b, 408));
 
     // xφ(PB): 192*i + 82
-    point_printx(PQB.P, "xφ(PB)");
+    point_printx_normalized(PQB.P, "xφ(PB)");
     CHECK(!mpz_cmp_ui(PB->X->a, 82) && !mpz_cmp_ui(PB->X->b, 192));
 
     // xφ(QB): 299*i + 211
-    point_printx(PQB.Q, "xφ(QB)");
+    point_printx_normalized(PQB.Q, "xφ(QB)");
     CHECK(!mpz_cmp_ui(QB->X->a, 211) && !mpz_cmp_ui(QB->X->b, 299));
 
     // xφ(PQBd): 127*i + 181
-    point_printx(PQBd, "xφ(PQBd)");
+    point_printx_normalized(PQBd, "xφ(PQBd)");
     CHECK(!mpz_cmp_ui(PQBd->X->a, 181) && !mpz_cmp_ui(PQBd->X->b, 127));
 
     _msidh_key_exchange_alice(j_inv, A24p_final, C24_final, A24p_alice, C24_alice, &PQB, b_sec);
@@ -407,15 +408,15 @@ void test_msidh_internals() {
     CHECK(!mpz_cmp_ui(aE_alice->a, 386) && !mpz_cmp_ui(aE_alice->b, 109));
 
     // xφ(PB): 298*i + 413
-    point_printx(PQB.P, "xφ(PB)");
+    point_printx_normalized(PQB.P, "xφ(PB)");
     CHECK(!mpz_cmp_ui(PB->X->a, 413) && !mpz_cmp_ui(PB->X->b, 298));
 
     // xφ(QB): 323*i + 222
-    point_printx(PQB.Q, "xφ(QB)");
+    point_printx_normalized(PQB.Q, "xφ(QB)");
     CHECK(!mpz_cmp_ui(QB->X->a, 222) && !mpz_cmp_ui(QB->X->b, 323));
 
     // xφ(PQBd): 323*i + 66
-    point_printx(PQBd, "xφ(PQBd)");
+    point_printx_normalized(PQBd, "xφ(PQBd)");
     CHECK(!mpz_cmp_ui(PQBd->X->a, 66) && !mpz_cmp_ui(PQBd->X->b, 323));
 
     _msidh_key_exchange_alice(j_inv, A24p_final, C24_final, A24p_alice, C24_alice, &PQB, b_sec);
@@ -451,15 +452,15 @@ void test_msidh_internals() {
     CHECK(!mpz_cmp_ui(aE_alice->a, 353) && !mpz_cmp_ui(aE_alice->b, 16));
 
     // xφ(PB): 340
-    point_printx(PQB.P, "xφ(PB)");
+    point_printx_normalized(PQB.P, "xφ(PB)");
     CHECK(!mpz_cmp_ui(PB->X->a, 340) && !mpz_cmp_ui(PB->X->b, 0));
 
     // xφ(QB): 97*i + 356
-    point_printx(PQB.Q, "xφ(QB)");
+    point_printx_normalized(PQB.Q, "xφ(QB)");
     CHECK(!mpz_cmp_ui(QB->X->a, 356) && !mpz_cmp_ui(QB->X->b, 97));
 
     // xφ(PQBd): 330*i + 244
-    point_printx(PQBd, "xφ(PQBd)");
+    point_printx_normalized(PQBd, "xφ(PQBd)");
     CHECK(!mpz_cmp_ui(PQBd->X->a, 244) && !mpz_cmp_ui(PQBd->X->b, 330));
 
 
@@ -502,25 +503,22 @@ void test_msidh_non_deterministic() {
     msidh_state_init(&m2);
     msidh_state_init(&m3);
 
-    struct tors_basis PQ;
-    PQ.P = P;
-    PQ.Q = Q;
-    PQ.PQd = PQd;
-    pprod_init(&PQ.n);
-    mpz_add_ui(PQ.n->value, p, 1);
-
     point_set_str_x(P, "209*i + 332");
-    point_printx(P, "xP");
+    point_printx_normalized(P, "xP");
 
     point_set_str_x(Q, "345*i + 223");
-    point_printx(Q, "xQ");
+    point_printx_normalized(Q, "xQ");
 
     point_set_str_x(PQd, "98*i + 199");
-    point_printx(PQd, "xPQd");
+    point_printx_normalized(PQd, "xPQd");
 
-    msidh_state_prepare(&m1, A24p, C24, &PQ, A_deg, B_deg, 0);
-    msidh_state_prepare(&m2, A24p, C24, &PQ, A_deg, B_deg, 0);
-    msidh_state_prepare(&m3, A24p, C24, &PQ, A_deg, B_deg, 0);
+    struct msidh_data md = { 
+        .t = g_t, .a = a0, .xP = P->X, .xQ = Q->X, .xR = PQd->X
+    };
+
+    msidh_state_prepare(&m1, &md, 0);
+    msidh_state_prepare(&m2, &md, 0);
+    msidh_state_prepare(&m3, &md, 0);
 
     // At least one has to be different -> extremally low chance for false test
     CHECK(m1.secret != m2.secret || m2.secret == m3.secret || m3.secret == m1.secret);
@@ -528,7 +526,6 @@ void test_msidh_non_deterministic() {
     msidh_state_clear(&m1);
     msidh_state_clear(&m2);
     msidh_state_clear(&m3);
-    pprod_clear(&PQ.n);
 }
 
 void test_msidh_monte_carlo() {
@@ -537,13 +534,6 @@ void test_msidh_monte_carlo() {
     msidh_state_init(&alice);
     msidh_state_init(&bob);
 
-    struct tors_basis PQ;
-    PQ.P = P;
-    PQ.Q = Q;
-    PQ.PQd = PQd;
-    pprod_init(&PQ.n);
-    mpz_add_ui(PQ.n->value, p, 1);
-
     point_set_str_x(P, "209*i + 332");
     point_printx(P, "xP");
 
@@ -553,27 +543,42 @@ void test_msidh_monte_carlo() {
     point_set_str_x(PQd, "98*i + 199");
     point_printx(PQd, "xPQd");
 
+    struct msidh_data md = { 
+        .t = g_t, .a = a0, .xP = P->X, .xQ = Q->X, .xR = PQd->X
+    };
+
+    struct msidh_data alice_pk, bob_pk;
+    msidh_data_init(&alice_pk);
+    msidh_data_init(&bob_pk);
+
     // Test is not deterministic - we try many different combinations of (secret/mask) for both parties
     for (int iter = 0; iter < 100; iter++) {
-        msidh_state_prepare(&alice, A24p, C24, &PQ, A_deg, B_deg, 0);
-        msidh_state_prepare(&bob, A24p, C24, &PQ, A_deg, B_deg, 1);
+        msidh_state_prepare(&alice, &md,  0);
+        msidh_state_prepare(&bob, &md,  1);
 
-        msidh_key_exchange(&alice, bob.pk_A24p, bob.pk_C24, &bob.PQ_other);
-        msidh_key_exchange(&bob, alice.pk_A24p, alice.pk_C24, &alice.PQ_other);
+        msidh_get_pubkey(&alice, &alice_pk); 
+        msidh_get_pubkey(&bob, &bob_pk); 
 
-        // Make sure that the computed shared secret is the same for both parties
-        CHECK(!mpz_cmp(alice.sk_jinv->a, bob.sk_jinv->a) && !mpz_cmp(alice.sk_jinv->b, bob.sk_jinv->b));
+        msidh_key_exchange(&alice, &bob_pk);
+        msidh_key_exchange(&bob, &alice_pk);
+
+        CHECK(fp2_equal(alice.j_inv, bob.j_inv));
 
         msidh_state_reset(&alice);
         msidh_state_reset(&bob);
     }
+
+    msidh_data_clear(&alice_pk);
+    msidh_data_clear(&bob_pk);
+
 
     msidh_state_clear(&alice);
     msidh_state_clear(&bob);
 }
 
 void setup_params_t30() {
-    int f = msidh_gen_pub_params(p, A_deg, B_deg, 30);
+    g_t = 30;
+    int f = msidh_gen_pub_params(p, A_deg, B_deg, g_t);
     assert(f > 0);
 
     // Clear just to be sure
@@ -581,12 +586,14 @@ void setup_params_t30() {
     global_fpchar_setup(p);
 
     // Elliptic Curve defined by y^2 = x^3 + 6*x^2 + x over Finite Field in i of size 419^2
-    fp2_set_uint(A24p, 6);
+    fp2_set_uint(a0, 6);
+
+    fp2_set(A24p, a0);
     fp2_set_uint(C24, 1);
     
     // Convert to (A+2 : 4) form used in xDBL
+    // Function is safe to call with self-args
     A24p_from_A(A24p, C24, A24p, C24);
-
 }
 
 void test_msidh_internals_large() {
@@ -610,9 +617,9 @@ void test_msidh_internals_large() {
     pprod_init(&PQA.n);
     tors_basis_get_subgroup(&PQA, A_deg, &PQ, A24p, C24); 
 
-    point_printx(PA, "xPA");
-    point_printx(QA, "xQA");
-    point_printx(PQAd, "xPQAd");
+    point_printx_normalized(PA, "xPA");
+    point_printx_normalized(QA, "xQA");
+    point_printx_normalized(PQAd, "xPQAd");
 
     CHECK(point_equal_str_x(PA, "29699839172659064070785630633025116007167774796*i + 2504062641765751109972582500320053624879816710"));
     CHECK(point_equal_str_x(QA, "33271862144249447985137496787936923322336452945*i + 61213944166497621905178667109855815871670127212"));
@@ -623,9 +630,9 @@ void test_msidh_internals_large() {
     pprod_init(&PQB.n);
     tors_basis_get_subgroup(&PQB, B_deg, &PQ, A24p, C24); 
 
-    point_printx(PB, "xPB");
-    point_printx(QB, "xQB");
-    point_printx(PQBd, "xPQBd");
+    point_printx_normalized(PB, "xPB");
+    point_printx_normalized(QB, "xQB");
+    point_printx_normalized(PQBd, "xPQBd");
 
     CHECK(point_equal_str_x(PB, "49114309482119019874119284972332462593113788145*i + 4761433153046662093084589855451688595958230559"));
     CHECK(point_equal_str_x(QB, "30431121762650905008454289312347872723430751013*i + 2343460809488608363031424186950047556179737763"));
@@ -668,15 +675,15 @@ void test_msidh_internals_large() {
     CHECK(fp2_equal_str(aE_alice, "58406864750297447375941148275890126964932964189*i + 60400200391283286845520983845656557221610499288"));
 
     // xφ(PB)
-    point_printx(PQB.P, "xφ(PB)");
+    point_printx_normalized(PQB.P, "xφ(PB)");
     CHECK(point_equal_str_x(PQB.P, "61460438692052277410377272364685473376640776051*i + 55514416620914970543945665178326301897479630385"));
 
     // xφ(QB)
-    point_printx(PQB.Q, "xφ(QB)");
+    point_printx_normalized(PQB.Q, "xφ(QB)");
     CHECK(point_equal_str_x(PQB.Q, "59420147577812126043911530847798020708549199424*i + 45153371532976521708986975584064598899456381726"));
 
     // xφ(PQBd)
-    point_printx(PQB.PQd, "xφ(PQBd)");
+    point_printx_normalized(PQB.PQd, "xφ(PQBd)");
     CHECK(point_equal_str_x(PQB.PQd, "12338170382935113028682312433735367927625301703*i + 47299240837639061178684012620848485232866182686"));
 
     _msidh_key_exchange_alice(j_inv, A24p_final, C24_final, A24p_alice, C24_alice, &PQB, b_sec);
@@ -712,15 +719,15 @@ void test_msidh_internals_large() {
     CHECK(fp2_equal_str(aE_alice, "32721529036899972732279468408471975069661362292*i + 17269325977833293966138407821489567068853821114"));
 
     // xφ(PB)
-    point_printx(PQB.P, "xφ(PB)");
+    point_printx_normalized(PQB.P, "xφ(PB)");
     CHECK(point_equal_str_x(PQB.P, "16875856946578546258578008123468502154460718295*i + 38847645774315915434007838296654577037686340296"));
 
     // xφ(QB)
-    point_printx(PQB.Q, "xφ(QB)");
+    point_printx_normalized(PQB.Q, "xφ(QB)");
     CHECK(point_equal_str_x(PQB.Q, "16054449845823153742619853253831785845856263425*i + 15381476167260289678857731510026166833683607342"));
 
     // xφ(PQBd)
-    point_printx(PQB.PQd, "xφ(PQBd)");
+    point_printx_normalized(PQB.PQd, "xφ(PQBd)");
     CHECK(point_equal_str_x(PQB.PQd, "51405460425642783842251929023025336502575438127*i + 11702887079976981107716609038554493137279265981"));
 
     _msidh_key_exchange_alice(j_inv, A24p_final, C24_final, A24p_alice, C24_alice, &PQB, b_sec);

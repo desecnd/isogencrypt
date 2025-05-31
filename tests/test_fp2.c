@@ -1,4 +1,6 @@
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #include "fp2.h"
 #include "testing.h"
@@ -247,6 +249,30 @@ void test_set_str() {
     CHECK(!global_fpchar_clear());
 }
 
+void test_write() {
+    CHECK(!global_fpchar_setup_uint(431));
+    fp2_t x;
+    fp2_init(&x);
+
+    CHECK(0 == fp2_set_str(x, "416*i + 175"));
+    size_t buff_size = fp2_write_size(x);
+    CHECK(3 + 5 + 3 + 1 == buff_size);
+
+    char * buffer = (char*) malloc(buff_size);
+    fp2_write(x, buffer);
+    CHECK(3 + 5 + 3 == strlen(buffer));
+    CHECK(0 == strcmp(buffer, "416*i + 175"));
+
+    fp2_t y;
+    fp2_init(&y);
+    fp2_set_str(y, buffer);
+    CHECK(fp2_equal(x, y));
+
+    fp2_clear(&y);
+    fp2_clear(&x);
+    CHECK(!global_fpchar_clear());
+}
+
 void test_fp2_mul_int() {
     CHECK(!global_fpchar_setup_uint(431));
 
@@ -329,8 +355,8 @@ void test_large_numbers() {
 }
 
 int main() {
-
     TEST_RUN(test_set_str());
+    TEST_RUN_SILENT(test_write());
     TEST_RUN(test_failed_once());
     TEST_RUN(test_basic_arithmetic());
     TEST_RUN(test_safe_unsafe_mul_sq());

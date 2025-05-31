@@ -22,25 +22,56 @@ enum {
 struct msidh_state {
     gmp_randstate_t randstate;
 
-    struct tors_basis PQ_me, PQ_other;
-    // Public Key
-    fp2_t pk_A24p, pk_C24;
+    unsigned int t;
+    int is_bob;
+
+    mpz_t p;
+    pprod_t A, B;
+
+    // Torsion basis for Alice and for Bob
+    struct tors_basis PQ_self, PQ_pubkey;
+
+    // Starting Elliptic Curve coefficient a = A/C in xDBL form
+    fp2_t A24p_start, C24_start;
+
+    // Public Key Elliptic Curve
+    fp2_t A24p_pubkey, C24_pubkey;
+
     // Private Key
     mpz_t secret;
-    // Shared Key -> j_invariant
-    fp2_t sk_jinv;
 
+    // Shared Key -> j_invariant
+    fp2_t j_inv;
+
+    // Current state of the protocol
     int status; 
 };
 
-// TODO: Make sure that the global arithmetic is set to FP
+struct msidh_data {
+    unsigned int t;
+    fp2_t a, xP, xQ, xR;
+};
+
+struct msidh_const_data {
+    unsigned int t; 
+    const char *a_str, *xP_str, *xQ_str, *xR_str;
+};
+
+void msidh_data_init(struct msidh_data *md);
+
+void msidh_data_clear(struct msidh_data *md);
+
 void msidh_state_init(struct msidh_state* msidh);
 
 void msidh_state_clear(struct msidh_state* msidh);
 
 void msidh_state_reset(struct msidh_state *msidh);
 
-void msidh_state_prepare(struct msidh_state *msidh, const fp2_t A24p, const fp2_t C24, const struct tors_basis *PQ, pprod_t A_deg, pprod_t B_deg, int is_bob);
+void msidh_state_prepare(struct msidh_state *msidh, const struct msidh_data *params, int is_bob);
+
+void msidh_key_exchange(struct msidh_state *msidh, const struct msidh_data *pk_other);
+
+void msidh_get_pubkey(const struct msidh_state *msidh, struct msidh_data *pk_self);
 
 // TODO: add gmp_randstate instead of random
 int sample_quadratic_root_of_unity(mpz_t result, pprod_t modulus);
@@ -63,11 +94,11 @@ void _msidh_gen_pubkey_alice(fp2_t A24p_alice, fp2_t C24_alice, struct tors_basi
  */
 void _msidh_key_exchange_alice(fp2_t j_inv, fp2_t A24p_final, fp2_t C24_final, const fp2_t A24p_bob, const fp2_t C24_bob, struct tors_basis * BPQA, const mpz_t A_sec);
 
-void msidh_key_exchange(struct msidh_state *msidh, const fp2_t A24p, const fp2_t C24, const struct tors_basis* BPQA);
-
 /*
  * @brief Calculate subgroup basis of the torsion basis (Pn, Qn) = [N/n](P, Q) of order n, where N is the order of (P, Q)
  */
 void tors_basis_get_subgroup(struct tors_basis *PQsub, pprod_t n, const struct tors_basis *PQ, const fp2_t A24p, const fp2_t C24);
+void tors_basis_init(struct tors_basis *tb);
+void tors_basis_clear(struct tors_basis *tb);
 
 #endif
