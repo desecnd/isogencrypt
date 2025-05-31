@@ -453,7 +453,7 @@ void aISOG_curve_KPS(fp2_t A_, fp2_t C_, const fp2_t A24p, const fp2_t C24, cons
 void aISOG_curve(fp2_t A_, fp2_t C_, const fp2_t A24p, const fp2_t C24, const point_t K, int degree) {
 
     size_t n = KPS_DEG2SIZE(degree);
-    point_t * kpts = calloc(sizeof(point_t), n);
+    point_t * kpts = calloc(n, sizeof(point_t));
 
     // Initialize kernel points
     for (size_t i = 0; i < n; i++) {
@@ -631,7 +631,7 @@ void ISOG_chain(fp2_t A24p, fp2_t C24, const fp2_t A24p_init, const fp2_t C24_in
     }
 
     size_t max_n = KPS_DEG2SIZE(max_div);
-    point_t * kpts = calloc(sizeof(point_t), max_n);
+    point_t * kpts = calloc(max_n, sizeof(point_t));
 
     // Initialize kernel points
     for (size_t i = 0; i < max_n; i++) {
