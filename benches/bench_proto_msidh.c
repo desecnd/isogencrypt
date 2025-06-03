@@ -229,6 +229,10 @@ int main() {
 
     struct msidh_data params;
     msidh_data_init(&params);
+        
+    struct msidh_data alice_pk, bob_pk;
+    msidh_data_init(&alice_pk);
+    msidh_data_init(&bob_pk);
 
     float timings[N_REPS] = { 0 };
 
@@ -248,9 +252,22 @@ int main() {
         float time_sum = 0.0;
         for (int j = 0; j < N_REPS; j++) {
 
+            msidh_state_prepare(&alice, &params, 0);
+            msidh_get_pubkey(&alice, &alice_pk);
+
+            // Calculate time for only one party
             clock_t tic = clock();
-            run_double_msidh(&alice, &bob, &params);
+            msidh_state_prepare(&bob, &params, 1);
+            msidh_key_exchange(&bob, &alice_pk);
             clock_t toc = clock();
+
+            msidh_get_pubkey(&bob, &bob_pk);
+            msidh_key_exchange(&alice, &bob_pk);
+
+            // Make sure that the computed shared secret is the same for both parties
+            assert(fp2_equal(alice.j_inv, bob.j_inv));
+
+
             timings[j] = ((double)toc - tic)/CLOCKS_PER_SEC;
             fprintf(stderr,"[%d/%d][t=%d][%d/%d]: took %f seconds to execute \n", bench_id + 1, n_benchmarks, bt_array[bench_id].t, j + 1, N_REPS, timings[j]); 
             time_sum += timings[j];
@@ -269,6 +286,8 @@ int main() {
     }
 
     msidh_data_clear(&params);
+    msidh_data_clear(&alice_pk);
+    msidh_data_clear(&bob_pk);
 
     msidh_state_clear(&alice);
     msidh_state_clear(&bob);
