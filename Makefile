@@ -136,7 +136,7 @@ $(TESTS_OUT_DIR)/%.out: $(TESTS_BIN_DIR)/%  | $(TESTS_OUT_DIR)
 # @echo "> $(notdir $@)"
 # && echo "Check diff: $(notdir $@) (\033[0;32mPASSED\033[0m)" || (echo "[\033[0;31mFAILED\033[0m]: $(notdir $@) (see: $@)")
 $(DIFFS_OUT_DIR)/%.diff: $(TESTS_OUT_DIR)/%.out $(VECTORS_SRC_DIR)/%.out $(TESTS_BIN_DIR)/% FORCE | $(DIFFS_OUT_DIR)
-	@diff $< $(patsubst $(DIFFS_OUT_DIR)/%.diff,$(VECTORS_SRC_DIR)/%.out,$@) --color=always > $@ \
+	@diff -Z $< $(patsubst $(DIFFS_OUT_DIR)/%.diff,$(VECTORS_SRC_DIR)/%.out,$@) --color=always > $@ \
 	&& echo "Check diff: $(notdir $@) (\033[0;32mPASSED\033[0m)" || (echo "Check diff: $(notdir $@) (\033[0;31mFAILED\033[0m) - see: $@")
 
 clean:
