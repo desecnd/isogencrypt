@@ -281,6 +281,7 @@ def prep_environment(bt: MSIDHBenchTask):
     # Montgomery Curve with 'a' as x^2 coefficient
     a = F(bt.a)
     E = EllipticCurve(F, [0, a, 0, 1, 0])
+    E.set_order((p+1)**2)
     assert E.is_supersingular()
 
     P = E(F(bt.xP), F(bt.yP))
@@ -310,9 +311,6 @@ def run_benchmark():
 
             # Run The benchmark N_REPS times
             for j in range(N_REPS):
-                prep_environment(bt)
-                # run_msidh_exchange(p, A, B, E, P, Q)
-
                 A_mul = (p + 1)//A
                 B_mul = (p + 1)//B
                 B_basis = (P * B_mul, Q * B_mul)
