@@ -1,14 +1,11 @@
-
-#include "ec_mont.h"
-#include "fp2.h"
-#include "pprod.h"
-#include "proto_msidh.h"
-
 #include <gmp.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <time.h>
 #include <stdio.h>
+
+#include "fp2.h"
+#include "proto_msidh.h"
 
 #define N_REPS 5
 
