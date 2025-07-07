@@ -41,7 +41,7 @@ void fp_mul(fp_t res, const fp_t a, const fp_t b);
 // mul int: res = a * (int) b (mod p)
 void fp_mul_int(fp_t res, const fp_t a, long int b); 
 
-// modular inverse: res = a^-1 (mod p)
+// inv: res = a^-1 (mod p)
 void fp_inv(fp_t res, const fp_t a); 
 
 // div: res = a / b (mod p) = a * b^-1 (mod p)
@@ -55,9 +55,7 @@ void fp_neg(fp_t res, const fp_t a);
 void fp_sqrt(fp_t res, const fp_t a); 
 
 // Return 1 if fp is zero, 0 otherwise
-static int fp_is_zero(const fp_t a) {
-    return (int) (mpz_sgn(a) == 0);
-}
+int fp_is_zero(const fp_t a);
 
 /*
  * @brief Return 1 if FiniteField element is equal to ulong number
@@ -69,6 +67,11 @@ int fp_equal_uint(fp_t a, unsigned long int b);
  */
 int fp_equal(fp_t a, fp_t b);
 
+
+/*
+ * @brief Compare fp_t element with fp_t element represented as a str type. 
+ * Return 1 if equal, 0 otherwise.
+ */
 int fp_equal_str(fp_t a, const char *b_str);
 
 /* 

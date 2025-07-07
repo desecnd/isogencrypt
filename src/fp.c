@@ -170,6 +170,10 @@ void fp_sqrt(fp_t res, const fp_t a) {
     mpz_clear(exp);
 }
 
+int fp_is_zero(const fp_t a) {
+    return (int) (mpz_sgn(a) == 0);
+}
+
 int fp_equal_uint(fp_t a, unsigned long int b) {
     return !mpz_cmp_ui(a, b);
 }

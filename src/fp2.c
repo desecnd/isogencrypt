@@ -32,9 +32,9 @@ void fp2_set(fp2_t r, const fp2_t x) {
 }
 
 
-// set: result <- (unsigned int) rhs 
-void fp2_set_uint(fp2_t res, unsigned long int rhs) {
-    fp_set_uint(res->a, rhs);
+// set: result = (uint) x 
+void fp2_set_uint(fp2_t res, unsigned long int x) {
+    fp_set_uint(res->a, x);
     fp_set_uint(res->b, 0);
 }
 
@@ -117,36 +117,32 @@ void fp2_fill_uint(fp2_t res, unsigned long int a, unsigned long int b) {
 }
 
 
-// add: result <- lhs[a + bi] + rhs[a + bi]
-void fp2_add(fp2_t res, const fp2_t lhs, const fp2_t rhs) {
-    fp_add(res->a, lhs->a, rhs->a);
-    fp_add(res->b, lhs->b, rhs->b);
+// add: result <- x[a + bi] + y[a + bi]
+void fp2_add(fp2_t res, const fp2_t x, const fp2_t y) {
+    fp_add(res->a, x->a, y->a);
+    fp_add(res->b, x->b, y->b);
 }
 
-// add: result <- lhs[a + bi] + (unsigned int) rhs
-void fp2_add_uint(fp2_t res, const fp2_t lhs, unsigned long int rhs) {
-    fp_add_uint(res->a, lhs->a, rhs);
-    fp_set(res->b, lhs->b);
+// add: result <- x[a + bi] + (unsigned int) y
+void fp2_add_uint(fp2_t res, const fp2_t x, unsigned long int y) {
+    fp_add_uint(res->a, x->a, y);
+    fp_set(res->b, x->b);
 }
 
-// sub: result <- lhs[a + bi] - rhs[a + bi]
-void fp2_sub(fp2_t res, const fp2_t lhs, const fp2_t rhs) {
-    fp_sub(res->a, lhs->a, rhs->a);
-    fp_sub(res->b, lhs->b, rhs->b);
+// sub: result <- x[a + bi] - y[a + bi]
+void fp2_sub(fp2_t res, const fp2_t x, const fp2_t y) {
+    fp_sub(res->a, x->a, y->a);
+    fp_sub(res->b, x->b, y->b);
 }
 
-// sub: result <- lhs[a + bi] - (unsigned int) rhs 
-void fp2_sub_uint(fp2_t res, const fp2_t lhs, unsigned long int rhs) {
-    fp_sub_uint(res->a, lhs->a, rhs);
-    fp_set(res->b, lhs->b);
+// sub: result <- x[a + bi] - (unsigned int) y 
+void fp2_sub_uint(fp2_t res, const fp2_t x, unsigned long int y) {
+    fp_sub_uint(res->a, x->a, y);
+    fp_set(res->b, x->b);
 }
 
-// mul: result <- lhs[a + bi] * rhs[a + bi]
-// This function is **not** argument-safe, i.e.
-// calling fp_mul(a, a, a) will provide incorrect results.
-// Therefore, res != lhs and res != rhs, but calling (a, n, n) is ok.
-void fp2_mul_unsafe(fp2_t res, const fp2_t lhs, const fp2_t rhs) {
-    assert(res != lhs && res != rhs && "fp2_mul cannot be called with res = lhs or res = rhs");
+void fp2_mul_unsafe(fp2_t res, const fp2_t x, const fp2_t y) {
+    assert(res != x && res != y && "fp2_mul cannot be called with res = x or res = y");
     // add temprary field elements for storing values
     fp_t t;
     fp_init(t); // allocate and set to 0
@@ -155,21 +151,21 @@ void fp2_mul_unsafe(fp2_t res, const fp2_t lhs, const fp2_t rhs) {
 
     // calculate the first variable (real part); ac - bd 
     // res[0] <- a * c
-    fp_mul(res->a, lhs->a, rhs->a);
+    fp_mul(res->a, x->a, y->a);
     // temp <- b * d
-    fp_mul(t, lhs->b, rhs->b);
+    fp_mul(t, x->b, y->b);
     // res[0] <- [res0](a * c) - [tmp](b * d)
     fp_sub(res->a, res->a, t);
 
     // calculate the second variable (real part); ad - bc
     // res[1] <- a * d
-    fp_mul(res->b, lhs->a, rhs->b);
+    fp_mul(res->b, x->a, y->b);
     // TODO: make sure we can set the register without UB
     // i.e-> there is no garbage left from other operations
     // so no need to set value to 0?
 
     // tmp <- b * c
-    fp_mul(t, lhs->b, rhs->a);
+    fp_mul(t, x->b, y->a);
     fp_add(res->b, res->b, t);
 
     fp_clear(t);
@@ -182,7 +178,7 @@ void fp2_mul_int(fp2_t r, const fp2_t x, long int y) {
     fp_mul_int(r->b, x->b, y);
 }
 
-void fp2_mul_safe(fp2_t res, const fp2_t rhs) {
+void fp2_mul_safe(fp2_t x, const fp2_t y) {
     // x = a + bi, y = c + di
     // r = (ac - bd) + (ad + bc)i = e + fi
     // cost: 4m + 2a
@@ -193,15 +189,15 @@ void fp2_mul_safe(fp2_t res, const fp2_t rhs) {
     // tc is used for storing value c in case 
     // it will be overwritten in step: e = ac 
     // if fp2_mul is called with r = x = y
-    fp_set(tc, rhs->raw[0]);             // tc = c
-    fp_mul(t0, res->raw[1], rhs->raw[1]);     // t0 = bd
-    fp_mul(t1, res->raw[0], rhs->raw[1]);     // t1 = ad
+    fp_set(tc, y->a);             // tc = c
+    fp_mul(t0, x->b, y->b);     // t0 = bd
+    fp_mul(t1, x->a, y->b);     // t1 = ad
 
-    fp_mul(res->raw[0], res->raw[0], rhs->raw[0]); // e = ac
-    fp_sub(res->raw[0], res->raw[0], t0);     // e = ac - bd
+    fp_mul(x->a, x->a, y->a); // e = ac
+    fp_sub(x->a, x->a, t0);     // e = ac - bd
 
-    fp_mul(res->raw[1], res->raw[1], tc);     // f = bc 
-    fp_add(res->raw[1], res->raw[1], t1);     // f = bc + ad
+    fp_mul(x->b, x->b, tc);     // f = bc 
+    fp_add(x->b, x->b, t1);     // f = bc + ad
 
     fp_clear(t0); fp_clear(t1); fp_clear(tc);
 }
