@@ -1,15 +1,9 @@
-#ifndef PROTO_MSIDH_H
-#define PROTO_MSIDH_H
+#pragma once
 
 #include <gmp.h>
 
 #include "pprod.h"
-#include "ec_mont.h"
-
-struct tors_basis {
-    point_t P, Q, PQd;
-    pprod_t n;
-};
+#include "ec_tors_basis.h"
 
 // Used by msidh_state structure
 enum {
@@ -93,12 +87,3 @@ void _msidh_gen_pubkey_alice(fp2_t A24p_alice, fp2_t C24_alice, struct tors_basi
  * @brief Calculate shared secret (j_inv) and destination curve coefficient (a + 2)/4 = (A24p : C24) in xDBL form
  */
 void _msidh_key_exchange_alice(fp2_t j_inv, fp2_t A24p_final, fp2_t C24_final, const fp2_t A24p_bob, const fp2_t C24_bob, struct tors_basis * BPQA, const mpz_t A_sec);
-
-/*
- * @brief Calculate subgroup basis of the torsion basis (Pn, Qn) = [N/n](P, Q) of order n, where N is the order of (P, Q)
- */
-void tors_basis_get_subgroup(struct tors_basis *PQsub, pprod_t n, const struct tors_basis *PQ, const fp2_t A24p, const fp2_t C24);
-void tors_basis_init(struct tors_basis *tb);
-void tors_basis_clear(struct tors_basis *tb);
-
-#endif

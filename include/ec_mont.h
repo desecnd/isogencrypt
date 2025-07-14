@@ -1,65 +1,10 @@
-#ifndef EC_MONT_H
-#define EC_MONT_H
+#pragma once
 
 #include <stdint.h>
 
 #include "fp2.h"
+#include "ec_point_xz.h"
 #include "pprod.h"
-
-// Point in projective coordinates X-Z
-struct point_xz { 
-    fp2_t X; 
-    fp2_t Z; 
-};
-
-typedef struct point_xz* point_t;
-
-void point_set(point_t R, const point_t P);
-
-void point_init(point_t *P);
-
-void point_clear(point_t *P);
-
-// Set: X(P) = x, and Z(P) = 1
-void point_set_str_x(point_t P, const char *x); 
-
-// Set: X(P) = x, and Z(P) = 1
-void point_set_fp2_x(point_t P, fp2_t x); 
-
-/*
- * @brief Print the normalized (Z = 1) x-coordinate of the point P = (X : Z)
- */
-void point_printx_normalized(point_t P, const char* name);
-
-/*
- * @brief Print the x-coordinate of the point P = (X : Z) with assertion that Z == 1
- */
-void point_printx(point_t P, const char* name);
-
-// Normalize: P = (X : Z) -> (X' : 1) with X' = X/Z
-void point_normalize_coords(point_t P);
-
-/*
- * @brief Return 1 if point is normalized (P->Z == 1), 0 if P->Z != 1
- */
-int point_is_normalized(point_t P);
-
-/* 
- * @brief Compare the x-only coordinate of point by normalization of P and initalization of the const char* str.
- */
-int point_equal_str_x(point_t P, const char* str);
-
-/* 
- * @brief Transform (A : C) = (a : 1) into (A' : C') = ((a+ 2)/4 : 1) = (a + 2 : 4) suitable for xDBL.
- * Function is argument safe for A24p = A and C24 = C.
- */
-void A24p_from_A(fp2_t A24p, fp2_t C24, const fp2_t A, const fp2_t C);
-
-/* 
- * @brief Transform (A' : C') = (a + 2 : 4) into (A : C) = (a : 1). 
- * Function is argument safe for A = A24p and C = C24
- */
-void A_from_A24p(fp2_t A, fp2_t C, const fp2_t A24p, const fp2_t C24);
 
 /*
  * @brief Calculate x-coordinate of the double point x(R) = x([2]P). 
@@ -73,14 +18,6 @@ void xDBL(point_t R, const point_t P, const fp2_t A24p, const fp2_t C24);
  */
 void xDBLe(point_t R, const point_t P, const fp2_t A24p, const fp2_t C24, const int e);
 
-/* 
- * @brief Calculate (xw + yz, xw - yz) given (x, y, z, w)
- * @details 
- *  Argument-safe: Yes
- *  Registers: 2
- *  Cost: 2M + 2a
- */
-void criss_cross(fp2_t lsum, fp2_t rdiff, const fp2_t x, const fp2_t y, const fp2_t z, const fp2_t w);
 
 // Calculate P + Q given P, Q, P - Q
 void xADD(point_t PQsum, const point_t P, const point_t Q, const point_t PQdiff);
@@ -102,6 +39,20 @@ void xLADDER_int(point_t R0, const point_t P, long int m, const fp2_t A24p, cons
 void xLADDER3PT_int(point_t P, point_t Q, point_t PQdiff, long int m, const fp2_t A24p, const fp2_t C24);
 
 void xLADDER3PT(point_t P, point_t Q, point_t PQdiff, const mpz_t m, const fp2_t A24p, const fp2_t C24);
+
+/*
+ * @brief Calculate j-invariant of the Elliptic Curve in Montgomery Model with coefficient a = (A : C)
+ */
+void j_invariant(fp2_t j_inv, const fp2_t A, const fp2_t C);
+
+/* 
+ * @brief Calculate (xw + yz, xw - yz) given (x, y, z, w)
+ * @details 
+ *  Argument-safe: Yes
+ *  Registers: 2
+ *  Cost: 2M + 2a
+ */
+void criss_cross(fp2_t lsum, fp2_t rdiff, const fp2_t x, const fp2_t y, const fp2_t z, const fp2_t w);
 
 /*
  * @brief Return size of the kernel points array based on odd isogeny degree
@@ -184,10 +135,3 @@ void aISOG2_24p(fp2_t A24p_, fp2_t C24_, const point_t K);
  * @ref https://eprint.iacr.org/2017/1198.pdf 
  */
 void aISOG2(fp2_t A_, fp2_t C_, const point_t K);
-
-/*
- * @brief Calculate j-invariant of the Elliptic Curve in Montgomery Model with coefficient a = (A : C)
- */
-void j_invariant(fp2_t j_inv, const fp2_t A, const fp2_t C);
-
-#endif

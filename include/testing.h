@@ -1,5 +1,4 @@
-#ifndef TESTING_H
-#define TESTING_H
+#pragma once
 
 #include <stdio.h>
 
@@ -48,6 +47,4 @@ int g_curr_test_error = 0;
             fprintf(stderr, "\x1b[32m[+] Ok\x1b[0m: All tests passed: %s\n", __FILE__); \
             return 0; \
         } \
-    } while (0) \
-
-#endif
+    } while (0) 

@@ -4,111 +4,6 @@
 #include <stdio.h>
 
 #include "ec_mont.h"
-#include "fp2.h"
-
-
-void point_init(point_t *P) {
-    *P = (point_t) malloc(sizeof(struct point_xz));
-    // Recursively allocate memory for the member pointers
-    fp2_init(&(*P)->X);
-    fp2_init(&(*P)->Z);
-}
-
-void point_clear(point_t *P) {
-    if (P) {
-        fp2_clear(&(*P)->X);
-        fp2_clear(&(*P)->Z);
-        free(*P);
-        P = NULL;
-    }
-}
-
-// copy coordinates of point: R <- P
-void point_set(point_t R, const point_t P) {
-    // TODO: Not a deepcopy -> only copies the pointers
-    // memcpy(R, P, sizeof(struct point_xz));
-    fp2_set(R->X, P->X);
-    fp2_set(R->Z, P->Z);
-}
-
-// Set: x(P) = x, and z(P) = 1
-void point_set_str_x(point_t P, const char *x) {
-    fp2_set_str(P->X, x);
-    fp2_set_uint(P->Z, 1);
-}
-
-
-// Set: x(P) = x, and z(P) = 1
-void point_set_fp2_x(point_t P, fp2_t x) {
-    fp2_set(P->X, x);
-    fp2_set_uint(P->Z, 1);
-}
-
-void point_printx(point_t P, const char* name) {
-    // Make sure that the coordinate is normalized, otherwise we get false results when Z != 1: x = (X : Z)
-    assert(point_is_normalized(P));
-    fp2_print(P->X, name);
-}
-
-
-void point_printx_normalized(point_t P, const char* name) {
-    // Make sure that the coordinate is normalized, otherwise we get false results when Z != 1: x = (X : Z)
-    point_normalize_coords(P);
-    fp2_print(P->X, name);
-}
-
-int point_equal_str_x(point_t P, const char* str) {
-    point_t P_str;
-    point_init(&P_str);
-
-    // Make sure that the Point is normalized, i.e: P->Z = 1
-    point_normalize_coords(P);
-
-    point_set_str_x(P_str, str);
-    int equal = fp2_equal(P->X, P_str->X) && fp2_equal(P->Z, P_str->Z);
-
-    point_clear(&P_str);
-    return equal;
-}
-
-int point_is_normalized(point_t P) {
-    return fp2_equal_uint(P->Z, 1);
-}
-
-
-void A24p_from_A(fp2_t A24p, fp2_t C24, const fp2_t A, const fp2_t C) {
-    // Set A24p := A + 2C and C24 := 4C
-    fp2_set(A24p, A);               // A24p = A
-    fp2_add(C24, C, C);                 // C24 = 2C
-    fp2_add(A24p, A24p, C24);   // A24p = A + 2C
-    fp2_add(C24, C24, C24);             // C24 = 4C
-}
-
-void A_from_A24p(fp2_t A, fp2_t C, const fp2_t A24p, const fp2_t C24) {
-    // Set A := 4*A24p - 2*C24 and C := C24
-    fp2_set(C, C24);
-
-    // A = 4A'
-    fp2_mul_int(A, A24p, 4);
-
-    // A = 4A' - 2C'
-    fp2_sub(A, A, C);
-    fp2_sub(A, A, C);
-}
-
-// Normalize: P = (X : Z) -> (X' : 1) with X' = X/Z
-void point_normalize_coords(point_t P) {
-    assert(!fp2_is_zero(P->Z) && "Normalized Point cannot have Z = 0");
-    // Registers: 1
-
-    fp2_t t; fp2_init(&t);
-
-    fp2_div_unsafe(t, P->X, P->Z);
-    fp2_set(P->X, t);
-    fp2_set_uint(P->Z, 1);
-
-    fp2_clear(&t);
-}
 
 void xDBL(point_t R, const point_t P, const fp2_t A24p, const fp2_t C24) {
     fp2_t t0, t1;
@@ -202,27 +97,6 @@ void xDBLADD(point_t P, point_t Q, const point_t PQdiff, const fp2_t A24p, const
     xDBL(P, P, A24p, C24);
 }
 
-void criss_cross(fp2_t lsum, fp2_t rdiff, const fp2_t x, const fp2_t y, const fp2_t z, const fp2_t w) {
-    // Calculate (xw + yz, xw - yz) given (x, y, z, w)
-    // Argument-safe: Yes
-    // Registers: 2
-    // Cost: 2M + 2a
-
-    fp2_t t0, t1;
-    fp2_init(&t0); fp2_init(&t1);
-
-    // t0 = x * w
-    fp2_mul_unsafe(t0, x, w);
-    // t1 = y * z
-    fp2_mul_unsafe(t1, y, z);
-    
-    // rdiff = t0 - t1: xw - yz
-    fp2_sub(rdiff, t0, t1);
-    // lsum = t0 + t1: xw + yz
-    fp2_add(lsum, t0, t1);
-    
-    fp2_clear(&t0); fp2_clear(&t1);
-}
 
 void xLADDER(point_t R0, const point_t P, const mpz_t m, const fp2_t A24p, const fp2_t C24) {
     assert(mpz_sgn(m) > 0 && "Given scalar m must be nonnegative");
@@ -322,6 +196,69 @@ void xLADDER3PT(point_t P, point_t Q, point_t PQdiff, const mpz_t m, const fp2_t
 
     mpz_clear(r);
     mpz_clear(n);
+}
+
+void j_invariant(fp2_t j_inv, const fp2_t A, const fp2_t C) {
+    fp2_t t0, t1;
+    fp2_init(&t0); fp2_init(&t1);
+
+    // TODO: compare this approach with trying to stay in projective coords until last division
+
+    // Use jinv as register until last line:
+    // jinv = A/C: a
+    fp2_div_unsafe(j_inv, A, C); 
+
+    // t0 = jinv^2: a^2 
+    fp2_sq_unsafe(t0, j_inv);
+
+    // jinv = t0 - 3: a^2 - 3 
+    fp2_sub_uint(j_inv, t0, 3);
+    
+    // t0 = jinv^3: (a^2 - 3)^3
+    fp2_sq_unsafe(t0, j_inv);
+    fp2_mul_safe(t0, j_inv);
+    
+    // t1 = jinv - 1: a^2 - 4
+    fp2_sub_uint(t1, j_inv, 1);
+    assert(!fp2_is_zero(t1) && "A was equal 2 or -2");
+    
+    // jinv = t0 / t1: (a^2 - 3)^3/(a^2 - 4)
+    fp2_div_unsafe(j_inv, t0, t1);
+
+    // jinv = 256 * jinv: 256(a^2 - 3)^3/(a^2 - 4)
+    // fp2_mul_int(j_inv, j_inv, 256);
+    fp2_add(j_inv, j_inv, j_inv);
+    fp2_add(j_inv, j_inv, j_inv);
+    fp2_add(j_inv, j_inv, j_inv);
+    fp2_add(j_inv, j_inv, j_inv);
+    fp2_add(j_inv, j_inv, j_inv);
+    fp2_add(j_inv, j_inv, j_inv);
+    fp2_add(j_inv, j_inv, j_inv);
+    fp2_add(j_inv, j_inv, j_inv);
+
+    fp2_clear(&t0); fp2_clear(&t1);
+}
+
+void criss_cross(fp2_t lsum, fp2_t rdiff, const fp2_t x, const fp2_t y, const fp2_t z, const fp2_t w) {
+    // Calculate (xw + yz, xw - yz) given (x, y, z, w)
+    // Argument-safe: Yes
+    // Registers: 2
+    // Cost: 2M + 2a
+
+    fp2_t t0, t1;
+    fp2_init(&t0); fp2_init(&t1);
+
+    // t0 = x * w
+    fp2_mul_unsafe(t0, x, w);
+    // t1 = y * z
+    fp2_mul_unsafe(t1, y, z);
+    
+    // rdiff = t0 - t1: xw - yz
+    fp2_sub(rdiff, t0, t1);
+    // lsum = t0 + t1: xw + yz
+    fp2_add(lsum, t0, t1);
+    
+    fp2_clear(&t0); fp2_clear(&t1);
 }
 
 void KPS(point_t * kpts, size_t n, const point_t K, const fp2_t A24p, const fp2_t C24) {
@@ -698,45 +635,4 @@ void ISOG_chain(fp2_t A24p, fp2_t C24, const fp2_t A24p_init, const fp2_t C24_in
 
     fp2_clear(&A24p_next); fp2_clear(&C24_next);
     point_clear(&K0); point_clear(&Q); point_clear(&T); point_clear(&R);
-}
-
-void j_invariant(fp2_t j_inv, const fp2_t A, const fp2_t C) {
-    fp2_t t0, t1;
-    fp2_init(&t0); fp2_init(&t1);
-
-    // TODO: compare this approach with trying to stay in projective coords until last division
-
-    // Use jinv as register until last line:
-    // jinv = A/C: a
-    fp2_div_unsafe(j_inv, A, C); 
-
-    // t0 = jinv^2: a^2 
-    fp2_sq_unsafe(t0, j_inv);
-
-    // jinv = t0 - 3: a^2 - 3 
-    fp2_sub_uint(j_inv, t0, 3);
-    
-    // t0 = jinv^3: (a^2 - 3)^3
-    fp2_sq_unsafe(t0, j_inv);
-    fp2_mul_safe(t0, j_inv);
-    
-    // t1 = jinv - 1: a^2 - 4
-    fp2_sub_uint(t1, j_inv, 1);
-    assert(!fp2_is_zero(t1) && "A was equal 2 or -2");
-    
-    // jinv = t0 / t1: (a^2 - 3)^3/(a^2 - 4)
-    fp2_div_unsafe(j_inv, t0, t1);
-
-    // jinv = 256 * jinv: 256(a^2 - 3)^3/(a^2 - 4)
-    // fp2_mul_int(j_inv, j_inv, 256);
-    fp2_add(j_inv, j_inv, j_inv);
-    fp2_add(j_inv, j_inv, j_inv);
-    fp2_add(j_inv, j_inv, j_inv);
-    fp2_add(j_inv, j_inv, j_inv);
-    fp2_add(j_inv, j_inv, j_inv);
-    fp2_add(j_inv, j_inv, j_inv);
-    fp2_add(j_inv, j_inv, j_inv);
-    fp2_add(j_inv, j_inv, j_inv);
-
-    fp2_clear(&t0); fp2_clear(&t1);
 }

@@ -13,7 +13,6 @@ void pprod_init(pprod_t *pp) {
     mpz_init((*pp)->value);
 }
 
-
 // Deallocate the memory for pprod type
 void pprod_clear(pprod_t *pp) {
     mpz_clear((*pp)->value);
