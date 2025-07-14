@@ -1,7 +1,7 @@
 #include <assert.h>
 
-#include "testing.h"
 #include "fp2.h"
+#include "testing.h"
 
 void test_small_arithmetic() {
     CHECK(!fpchar_setup_uint(431));

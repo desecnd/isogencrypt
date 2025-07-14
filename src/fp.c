@@ -1,6 +1,6 @@
+#include <assert.h>
 #include <gmp.h>
 #include <stdio.h>
-#include <assert.h>
 
 #include "fp.h"
 
@@ -8,7 +8,7 @@ static fp_t g_fpchar;
 static int g_is_fpchar_set = 0;
 
 int fpchar_clear_if_set() {
-    if (g_is_fpchar_set) { 
+    if (g_is_fpchar_set) {
         fpchar_clear();
         return 1;
     } else {
@@ -16,9 +16,7 @@ int fpchar_clear_if_set() {
     }
 }
 
-int fpchar_check() {
-    return g_is_fpchar_set;
-}
+int fpchar_check() { return g_is_fpchar_set; }
 
 int fpchar_setup_uint(unsigned int p) {
     fp_t pp;
@@ -33,15 +31,17 @@ int fpchar_setup_uint(unsigned int p) {
 // For now, only p = 3 (mod 4) is allowed
 int fpchar_setup(fp_t p) {
     if (g_is_fpchar_set) {
-        fprintf(stderr, "[!] trying to initialize the characteristic second time!\n");
+        fprintf(stderr,
+                "[!] trying to initialize the characteristic second time!\n");
         return -1;
     }
 
     int invalid_mod4 = 0;
-    
+
     // Check for modulo 4 operans
     {
-        fp_t t; fp_init(t);
+        fp_t t;
+        fp_init(t);
         // TODO: change inconsistent API
         mpz_mod_ui(t, p, 4);
         // invalid := p mod 4 is different than 3
@@ -50,7 +50,8 @@ int fpchar_setup(fp_t p) {
     }
 
     if (invalid_mod4) {
-        fprintf(stderr, "[!] Trying to set prime field characteristic with prime != 3 (mod 4)\n");
+        fprintf(stderr, "[!] Trying to set prime field characteristic with "
+                        "prime != 3 (mod 4)\n");
         assert(0);
     }
 
@@ -62,7 +63,8 @@ int fpchar_setup(fp_t p) {
 
 int fpchar_clear() {
     if (!g_is_fpchar_set) {
-        fprintf(stderr, "[!] trying to clear not-initialized characteristic!\n");
+        fprintf(stderr,
+                "[!] trying to clear not-initialized characteristic!\n");
         return -1;
     }
     fp_clear(g_fpchar);
@@ -71,31 +73,22 @@ int fpchar_clear() {
 }
 
 // init: allocate memory and set value = 0
-void fp_init(fp_t res) {
-    mpz_init(res);
-}
+void fp_init(fp_t res) { mpz_init(res); }
 
 // clear: deallocate memory
-void fp_clear(fp_t res) {
-    mpz_clear(res);
-}
-
+void fp_clear(fp_t res) { mpz_clear(res); }
 
 // set: result <- a
-void fp_set(fp_t res, const fp_t a) {
-    mpz_set(res, a);
-}
+void fp_set(fp_t res, const fp_t a) { mpz_set(res, a); }
 
 // set uint: result <- (uint) a
-void fp_set_uint(fp_t res, unsigned long int a) {
-    mpz_set_ui(res, a);
-}
+void fp_set_uint(fp_t res, unsigned long int a) { mpz_set_ui(res, a); }
 
 // add: result = a + b (mod p)
 void fp_add(fp_t res, const fp_t a, const fp_t b) {
     mpz_add(res, a, b);
     mpz_mod(res, res, g_fpchar);
-} 
+}
 
 // add uint: result = a + (unsigned int) b (mod p)
 void fp_add_uint(fp_t res, const fp_t a, unsigned long int b) {
@@ -116,7 +109,7 @@ void fp_sub_uint(fp_t res, const fp_t a, unsigned long int b) {
 }
 
 // mul: res = a * b (mod p)
-// This function is argument-safe and can be called 
+// This function is argument-safe and can be called
 // with: fp_mul(n, n, n), where n is the same variable
 void fp_mul(fp_t res, const fp_t a, const fp_t b) {
     mpz_mul(res, a, b);
@@ -130,9 +123,7 @@ void fp_mul_int(fp_t res, const fp_t a, long int b) {
 }
 
 // modular inverse: res = a^-1 (mod p)
-void fp_inv(fp_t res, const fp_t a) {
-    mpz_invert(res, a, g_fpchar);
-}
+void fp_inv(fp_t res, const fp_t a) { mpz_invert(res, a, g_fpchar); }
 
 // div: a / b (mod p) = a * b^-1 (mod p)
 void fp_div(fp_t res, const fp_t a, const fp_t b) {
@@ -141,17 +132,16 @@ void fp_div(fp_t res, const fp_t a, const fp_t b) {
     mpz_mod(res, res, g_fpchar);
 }
 
-
 // neg: a = -a (mod p)
 void fp_neg(fp_t res, const fp_t a) {
     mpz_sub(res, g_fpchar, a);
     mpz_mod(res, res, g_fpchar);
 }
 
-// sqrt: 
+// sqrt:
 // assumes that prime is in form: p = 3 (mod 4)
 void fp_sqrt(fp_t res, const fp_t a) {
-    mpz_t exp; 
+    mpz_t exp;
     mpz_init(exp);
 
     // calculate a^((p + 1)/4)
@@ -170,26 +160,18 @@ void fp_sqrt(fp_t res, const fp_t a) {
     mpz_clear(exp);
 }
 
-int fp_is_zero(const fp_t a) {
-    return (int) (mpz_sgn(a) == 0);
-}
+int fp_is_zero(const fp_t a) { return (int)(mpz_sgn(a) == 0); }
 
-int fp_equal_uint(fp_t a, unsigned long int b) {
-    return !mpz_cmp_ui(a, b);
-}
+int fp_equal_uint(fp_t a, unsigned long int b) { return !mpz_cmp_ui(a, b); }
 
-int fp_equal(fp_t a, fp_t b) {
-    return !mpz_cmp(a, b);
-}
+int fp_equal(fp_t a, fp_t b) { return !mpz_cmp(a, b); }
 
 int fp_equal_str(fp_t a, const char *b_str) {
-    fp_t b; 
+    fp_t b;
     mpz_init_set_str(b, b_str, 0);
     int equal = fp_equal(a, b);
     fp_clear(b);
     return equal;
 }
 
-void fp_print(fp_t a, const char* name) {
-    gmp_printf("%s: %Zd\n", name, a);
-}
+void fp_print(fp_t a, const char *name) { gmp_printf("%s: %Zd\n", name, a); }

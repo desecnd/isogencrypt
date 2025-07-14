@@ -2,136 +2,161 @@
 
 #include <stdint.h>
 
-#include "fp2.h"
 #include "ec_point_xz.h"
+#include "fp2.h"
 #include "pprod.h"
 
 /*
- * @brief Calculate x-coordinate of the double point x(R) = x([2]P). 
+ * @brief Calculate x-coordinate of the double point x(R) = x([2]P).
  * Function is argument-safe for R = P.
  */
 void xDBL(point_t R, const point_t P, const fp2_t A24p, const fp2_t C24);
 
 /*
- * @brief Calculate x-coordinate of the point multiplied by the power of 2 x(R) = x([2^e]P).
- * Function is argument-safe for R = P.
+ * @brief Calculate x-coordinate of the point multiplied by the power of 2 x(R)
+ * = x([2^e]P). Function is argument-safe for R = P.
  */
-void xDBLe(point_t R, const point_t P, const fp2_t A24p, const fp2_t C24, const int e);
-
+void xDBLe(point_t R, const point_t P, const fp2_t A24p, const fp2_t C24,
+           const int e);
 
 // Calculate P + Q given P, Q, P - Q
-void xADD(point_t PQsum, const point_t P, const point_t Q, const point_t PQdiff);
+void xADD(point_t PQsum, const point_t P, const point_t Q,
+          const point_t PQdiff);
 
-/* 
- * @brief Calculate x coordinate of R = [m]P using Montgomery Ladder algorithm. 
+/*
+ * @brief Calculate x coordinate of R = [m]P using Montgomery Ladder algorithm.
  *  Function is not argsafe for R0 = P.
  * @ref https://eprint.iacr.org/2017/212.pdf
  */
-void xLADDER(point_t R0, const point_t P, const mpz_t m, const fp2_t A24p, const fp2_t C24);
-
-/* 
- * @brief Calculate x coordinate of R = [m]P using Montgomery Ladder algorithm with m fitting in 63 bits.
- *  Function is not argsafe for R0 = P
- * @ref https://eprint.iacr.org/2017/212.pdf
- */
-void xLADDER_int(point_t R0, const point_t P, long int m, const fp2_t A24p, const fp2_t C24);
-
-void xLADDER3PT_int(point_t P, point_t Q, point_t PQdiff, long int m, const fp2_t A24p, const fp2_t C24);
-
-void xLADDER3PT(point_t P, point_t Q, point_t PQdiff, const mpz_t m, const fp2_t A24p, const fp2_t C24);
+void xLADDER(point_t R0, const point_t P, const mpz_t m, const fp2_t A24p,
+             const fp2_t C24);
 
 /*
- * @brief Calculate j-invariant of the Elliptic Curve in Montgomery Model with coefficient a = (A : C)
+ * @brief Calculate x coordinate of R = [m]P using Montgomery Ladder algorithm
+ * with m fitting in 63 bits. Function is not argsafe for R0 = P
+ * @ref https://eprint.iacr.org/2017/212.pdf
+ */
+void xLADDER_int(point_t R0, const point_t P, long int m, const fp2_t A24p,
+                 const fp2_t C24);
+
+void xLADDER3PT_int(point_t P, point_t Q, point_t PQdiff, long int m,
+                    const fp2_t A24p, const fp2_t C24);
+
+void xLADDER3PT(point_t P, point_t Q, point_t PQdiff, const mpz_t m,
+                const fp2_t A24p, const fp2_t C24);
+
+/*
+ * @brief Calculate j-invariant of the Elliptic Curve in Montgomery Model with
+ * coefficient a = (A : C)
  */
 void j_invariant(fp2_t j_inv, const fp2_t A, const fp2_t C);
 
-/* 
+/*
  * @brief Calculate (xw + yz, xw - yz) given (x, y, z, w)
- * @details 
+ * @details
  *  Argument-safe: Yes
  *  Registers: 2
  *  Cost: 2M + 2a
  */
-void criss_cross(fp2_t lsum, fp2_t rdiff, const fp2_t x, const fp2_t y, const fp2_t z, const fp2_t w);
+void criss_cross(fp2_t lsum, fp2_t rdiff, const fp2_t x, const fp2_t y,
+                 const fp2_t z, const fp2_t w);
 
 /*
  * @brief Return size of the kernel points array based on odd isogeny degree
  */
-#define KPS_DEG2SIZE(__deg) (__deg - 1)/2
+#define KPS_DEG2SIZE(__deg) (__deg - 1) / 2
 
 /*
- * @brief Generate points that lay in the kernel of the isogeny of degree d using generator P
- * @param[out]  kpoints     list of `P` multiples up to `deg`: `[[1]P, [2]P, [3]P, ... [d - 1]P]`
- * @param[in]   n           size of the kpoints array (degree of the isogeny - 1)
+ * @brief Generate points that lay in the kernel of the isogeny of degree d
+ * using generator P
+ * @param[out]  kpoints     list of `P` multiples up to `deg`: `[[1]P, [2]P,
+ * [3]P, ... [d - 1]P]`
+ * @param[in]   n           size of the kpoints array (degree of the isogeny -
+ * 1)
  * @see https://eprint.iacr.org/2017/504
-*/
-void KPS(point_t * kpoints, size_t n, const point_t P, const fp2_t A24p, const fp2_t C24);
+ */
+void KPS(point_t *kpoints, size_t n, const point_t P, const fp2_t A24p,
+         const fp2_t C24);
 
 /*
- * @brief Transform (X : Z) kernel points into (X + Z : X - Z) pairs for efficient computation
-*/
+ * @brief Transform (X : Z) kernel points into (X + Z : X - Z) pairs for
+ * efficient computation
+ */
 void prepare_kernel_points(point_t *kpts, size_t n);
 
 /*
- * @brief Calculate x-coordinate of the odd-degree isogeny point image Q = φ(P) given ker(phi) = prep_points
+ * @brief Calculate x-coordinate of the odd-degree isogeny point image Q = φ(P)
+ * given ker(phi) = prep_points
  */
 void xISOG_odd(point_t Q, const point_t *prep_kpts, size_t n, const point_t P);
 
-
 /*
- * @brief Calculate a coefficient of the odd-degree isogeny curve codomain E' = φ(E) given kernel points list
+ * @brief Calculate a coefficient of the odd-degree isogeny curve codomain E' =
+ * φ(E) given kernel points list
  */
-void aISOG_curve_KPS(fp2_t A_, fp2_t C_, const fp2_t A24p, const fp2_t C24, const point_t * kpts, size_t n);
+void aISOG_curve_KPS(fp2_t A_, fp2_t C_, const fp2_t A24p, const fp2_t C24,
+                     const point_t *kpts, size_t n);
 
 /*
- * @brief Calculate a coefficient of the odd-degree isogeny curve codomain E' = φ(E) given kernel point
+ * @brief Calculate a coefficient of the odd-degree isogeny curve codomain E' =
+ * φ(E) given kernel point
  * @details
- *  This function allocates space and generates KPS list, later calling `aISOG_curve_KPS` to obtain the result.
- *  If KPS is calulated beforehand use `aISOG_curve_KPS` istead to avoid unnecessary computations.
+ *  This function allocates space and generates KPS list, later calling
+ * `aISOG_curve_KPS` to obtain the result. If KPS is calulated beforehand use
+ * `aISOG_curve_KPS` istead to avoid unnecessary computations.
  */
-void aISOG_curve(fp2_t A_, fp2_t C_, const fp2_t A24p, const fp2_t C24, const point_t K, int degree);
-
+void aISOG_curve(fp2_t A_, fp2_t C_, const fp2_t A24p, const fp2_t C24,
+                 const point_t K, int degree);
 
 /*
- * @brief Calculate codomain of the isogeny generated by kernel K, using chaining method
+ * @brief Calculate codomain of the isogeny generated by kernel K, using
+ * chaining method
  */
-void ISOG_chain(fp2_t A24p, fp2_t C24, const fp2_t A24p_init, const fp2_t C24_init, const point_t K, pprod_t isog_degree, point_t *push_points);
+void ISOG_chain(fp2_t A24p, fp2_t C24, const fp2_t A24p_init,
+                const fp2_t C24_init, const point_t K, pprod_t isog_degree,
+                point_t *push_points);
 
 /*
- * @brief Calculate image of the point P under the 2-isogeny using point K of order 2 other than (0, 0) 
+ * @brief Calculate image of the point P under the 2-isogeny using point K of
+ * order 2 other than (0, 0)
  * @details Function is not safe when Q = P
- * @ref https://eprint.iacr.org/2017/1198.pdf 
+ * @ref https://eprint.iacr.org/2017/1198.pdf
  */
 void xISOG2_unsafe(point_t Q, const point_t K, const point_t P);
 
-/* 
- * @brief Transform kernel K = (XK : ZK) into (ZK + XK : ZK - XK). 
+/*
+ * @brief Transform kernel K = (XK : ZK) into (ZK + XK : ZK - XK).
  *   This is different formula than the one used for preparing KPTs
  */
 void prepare_isog2_kernel(point_t K);
 
 /*
- * @brief Calculate x-coordinate of the point P under the 2-isogeny using point K of order 2 other than (0, 0). 
- *  Assumes that K is already in **prepared** form, i.e. K = (ZK + XK : ZK - XK)
+ * @brief Calculate x-coordinate of the point P under the 2-isogeny using point
+ * K of order 2 other than (0, 0). Assumes that K is already in **prepared**
+ * form, i.e. K = (ZK + XK : ZK - XK)
  * @details Function is not safe when Q = P
- * @ref https://eprint.iacr.org/2017/1198.pdf 
+ * @ref https://eprint.iacr.org/2017/1198.pdf
  */
 void xISOG2_prep(point_t Q, const point_t prep_K, const point_t P);
 
 /*
- * @brief Calculate codomain of the 2^e-isogeny in the xDBL form (A24p) using point that does not lay above (0, 0).
- *  Additionaly push all points specified in the list by the 2^e-isogeny 
+ * @brief Calculate codomain of the 2^e-isogeny in the xDBL form (A24p) using
+ * point that does not lay above (0, 0). Additionaly push all points specified
+ * in the list by the 2^e-isogeny
  */
-void ISOG2e(fp2_t A24p, fp2_t C24, const fp2_t A24p_init, const fp2_t C24_init, const point_t K, uint32_t e, point_t* push_points);
+void ISOG2e(fp2_t A24p, fp2_t C24, const fp2_t A24p_init, const fp2_t C24_init,
+            const point_t K, uint32_t e, point_t *push_points);
 
 /*
- * @brief Calculate codomain of the 2-isogeny in the xDBL form (A24p) using point of order 2 other than (0, 0)
- * @ref https://eprint.iacr.org/2017/1198.pdf 
+ * @brief Calculate codomain of the 2-isogeny in the xDBL form (A24p) using
+ * point of order 2 other than (0, 0)
+ * @ref https://eprint.iacr.org/2017/1198.pdf
  */
 void aISOG2_24p(fp2_t A24p_, fp2_t C24_, const point_t K);
 
 /*
- * @brief Calculate codomain of the 2-isogeny using point of order 2 other than (0, 0)
- * @ref https://eprint.iacr.org/2017/1198.pdf 
+ * @brief Calculate codomain of the 2-isogeny using point of order 2 other than
+ * (0, 0)
+ * @ref https://eprint.iacr.org/2017/1198.pdf
  */
 void aISOG2(fp2_t A_, fp2_t C_, const point_t K);

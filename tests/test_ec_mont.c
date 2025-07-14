@@ -34,7 +34,7 @@ void clear_test_variables() {
 void set_params_testp431() {
     // Clear just to be sure
     fpchar_clear_if_set();
-    
+
     // p + 1 = 432 = 2^4 * 3^3
     assert(0 == fpchar_setup_uint(431));
 
@@ -43,7 +43,7 @@ void set_params_testp431() {
     // We additionally define A24+, C24:
     // A24+: A + 2C
     // C24:  4C
-    // This constants are used to speed up the calculations inside 
+    // This constants are used to speed up the calculations inside
     // certain functions e.g. xDBL algorithm
     fp2_set_uint(A, 6);
     fp2_set_uint(C, 1);
@@ -68,11 +68,14 @@ void set_params_testp139() {
 }
 
 /*
- * @brief Make sure that calling A24p_from_A and A_from_A24p is safe with 'same' arguments: func(A, C, A, C)
+ * @brief Make sure that calling A24p_from_A and A_from_A24p is safe with 'same'
+ * arguments: func(A, C, A, C)
  */
 void test_A_A24p_conversion_in_place() {
     fp2_t At, Ct, at;
-    fp2_init(&At); fp2_init(&Ct); fp2_init(&at);
+    fp2_init(&At);
+    fp2_init(&Ct);
+    fp2_init(&at);
 
     // p + 1 = 432 = 2^4 * 3^3
     fpchar_setup_uint(431);
@@ -105,7 +108,9 @@ void test_A_A24p_conversion_in_place() {
     CHECK(fp2_equal_uint(at, a));
 
     fpchar_clear();
-    fp2_clear(&At); fp2_clear(&Ct); fp2_clear(&at);
+    fp2_clear(&At);
+    fp2_clear(&Ct);
+    fp2_clear(&at);
 }
 
 void test_A_A24p_conversion() {
@@ -153,7 +158,6 @@ void test_point_set_is_immutable() {
     CHECK(!mpz_cmp_ui(P->X->a, 2) && !mpz_cmp_ui(P->X->b, 5));
 }
 
-
 // ------------------------------
 // | SIDH-like prime tests p431
 // ------------------------------
@@ -175,11 +179,14 @@ void test_point_normalize_coords() {
     CHECK(fp2_equal_str(P->X, "12*i + 95"));
 }
 
-
-
 void test_criss_cross_small() {
     fp2_t x, y, z, w, sum, diff;
-    fp2_init(&x); fp2_init(&y); fp2_init(&z); fp2_init(&w); fp2_init(&sum); fp2_init(&diff); 
+    fp2_init(&x);
+    fp2_init(&y);
+    fp2_init(&z);
+    fp2_init(&w);
+    fp2_init(&sum);
+    fp2_init(&diff);
 
     fp2_set_str(x, "416*i + 175");
     fp2_set_str(y, "112*i + 179");
@@ -190,7 +197,7 @@ void test_criss_cross_small() {
     fp2_print(y, "y");
     fp2_print(z, "z");
     fp2_print(w, "w");
-    
+
     criss_cross(sum, diff, x, y, z, w);
 
     fp2_print(sum, "xw+yz");
@@ -201,16 +208,24 @@ void test_criss_cross_small() {
     // ad-bc: 19*i + 425
     CHECK(!mpz_cmp_ui(diff->a, 425) && !mpz_cmp_ui(diff->b, 19));
 
-    fp2_clear(&x); fp2_init(&y); fp2_init(&z); fp2_init(&w); fp2_init(&sum); fp2_init(&diff); 
+    fp2_clear(&x);
+    fp2_init(&y);
+    fp2_init(&z);
+    fp2_init(&w);
+    fp2_init(&sum);
+    fp2_init(&diff);
 }
 
-
 /*
- * @brief Test whether criss-cross is safe for calling with l or r set to any of (x, y, z, w)
+ * @brief Test whether criss-cross is safe for calling with l or r set to any of
+ * (x, y, z, w)
  */
 void test_criss_cross_argsafe() {
     fp2_t x, y, z, w;
-    fp2_init(&x); fp2_init(&y); fp2_init(&z); fp2_init(&w);
+    fp2_init(&x);
+    fp2_init(&y);
+    fp2_init(&z);
+    fp2_init(&w);
 
     fp2_set_str(x, "416*i + 175");
     fp2_set_str(y, "112*i + 179");
@@ -242,7 +257,10 @@ void test_criss_cross_argsafe() {
     CHECK(!mpz_cmp_ui(z->a, 314) && !mpz_cmp_ui(z->b, 367));
     CHECK(!mpz_cmp_ui(y->a, 425) && !mpz_cmp_ui(y->b, 19));
 
-    fp2_clear(&x); fp2_init(&y); fp2_init(&z); fp2_init(&w);
+    fp2_clear(&x);
+    fp2_init(&y);
+    fp2_init(&z);
+    fp2_init(&w);
 }
 
 void test_xDBL_small() {
@@ -264,7 +282,7 @@ void test_xDBL_small() {
     // X(Q)/Z(Q) = 61 + 184 * i = x(Q)
     point_normalize_coords(Q);
     fp2_print(Q->X, "x[2]P");
-    
+
     CHECK(fp2_equal_str(Q->X, "184*i + 61"));
 }
 
@@ -345,7 +363,7 @@ void test_xLADDER3PT() {
     // P contains the result, other points modified
     xLADDER3PT_int(P, Q, PQd, n, A24p, C24);
     point_normalize_coords(P);
-    
+
     point_printx(P, "x(P+nQ)");
     CHECK(!mpz_cmp_ui(P->X->a, 360) && !mpz_cmp_ui(P->X->b, 45));
 
@@ -364,7 +382,6 @@ void test_xLADDER3PT() {
     mpz_clear(m);
 }
 
-
 void test_ISOG2e() {
     // Point of order 16, does not lay above (0, 0)
     point_set_str_x(K, "33*i + 429");
@@ -374,11 +391,16 @@ void test_ISOG2e() {
     fp2_print(P->X, "xP");
 
     fp2_t A24p_, C24_, A_, C_, a_;
-    fp2_init(&A24p_); fp2_init(&C24_); fp2_init(&a_); fp2_init(&A_); fp2_init(&C_);
+    fp2_init(&A24p_);
+    fp2_init(&C24_);
+    fp2_init(&a_);
+    fp2_init(&A_);
+    fp2_init(&C_);
 
     point_t push_points[2] = {P, NULL};
 
-    // Calculate codomain and push point P through the isogeny of degree 2^4 = 16.
+    // Calculate codomain and push point P through the isogeny of degree 2^4
+    // = 16.
     ISOG2e(A24p_, C24_, A24p, C24, K, 4, push_points);
 
     point_normalize_coords(P);
@@ -393,7 +415,11 @@ void test_ISOG2e() {
     // aphi(E) = 201
     CHECK(!mpz_cmp_ui(a_->a, 201) && !mpz_cmp_ui(a_->b, 0));
 
-    fp2_clear(&A24p_); fp2_clear(&C24_); fp2_clear(&a_); fp2_clear(&A_); fp2_clear(&C_);
+    fp2_clear(&A24p_);
+    fp2_clear(&C24_);
+    fp2_clear(&a_);
+    fp2_clear(&A_);
+    fp2_clear(&C_);
 }
 
 // ---------------------
@@ -447,14 +473,17 @@ void test_xISOG_and_aISOG() {
     const int degree = 5;
     const size_t n = KPS_DEG2SIZE(degree);
     point_t kpts[n];
-    for (size_t i = 0; i < n; i++) point_init(&kpts[i]);
+    for (size_t i = 0; i < n; i++)
+        point_init(&kpts[i]);
     printf("deg: %d\n", degree);
     printf("n: %lu\n", n);
 
     KPS(kpts, n, K, A24p, C24);
 
     fp2_t phiA, phiC, phi_a;
-    fp2_init(&phiA); fp2_init(&phiC); fp2_init(&phi_a);
+    fp2_init(&phiA);
+    fp2_init(&phiC);
+    fp2_init(&phi_a);
 
     // Check codomain Curve value
     aISOG_curve_KPS(phiA, phiC, A24p, C24, kpts, n);
@@ -467,7 +496,9 @@ void test_xISOG_and_aISOG() {
     fp2_div_unsafe(phi_a, phiA, phiC);
     CHECK(!mpz_cmp_ui(phi_a->a, 85) && !mpz_cmp_ui(phi_a->b, 76));
 
-    fp2_clear(&phiA); fp2_clear(&phiC); fp2_clear(&phi_a);
+    fp2_clear(&phiA);
+    fp2_clear(&phiC);
+    fp2_clear(&phi_a);
 
     prepare_kernel_points(kpts, n);
     xISOG_odd(Q, kpts, n, P);
@@ -476,9 +507,9 @@ void test_xISOG_and_aISOG() {
 
     CHECK(!mpz_cmp_ui(Q->X->a, 46) && !mpz_cmp_ui(Q->X->b, 88));
 
-    for (size_t i = 0; i < n; i++) point_clear(&kpts[i]);
+    for (size_t i = 0; i < n; i++)
+        point_clear(&kpts[i]);
 }
-
 
 void test_xLADDER_int() {
 
@@ -499,14 +530,14 @@ void test_xLADDER_int() {
     point_printx(Q, "x[2]P");
     CHECK(!mpz_cmp_ui(Q->X->a, 131) && !mpz_cmp_ui(Q->X->b, 113));
 
-    // x[3]P = 42*i + 83 
+    // x[3]P = 42*i + 83
     xLADDER_int(Q, P, 3, A24p, C24);
     point_normalize_coords(Q);
 
     point_printx(Q, "x[3]P");
     CHECK(!mpz_cmp_ui(Q->X->a, 83) && !mpz_cmp_ui(Q->X->b, 42));
 
-    // x[4]P = 47*i + 107 
+    // x[4]P = 47*i + 107
     xLADDER_int(Q, P, 4, A24p, C24);
     point_normalize_coords(Q);
 
@@ -516,7 +547,7 @@ void test_xLADDER_int() {
 
 void test_xLADDER() {
     point_set_str_x(P, "7*i + 97");
-    fp2_print(P->X, "xP"); 
+    fp2_print(P->X, "xP");
 
     mpz_t m;
     // 1. m = 2^80
@@ -557,7 +588,8 @@ void test_ISOG_chain_odd() {
     fp2_print(K->X, "xK");
 
     fp2_t A_, C_, a_;
-    fp2_init(&A_); fp2_init(&C_), fp2_init(&a_);
+    fp2_init(&A_);
+    fp2_init(&C_), fp2_init(&a_);
 
     pprod_t deg;
     pprod_init(&deg);
@@ -565,16 +597,18 @@ void test_ISOG_chain_odd() {
     unsigned int primes[2] = {5, 7};
     pprod_set_array(deg, primes, 2);
 
-    point_t push_points[] = { NULL, NULL};
-    ISOG_chain(A_, C_, A24p, C24, K, deg, push_points); 
+    point_t push_points[] = {NULL, NULL};
+    ISOG_chain(A_, C_, A24p, C24, K, deg, push_points);
 
     // aφ(K): 102*i + 73
-    A_from_A24p(A_, C_, A_, C_); 
+    A_from_A24p(A_, C_, A_, C_);
     fp2_div_unsafe(a_, A_, C_);
     fp2_print(a_, "aφ(K)");
     CHECK(!mpz_cmp_ui(a_->a, 73) && !mpz_cmp_ui(a_->b, 102));
 
-    fp2_clear(&A_); fp2_clear(&C_); fp2_clear(&a_);
+    fp2_clear(&A_);
+    fp2_clear(&C_);
+    fp2_clear(&a_);
     pprod_clear(&deg);
 }
 
@@ -588,7 +622,8 @@ void test_xISOG2_and_aISOG2() {
     point_printx(P, "xP");
 
     fp2_t A_, C_, a_;
-    fp2_init(&A_); fp2_init(&C_), fp2_init(&a_);
+    fp2_init(&A_);
+    fp2_init(&C_), fp2_init(&a_);
 
     // Calculate codomain of the 2-isogeny curve
     // a' = 37*i + 73
@@ -617,9 +652,9 @@ void test_xISOG2_and_aISOG2() {
     point_normalize_coords(Q);
     CHECK(!mpz_cmp_ui(Q->X->a, 0) && !mpz_cmp_ui(Q->X->b, 128));
 
-    fp2_clear(&A_); fp2_clear(&C_), fp2_clear(&a_);
+    fp2_clear(&A_);
+    fp2_clear(&C_), fp2_clear(&a_);
 }
-
 
 void test_ISOG_chain() {
     // Point of order 140, does not lay over (0, 0)
@@ -629,8 +664,11 @@ void test_ISOG_chain() {
     point_set_str_x(P, "8*i + 137");
     point_printx(P, "xP");
 
-    fp2_t A_, C_, a_, A24p_, C24_; 
-    fp2_init(&A24p_); fp2_init(&C24_); fp2_init(&A_); fp2_init(&C_), fp2_init(&a_);
+    fp2_t A_, C_, a_, A24p_, C24_;
+    fp2_init(&A24p_);
+    fp2_init(&C24_);
+    fp2_init(&A_);
+    fp2_init(&C_), fp2_init(&a_);
 
     pprod_t deg;
     pprod_init(&deg);
@@ -643,7 +681,7 @@ void test_ISOG_chain() {
 
     // Return in 24p form
     ISOG_chain(A24p_, C24_, A24p, C24, K, deg, push_points);
-    A_from_A24p(A_, C_, A24p_, C24_); 
+    A_from_A24p(A_, C_, A24p_, C24_);
     fp2_div_unsafe(a_, A_, C_);
 
     fp2_print(a_, "aφ(K)");
@@ -653,13 +691,18 @@ void test_ISOG_chain() {
     point_printx(P, "xφ(P)");
     CHECK(!mpz_cmp_ui(P->X->a, 68) && !mpz_cmp_ui(P->X->b, 114));
 
-    fp2_clear(&A24p_); fp2_clear(&C24_); fp2_clear(&A_); fp2_clear(&C_), fp2_clear(&a_);
+    fp2_clear(&A24p_);
+    fp2_clear(&C24_);
+    fp2_clear(&A_);
+    fp2_clear(&C_), fp2_clear(&a_);
     pprod_clear(&deg);
 }
 
 void test_j_invariant() {
     fp2_t a, c, j_inv;
-    fp2_init(&a); fp2_init(&c); fp2_init(&j_inv);
+    fp2_init(&a);
+    fp2_init(&c);
+    fp2_init(&j_inv);
     fp2_set_uint(c, 1);
 
     fp2_set_str(a, "92*i + 25");
@@ -689,7 +732,9 @@ void test_j_invariant() {
     fp2_print(j_inv, "j(E)");
     CHECK(!mpz_cmp_ui(j_inv->a, 97) && !mpz_cmp_ui(j_inv->b, 78));
 
-    fp2_clear(&a); fp2_clear(&c); fp2_clear(&j_inv);
+    fp2_clear(&a);
+    fp2_clear(&c);
+    fp2_clear(&j_inv);
 }
 
 int main() {

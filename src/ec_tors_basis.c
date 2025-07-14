@@ -16,11 +16,14 @@ void tors_basis_clear(struct tors_basis *tb) {
 }
 
 /*
- * @brief Calculate subgroup basis of the torsion basis (Pn, Qn) = [N/n](P, Q) of order n, where N is the order of (P, Q)
+ * @brief Calculate subgroup basis of the torsion basis (Pn, Qn) = [N/n](P, Q)
+ * of order n, where N is the order of (P, Q)
  */
-void tors_basis_get_subgroup(struct tors_basis *PQsub, pprod_t n, const struct tors_basis *PQ, const fp2_t A24p, const fp2_t C24) {
+void tors_basis_get_subgroup(struct tors_basis *PQsub, pprod_t n,
+                             const struct tors_basis *PQ, const fp2_t A24p,
+                             const fp2_t C24) {
     // Temporarily set the order as [N/n]
-    mpz_divexact(PQsub->n->value, PQ->n->value, n->value); 
+    mpz_divexact(PQsub->n->value, PQ->n->value, n->value);
     // Multiply all points in the subbasis by [N/n]
     xLADDER(PQsub->P, PQ->P, PQsub->n->value, A24p, C24);
     xLADDER(PQsub->Q, PQ->Q, PQsub->n->value, A24p, C24);
