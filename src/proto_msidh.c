@@ -3,10 +3,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "ec_mont.h"
-#include "fp2.h"
-#include "pprod.h"
 #include "proto_msidh.h"
+#include "ec_mont.h"
+#include "isog_mont.h"
 
 // Sample an element `x` from ``Z/mZ`` where ``x^2 = 1 (mod m)``.
 // Return != 0 if something goes wrong

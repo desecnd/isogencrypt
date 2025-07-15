@@ -1,0 +1,38 @@
+---: test_criss_cross_small()
+x: 416*i + 175
+y: 112*i + 179
+z: 235*i + 107
+w: 183*i + 197
+xw+yz: 367*i + 314
+xw-yz: 19*i + 425
+---: test_ISOG2e()
+xK: 33*i + 429
+xP: 158*i + 183
+xφ(P): 69*i + 48
+aφ(E): 201
+---: test_KPS()
+xK: 101*i + 20
+xK1: 101*i + 20
+xK2: 82*i + 16
+xK3: 106*i + 124
+---: test_xISOG_and_aISOG()
+xK: 77*i + 38
+xP: 32*i + 42
+deg: 5
+n: 2
+aφ(K): 76*i + 85
+xφ(P): 88*i + 46
+---: test_ISOG_chain_odd()
+xK: 108*i + 136
+aφ(K): 102*i + 73
+---: test_xISOG2_and_aISOG2()
+xK2: 100*i + 136
+xP: 70*i + 36
+aE2: 37*i + 73
+aE2(24p): 44*i + 123
+xφ(P): 128*i
+---: test_ISOG_chain()
+xK: 34*i + 99
+xP: 8*i + 137
+aφ(K): 49*i
+xφ(P): 114*i + 68
