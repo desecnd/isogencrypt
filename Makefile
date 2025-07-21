@@ -55,8 +55,9 @@ EXAMPLE_OBJ := $(patsubst $(EXAMPLE_SRC_DIR)/%.c,$(EXAMPLE_OBJ_DIR)/%.o,$(EXAMPL
 
 # Optional CPP flags: -MMD -MP 
 CPPFLAGS := -Iinclude 
-CFLAGS   := -Wall -Wextra -O2
-LDFLAGS  := -Llib
+# We must speficy "-pg" flag 2 times (compiler & linker) to obtian the callgraph data
+CFLAGS   := -Wall -Wextra -O0 -pg
+LDFLAGS  := -Llib -pg
 LDLIBS   := -lgmp
 
 .PHONY: tests benches example all clean run-tests run-diffs
