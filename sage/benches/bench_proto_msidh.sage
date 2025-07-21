@@ -281,6 +281,7 @@ def prep_environment(bt: MSIDHBenchTask):
     # Montgomery Curve with 'a' as x^2 coefficient
     a = F(bt.a)
     E = EllipticCurve(F, [0, a, 0, 1, 0])
+    E.set_order((p+1)**2)
     assert E.is_supersingular()
 
     P = E(F(bt.xP), F(bt.yP))
@@ -310,10 +311,26 @@ def run_benchmark():
 
             # Run The benchmark N_REPS times
             for j in range(N_REPS):
-                prep_environment(bt)
+                A_mul = (p + 1)//A
+                B_mul = (p + 1)//B
+                B_basis = (P * B_mul, Q * B_mul)
+                Alice = MSIDH(p, A, B, E0=E, P=P * A_mul, Q=Q * A_mul, is_bob=False)
+
+
+                # Calculate public key information (step 1)
+                pubkey_alice = Alice.gen_pubkey(*B_basis)
+
+                # Measure single exchange by one of the parties
                 start = timer()
-                run_msidh_exchange(p, A, B, E, P, Q)
+                Bob = MSIDH(p, A, B, E0=E, P=P * B_mul, Q=Q * B_mul, is_bob=True)
+                pubkey_bob = Bob.gen_pubkey(*Alice.basis)
+                jinv_bob = Bob.key_exchange(*pubkey_alice)
                 end = timer()
+
+                # Exchange - Calculate shared key information (step 2)
+                jinv_alice = Alice.key_exchange(*pubkey_bob)
+                assert jinv_alice == jinv_bob
+
                 time_s = end - start 
                 print(f"[{n + 1}/{len(BENCH_TASKS)}][t={bt.t}][{j+1}/{N_REPS}]: run_msidh_exchange took {time_s:.3f} seconds to execute", file=sys.stderr)
                 times.append(time_s)
