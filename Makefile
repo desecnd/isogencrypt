@@ -3,6 +3,9 @@
 # https://stackoverflow.com/a/30602701
 # https://stackoverflow.com/a/27838026 
 
+# Run make DEBUG=0 to turn off debugging build
+DEBUG ?= 1
+
 SRC_DIR := src
 
 BUILD_DIR := build
@@ -55,10 +58,22 @@ EXAMPLE_OBJ := $(patsubst $(EXAMPLE_SRC_DIR)/%.c,$(EXAMPLE_OBJ_DIR)/%.o,$(EXAMPL
 
 # Optional CPP flags: -MMD -MP 
 CPPFLAGS := -Iinclude 
-# We must speficy "-pg" flag 2 times (compiler & linker) to obtian the callgraph data
-CFLAGS   := -Wall -Wextra -O0 -pg
-LDFLAGS  := -Llib -pg
-LDLIBS   := -lgmp
+LDFLAGS  := -Llib
+
+# Compilation flags for debug build and release build
+# -pg: add profiler data (gprof)
+# -g: generate debugging symbols
+# -O0: do not optimize 
+# -fno-inline: do not inline functions (symbols should be present)
+# -fsanitize=address: enable asan
+ifeq ($(DEBUG),1)
+	LDLIBS := -lgmp -pg -fsanitize=address
+	CFLAGS := -Wall -Wextra -O0 -pg -g -fno-inline
+else
+	LDLIBS := -lgmp
+	CFLAGS := -Wall -Wextra -O2
+endif
+
 
 .PHONY: tests benches example all clean run-tests run-diffs
 # This allows for calling run-diffs without running run-tests
