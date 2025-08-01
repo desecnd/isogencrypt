@@ -29,6 +29,7 @@ void clear_test_variables() {
     point_clear(&Q);
     point_clear(&K);
     point_clear(&PQd);
+    fpchar_clear_if_set();
 }
 
 void set_params_testp431() {
@@ -352,7 +353,7 @@ void test_xLADDER() {
     CHECK(!mpz_cmp_ui(Q->X->a, 43) && !mpz_cmp_ui(Q->X->b, 98));
 
     // 2. m = 2^80 - 1
-    mpz_init_set_str(m, "ffffffffffffffffffff", 16);
+    mpz_set_str(m, "ffffffffffffffffffff", 16);
     xLADDER(Q, P, m, A24p, C24);
     point_normalize_coords(Q);
 
@@ -361,7 +362,7 @@ void test_xLADDER() {
     CHECK(!mpz_cmp_ui(Q->X->a, 96) && !mpz_cmp_ui(Q->X->b, 56));
 
     // 3. m = random in [2^79, 2^80]
-    mpz_init_set_str(m, "f5697b000f01c17d4c5e", 16);
+    mpz_set_str(m, "f5697b000f01c17d4c5e", 16);
     xLADDER(Q, P, m, A24p, C24);
     point_normalize_coords(Q);
 

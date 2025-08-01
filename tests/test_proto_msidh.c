@@ -3,6 +3,7 @@
 #include <stdlib.h>
 
 #include "ec_mont.h"
+#include "fp.h"
 #include "fp2.h"
 #include "pprod.h"
 #include "proto_msidh.h"
@@ -54,6 +55,7 @@ void clear_test_variables() {
     pprod_clear(&B_deg);
     mpz_clear(p);
     mpz_clear(m);
+    fpchar_clear_if_set();
 }
 
 void test_pprod_init() {

@@ -1,6 +1,7 @@
 #include <gmp.h>
 #include <stdio.h>
 
+#include "fp.h"
 #include "isog_mont.h"
 #include "fp2.h"
 #include "testing.h"
@@ -29,6 +30,7 @@ void clear_test_variables() {
     point_clear(&Q);
     point_clear(&K);
     point_clear(&PQd);
+    fpchar_clear_if_set();
 }
 
 void set_params_testp431() {
@@ -97,11 +99,11 @@ void test_criss_cross_small() {
     CHECK(!mpz_cmp_ui(diff->a, 425) && !mpz_cmp_ui(diff->b, 19));
 
     fp2_clear(&x);
-    fp2_init(&y);
-    fp2_init(&z);
-    fp2_init(&w);
-    fp2_init(&sum);
-    fp2_init(&diff);
+    fp2_clear(&y);
+    fp2_clear(&z);
+    fp2_clear(&w);
+    fp2_clear(&sum);
+    fp2_clear(&diff);
 }
 
 /*
@@ -146,9 +148,9 @@ void test_criss_cross_argsafe() {
     CHECK(!mpz_cmp_ui(y->a, 425) && !mpz_cmp_ui(y->b, 19));
 
     fp2_clear(&x);
-    fp2_init(&y);
-    fp2_init(&z);
-    fp2_init(&w);
+    fp2_clear(&y);
+    fp2_clear(&z);
+    fp2_clear(&w);
 }
 
 void test_ISOG2e() {

@@ -24,9 +24,9 @@ void pprod_clear(pprod_t *pp) {
 }
 
 void pprod_set_array(pprod_t pp, unsigned int *primes, unsigned int n_primes) {
-    if (pp->primes != NULL) {
+    mpz_clear(pp->value);
+    if (pp->n_primes != 0 || pp->primes != NULL) {
         free(pp->primes);
-        pp->primes = NULL;
     }
 
     pp->n_primes = n_primes;

@@ -42,6 +42,8 @@ void test_failed_once() {
         fp2_clear(&r);
     }
 
+    fp2_clear(&x);
+    fp2_clear(&y);
     CHECK(!fpchar_clear());
 }
 
@@ -269,6 +271,7 @@ void test_write() {
 
     fp2_clear(&y);
     fp2_clear(&x);
+    free(buffer);
     CHECK(!fpchar_clear());
 }
 
