@@ -3,6 +3,9 @@
 # https://stackoverflow.com/a/30602701
 # https://stackoverflow.com/a/27838026 
 
+# Run make DEBUG=0 to turn off debugging build
+DEBUG ?= 1
+
 SRC_DIR := src
 
 BUILD_DIR := build
@@ -55,9 +58,22 @@ EXAMPLE_OBJ := $(patsubst $(EXAMPLE_SRC_DIR)/%.c,$(EXAMPLE_OBJ_DIR)/%.o,$(EXAMPL
 
 # Optional CPP flags: -MMD -MP 
 CPPFLAGS := -Iinclude 
-CFLAGS   := -Wall -Wextra -O2
 LDFLAGS  := -Llib
-LDLIBS   := -lgmp
+
+# Compilation flags for debug build and release build
+# -pg: add profiler data (gprof)
+# -g: generate debugging symbols
+# -O0: do not optimize 
+# -fno-inline: do not inline functions (symbols should be present)
+# -fsanitize=address: enable asan
+ifeq ($(DEBUG),1)
+	LDLIBS := -lgmp -pg -fsanitize=address
+	CFLAGS := -Wall -Wextra -O0 -pg -g -fno-inline
+else
+	LDLIBS := -lgmp
+	CFLAGS := -Wall -Wextra -O2
+endif
+
 
 .PHONY: tests benches example all clean run-tests run-diffs
 # This allows for calling run-diffs without running run-tests
@@ -136,7 +152,7 @@ $(TESTS_OUT_DIR)/%.out: $(TESTS_BIN_DIR)/%  | $(TESTS_OUT_DIR)
 # @echo "> $(notdir $@)"
 # && echo "Check diff: $(notdir $@) (\033[0;32mPASSED\033[0m)" || (echo "[\033[0;31mFAILED\033[0m]: $(notdir $@) (see: $@)")
 $(DIFFS_OUT_DIR)/%.diff: $(TESTS_OUT_DIR)/%.out $(VECTORS_SRC_DIR)/%.out $(TESTS_BIN_DIR)/% FORCE | $(DIFFS_OUT_DIR)
-	@diff -Z $< $(patsubst $(DIFFS_OUT_DIR)/%.diff,$(VECTORS_SRC_DIR)/%.out,$@) --color=always > $@ \
+	@diff -Z $< $(patsubst $(DIFFS_OUT_DIR)/%.diff,$(VECTORS_SRC_DIR)/%.out,$@) --color > $@ \
 	&& echo "Check diff: $(notdir $@) (\033[0;32mPASSED\033[0m)" || (echo "Check diff: $(notdir $@) (\033[0;31mFAILED\033[0m) - see: $@")
 
 clean:

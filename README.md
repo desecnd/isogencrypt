@@ -135,7 +135,17 @@ Detailed specification of the `isogencrypt_sage` python package, can be found in
 Test vectors located in `assets` directory were created using:
 
 ```bash
+# Find all .py verifiers in './sage/verifiers' dir, run them with sage
+# and store result in './assets/test_vectors/<filename>.out, replacing 'verify' with 'test'
+$ find ./sage/verifiers -type f -name 'verify*.py' -exec sh -c 'sage -python "$1" > "./assets/test_vectors/$(basename "$1" | sed "s/^verify_\(.\+\)\.py$/test_\1.out/")"' _ {} \;
+```
+
+Each of the test vectors can be also regenerated separately.
+
+```bash
 $ sage -python ./sage/verifiers/verify_ec_mont.py > ./assets/test_vectors/test_ec_mont.out
+$ sage -python ./sage/verifiers/verify_isog_mont.py > ./assets/test_vectors/test_isog_mont.out
+...
 $ sage -python ./sage/verifiers/verify_proto_msidh.py  > ./assets/test_vectors/test_proto_msidh.out
 ```
 
