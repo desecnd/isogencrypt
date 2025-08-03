@@ -6,7 +6,7 @@ int main() {
     printf("# C Benchmark results for MSIDH protocol\n");
     printf("n\tt\tp_bitsize\tavg\tstddev\tn_reps\n");
 
-    int t_values[] =  {100, 200, 300, 400 };
+    int t_values[] = {100, 200, 300, 400};
     const int N_RUNS = sizeof(t_values) / sizeof(int);
 
     struct benchmark_data bd;
@@ -14,18 +14,19 @@ int main() {
     for (int i = 0; i < N_RUNS; i++) {
         int t_found = 0;
         for (int j = 0; !t_found && j < N_BENCHMARKS; j++) {
-            if (BENCH_TASKS[j].t != t_values[i]) continue;
+            if (BENCH_TASKS[j].t != t_values[i])
+                continue;
 
             t_found = 1;
             run_benchmark(&BENCH_TASKS[j], &bd);
-            printf("%d\t%d\t%d\t%0.2lf\t%0.2lf\t%d\n", i + 1, t_values[i], bd.p_bitsize, bd.average, bd.stddev, N_REPS);
+            printf("%d\t%d\t%d\t%0.2lf\t%0.2lf\t%d\n", i + 1, t_values[i],
+                   bd.p_bitsize, bd.average, bd.stddev, N_REPS);
             fflush(stdout);
         }
 
         if (!t_found) {
-            fprintf(stderr, "Cannot find BenchTask for MSIDH param t=%d\n", t_values[i]);
+            fprintf(stderr, "Cannot find BenchTask for MSIDH param t=%d\n",
+                    t_values[i]);
         }
     }
-
-
 }

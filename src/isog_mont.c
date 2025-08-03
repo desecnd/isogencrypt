@@ -2,8 +2,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "isog_mont.h"
 #include "ec_mont.h"
+#include "isog_mont.h"
 
 void criss_cross(fp2_t lsum, fp2_t rdiff, const fp2_t x, const fp2_t y,
                  const fp2_t z, const fp2_t w) {

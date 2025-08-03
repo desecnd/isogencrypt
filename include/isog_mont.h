@@ -2,9 +2,9 @@
 
 #include <stdint.h>
 
+#include "ec_point_xz.h"
 #include "fp2.h"
 #include "pprod.h"
-#include "ec_point_xz.h"
 
 /*
  * @brief Calculate (xw + yz, xw - yz) given (x, y, z, w)

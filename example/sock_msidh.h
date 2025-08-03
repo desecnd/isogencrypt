@@ -215,12 +215,12 @@ int recv_fp2(int fd, fp2_t x) {
 }
 
 int recv_msidh_data(int fd, struct msidh_data *md) {
-    if (0 != recv_u32(fd, (uint32_t*) &md->t))
+    if (0 != recv_u32(fd, (uint32_t *)&md->t))
         return -1;
     if (md->t < MSIDH_TMIN || md->t >= MSIDH_TMAX) {
         return -1;
     }
-    if (0 != recv_u32(fd, (uint32_t*) &md->f))
+    if (0 != recv_u32(fd, (uint32_t *)&md->f))
         return -1;
     if (md->f <= 0) {
         return -1;

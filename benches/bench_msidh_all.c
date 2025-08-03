@@ -10,7 +10,8 @@ int main() {
 
     for (int j = 0; j < N_BENCHMARKS; j++) {
         run_benchmark(&BENCH_TASKS[j], &bd);
-        printf("%d\t%d\t%d\t%0.2lf\t%0.2lf\t%d\n", j + 1, BENCH_TASKS[j].t, bd.p_bitsize, bd.average, bd.stddev, N_REPS);
+        printf("%d\t%d\t%d\t%0.2lf\t%0.2lf\t%d\n", j + 1, BENCH_TASKS[j].t,
+               bd.p_bitsize, bd.average, bd.stddev, N_REPS);
         fflush(stdout);
     }
 }
