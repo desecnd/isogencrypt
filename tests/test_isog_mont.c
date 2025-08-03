@@ -2,8 +2,8 @@
 #include <stdio.h>
 
 #include "fp.h"
-#include "isog_mont.h"
 #include "fp2.h"
+#include "isog_mont.h"
 #include "testing.h"
 
 fp2_t A, C;

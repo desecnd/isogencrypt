@@ -88,7 +88,7 @@ int main(int argc, char *argv[]) {
 
     // Run MSIDH handshake with specified level
     unsigned char shared_key[SHA256_DIGEST_LENGTH];
-    int status = msidh_handshake(client_fd, 0, shared_key, MSIDH_T150);
+    int status = msidh_handshake(client_fd, 1, shared_key, MSIDH_T150);
     if (status < 0) {
         fprintf(stderr, "MSIDH handshake returned with errors.\n");
         close(server_fd);

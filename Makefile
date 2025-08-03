@@ -126,7 +126,7 @@ $(BENCHES_OBJ_DIR)/%.o: $(BENCHES_SRC_DIR)/%.c | $(BENCHES_OBJ_DIR)
 # Create the executable 'bench_something' based on the compiled 'src/*.c' -> 'obj/*.c' objects and 'obj/tests/test_something.o'
 $(BENCHES_BIN_DIR)/%: $(BENCHES_OBJ_DIR)/%.o $(OBJ) | $(BENCHES_BIN_DIR)
 	@echo "Linking benchmark: '$@'"
-	@$(CC) $(LDFLAGS) $^ $(LDLIBS) -o $@
+	@$(CC) $(LDFLAGS) $^ $(LDLIBS) -lm -o $@
 
 # Ephemeral target to "always" run
 run-tests: $(TESTS_TMP)

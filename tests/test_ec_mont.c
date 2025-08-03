@@ -303,7 +303,6 @@ void test_xLADDER3PT() {
 // Testcases for p = 139
 // ---------------------
 
-
 void test_xLADDER_int() {
 
     point_set_str_x(P, "108*i + 136");

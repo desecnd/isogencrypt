@@ -49,4 +49,3 @@ void xLADDER3PT(point_t P, point_t Q, point_t PQdiff, const mpz_t m,
  * coefficient a = (A : C)
  */
 void j_invariant(fp2_t j_inv, const fp2_t A, const fp2_t C);
-

@@ -8,7 +8,7 @@ from isogencrypt_sage.utils import print_error_and_exit, print_info, print_ok
 
 TEMPLATE_C_PREFIX = """// Auto-generated code using conv_msidh_bt.sage script
 struct bench_task {{
-    int t;
+    int t, f;
     const char *a_str, *xP_str, *xQ_str, *xPQd_str;
 }};
 #define N_BENCHMARKS {}
@@ -20,6 +20,7 @@ TEMPLATE_C_SUFFIX = """};
 
 TEMPLATE_C_ITEM = """    {{
         .t        = {t},
+        .f        = {f},
         .a_str    = "{a}",
         .xP_str   = "{xP}",
         .xQ_str   = "{xQ}", 
@@ -60,7 +61,7 @@ if __name__ == "__main__":
         bt_code.write(TEMPLATE_C_PREFIX.format(len(bench_tasks)))
         for bt in bench_tasks:
             bt_code.write(TEMPLATE_C_ITEM.format(
-                t=bt.t, a=bt.a, xP=bt.xP, xQ=bt.xQ, xPQd=bt.xR
+                t=bt.t, f=bt.f, a=bt.a, xP=bt.xP, xQ=bt.xQ, xPQd=bt.xR
             ))
         bt_code.write(TEMPLATE_C_SUFFIX)
 

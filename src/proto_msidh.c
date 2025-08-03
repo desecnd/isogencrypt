@@ -3,9 +3,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "proto_msidh.h"
 #include "ec_mont.h"
 #include "isog_mont.h"
+#include "proto_msidh.h"
 
 // Sample an element `x` from ``Z/mZ`` where ``x^2 = 1 (mod m)``.
 // Return != 0 if something goes wrong
@@ -58,13 +58,8 @@ int sample_quadratic_root_of_unity(mpz_t result, const pprod_t modulus) {
     return ret;
 }
 
-// TODO: From MSIDH paper: 128bit prime: p = 2^2 * l1 ... l571 * 10 - 1
-// So at least 571//2 primes per side is required
-#define MSIDH_TMAX 600
-#define MSIDH_TMAX_HALF MSIDH_TMAX / 2
-
-// TODO:
 // Catch! The first number is not a prime number => 2^2, this is a special case
+// to obtain p == 3 (mod 4)
 unsigned int PRIMES_ALICE[MSIDH_TMAX_HALF] = {
     4,    5,    11,   17,   23,   31,   41,   47,   59,   67,   73,   83,
     97,   103,  109,  127,  137,  149,  157,  167,  179,  191,  197,  211,
@@ -87,7 +82,10 @@ unsigned int PRIMES_ALICE[MSIDH_TMAX_HALF] = {
     3019, 3037, 3049, 3067, 3083, 3109, 3121, 3163, 3169, 3187, 3203, 3217,
     3229, 3253, 3259, 3299, 3307, 3319, 3329, 3343, 3359, 3371, 3389, 3407,
     3433, 3457, 3463, 3469, 3499, 3517, 3529, 3539, 3547, 3559, 3581, 3593,
-    3613, 3623, 3637, 3659};
+    3613, 3623, 3637, 3659, 3673, 3691, 3701, 3719, 3733, 3761, 3769, 3793,
+    3803, 3823, 3847, 3853, 3877, 3889, 3911, 3919, 3929, 3943, 3967, 4001,
+    4007, 4019, 4027, 4051, 4073, 4091, 4099, 4127, 4133, 4153, 4159, 4201,
+    4217, 4229, 4241, 4253, 4261, 4273, 4289, 4327, 4339, 4357, 4373, 4397};
 
 unsigned int PRIMES_BOB[MSIDH_TMAX_HALF] = {
     3,    7,    13,   19,   29,   37,   43,   53,   61,   71,   79,   89,
@@ -111,18 +109,28 @@ unsigned int PRIMES_BOB[MSIDH_TMAX_HALF] = {
     3023, 3041, 3061, 3079, 3089, 3119, 3137, 3167, 3181, 3191, 3209, 3221,
     3251, 3257, 3271, 3301, 3313, 3323, 3331, 3347, 3361, 3373, 3391, 3413,
     3449, 3461, 3467, 3491, 3511, 3527, 3533, 3541, 3557, 3571, 3583, 3607,
-    3617, 3631, 3643, 3671};
+    3617, 3631, 3643, 3671, 3677, 3697, 3709, 3727, 3739, 3767, 3779, 3797,
+    3821, 3833, 3851, 3863, 3881, 3907, 3917, 3923, 3931, 3947, 3989, 4003,
+    4013, 4021, 4049, 4057, 4079, 4093, 4111, 4129, 4139, 4157, 4177, 4211,
+    4219, 4231, 4243, 4259, 4271, 4283, 4297, 4337, 4349, 4363, 4391, 4409};
+
+static inline int _apply_and_test_cofactor(mpz_t result, const mpz_t base,
+                                           int f) {
+    // test if result = base * f - 1 is a prime number
+    mpz_mul_ui(result, base, f);
+    mpz_sub_ui(result, result, 1);
+    int is_prime = mpz_probab_prime_p(result, 100);
+    // Value 2 means "confident prime", value 1 means "probably prime".
+    // Return 0 if is prime or probably prime, -1 otherwise
+    return (is_prime == 1 || is_prime == 2) ? 0 : -1;
+}
 
 // Find number f such that base * f - 1 is a prime number
 // Return -1 if max number of tries exceeded
 int find_cofator(mpz_t result, const mpz_t base) {
-
     for (int f = 1; f < 1000; f++) {
-        mpz_mul_ui(result, base, f);
-        mpz_sub_ui(result, result, 1);
-        int is_prime = mpz_probab_prime_p(result, 100);
-        // 2 means "confident", 1 means "probably prime"
-        if (is_prime == 1 || is_prime == 2) {
+        int errors = _apply_and_test_cofactor(result, base, f);
+        if (!errors) {
             return f;
         }
     }
@@ -130,8 +138,31 @@ int find_cofator(mpz_t result, const mpz_t base) {
     return -1;
 }
 
-int msidh_gen_pub_params(mpz_t p, pprod_t A, pprod_t B, unsigned int t) {
-    if (t > MSIDH_TMAX) {
+int msidh_calc_pub_params(mpz_t p, pprod_t A, pprod_t B, int t, int f) {
+    if (t >= MSIDH_TMAX || t < MSIDH_TMIN || f < 0) {
+        return -1;
+    }
+
+    // Generate composite numbers A, B
+    pprod_set_array(A, PRIMES_ALICE, (t + 1) / 2);
+    pprod_set_array(B, PRIMES_BOB, t / 2);
+
+    // Find cofactor f: p = fAB - 1
+    mpz_t AB;
+    mpz_init(AB);
+
+    // temp = A * B
+    mpz_mul(AB, A->value, B->value);
+
+    // calculate p = ABf - 1, return 0 if prime, -1 otherwise
+    int ret = _apply_and_test_cofactor(p, AB, f);
+    mpz_clear(AB);
+
+    return ret;
+}
+
+int msidh_gen_pub_params(mpz_t p, pprod_t A, pprod_t B, int t) {
+    if (t >= MSIDH_TMAX || t < MSIDH_TMIN) {
         return -1;
     }
 
@@ -222,6 +253,7 @@ void msidh_get_pubkey(const struct msidh_state *msidh,
     assert(point_is_normalized(msidh->PQ_pubkey.PQd));
 
     pk_self->t = msidh->t;
+    pk_self->f = msidh->f;
 
     fp2_set(pk_self->xP, msidh->PQ_pubkey.P->X);
     fp2_set(pk_self->xQ, msidh->PQ_pubkey.Q->X);
@@ -245,22 +277,24 @@ void msidh_state_prepare(struct msidh_state *msidh,
     assert(msidh->status == MSIDH_STATUS_INITIALIZED);
 
     // `a = 2` is invalid in montgomery model
-    assert(!fp2_equal_uint(params->a, 2));
+    assert(!fp2_equal_uint(params->a, 2) &&
+           "Curve coefficient cannot be equal to 2");
+    assert(params->t >= 2 && "Security parameter t must be larger than 1");
+    // assert(params->f > 0 && "MSIDH Params cofactor f must be a positive
+    // integer");
 
     // Generate public protocol params: p, A, B given t;
     msidh->is_bob = is_bob;
     msidh->t = params->t;
-    int ret = msidh_gen_pub_params(msidh->p, msidh->A, msidh->B, msidh->t);
-    assert(ret > 0 && "MSIDH cannot generate public params");
+    msidh->f = params->f;
+
+    // Do not seek the cofactor f, only calculate p = AB-f and check for
+    // primality
+    int ret =
+        msidh_calc_pub_params(msidh->p, msidh->A, msidh->B, msidh->t, msidh->f);
+    assert(ret == 0 && "MSIDH cannot calculate public params");
 
     // Initialize global characteristic if its not set
-
-    // int cleared = fpchar_clear_if_set();
-    // if (cleared) {
-    //     // fprintf(stderr, "MSIDH cleared previous fpchar in
-    //     state_prepare.\n");
-    // }
-
     fpchar_clear_if_set();
     ret = fpchar_setup(msidh->p);
     assert(ret == 0 &&

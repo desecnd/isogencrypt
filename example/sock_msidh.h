@@ -21,6 +21,7 @@ enum MSIDH_LEVEL {
 static const struct msidh_const_data MSIDH_PARAMS[MSIDH_NLEVELS] = {
     {
         .t = 100,
+        .f = 91,
         .a_str = "6",
         .xP_str = "676782264267647704374841078583377129084920411368462533161975"
                   "883862106168381374621964630435711031310199890121669098735728"
@@ -49,6 +50,7 @@ static const struct msidh_const_data MSIDH_PARAMS[MSIDH_NLEVELS] = {
     },
     {
         .t = 150,
+        .f = 1,
         .a_str = "6",
         .xP_str =
             "388751016565896480745408899101580940285103546781039113455871505855"
@@ -92,6 +94,7 @@ static const struct msidh_const_data MSIDH_PARAMS[MSIDH_NLEVELS] = {
     },
     {
         .t = 200,
+        .f = 18,
         .a_str = "6",
         .xP_str =
             "584377319988353226109140861313255722091016952488500106625886618186"
@@ -212,8 +215,17 @@ int recv_fp2(int fd, fp2_t x) {
 }
 
 int recv_msidh_data(int fd, struct msidh_data *md) {
-    if (0 != recv_u32(fd, &md->t))
+    if (0 != recv_u32(fd, (uint32_t *)&md->t))
         return -1;
+    if (md->t < MSIDH_TMIN || md->t >= MSIDH_TMAX) {
+        return -1;
+    }
+    if (0 != recv_u32(fd, (uint32_t *)&md->f))
+        return -1;
+    if (md->f <= 0) {
+        return -1;
+    }
+
     if (0 != recv_fp2(fd, md->a))
         return -1;
     if (0 != recv_fp2(fd, md->xP))
@@ -228,6 +240,8 @@ int recv_msidh_data(int fd, struct msidh_data *md) {
 int send_msidh_data(int fd, struct msidh_data *md) {
     if (0 != send_u32(fd, md->t))
         return -1;
+    if (0 != send_u32(fd, md->f))
+        return -1;
     if (0 != send_fp2(fd, md->a))
         return -1;
     if (0 != send_fp2(fd, md->xP))
@@ -239,7 +253,7 @@ int send_msidh_data(int fd, struct msidh_data *md) {
     return 0;
 }
 
-int msidh_handshake(int fd, int is_client,
+int msidh_handshake(int fd, int is_server,
                     unsigned char shared_key[SHA256_DIGEST_LENGTH],
                     enum MSIDH_LEVEL level) {
     if ((unsigned)level >= MSIDH_NLEVELS) {
@@ -257,6 +271,7 @@ int msidh_handshake(int fd, int is_client,
     // Parse the given MSIDH level
     const struct msidh_const_data *mcd = &MSIDH_PARAMS[level];
     params.t = mcd->t;
+    params.f = mcd->f;
     fp2_set_str(params.a, mcd->a_str);
     fp2_set_str(params.xP, mcd->xP_str);
     fp2_set_str(params.xQ, mcd->xQ_str);
@@ -266,27 +281,28 @@ int msidh_handshake(int fd, int is_client,
     struct msidh_state msidh;
     msidh_state_init(&msidh);
 
-    msidh_state_prepare(&msidh, &params, is_client);
+    msidh_state_prepare(&msidh, &params, is_server);
     msidh_get_pubkey(&msidh, &pk_self);
     int ret = 0;
 
-    if (is_client) {
-        ret = send_msidh_data(fd, &pk_self);
-        if (ret == 0)
-            ret = recv_msidh_data(fd, &pk_other);
-    } else {
+    if (is_server) {
         ret = recv_msidh_data(fd, &pk_other);
         if (ret == 0)
             ret = send_msidh_data(fd, &pk_self);
+    } else {
+        ret = send_msidh_data(fd, &pk_self);
+        if (ret == 0)
+            ret = recv_msidh_data(fd, &pk_other);
     }
 
     // If there is a mismatch in parameters we need to abort the connection
-    if (pk_self.t != pk_other.t) {
+    if (pk_self.t != pk_other.t || pk_self.f != pk_other.f) {
         ret = -1;
     }
 
     // Jump directly to exit to free the resources
     if (ret == -1) {
+        perror("msidh_handshake");
         goto exit;
     }
 
