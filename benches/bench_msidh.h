@@ -1,3 +1,17 @@
+#pragma once
+
+#include <gmp.h>
+#include <stdint.h>
+#include <stdlib.h>
+#include <time.h>
+#include <stdio.h>
+#include <math.h>
+
+#include "fp2.h"
+#include "proto_msidh.h"
+
+#define N_REPS 5
+
 // Auto-generated code using conv_msidh_bt.sage script
 struct bench_task {
     int t, f;
@@ -342,3 +356,96 @@ const struct bench_task BENCH_TASKS[N_BENCHMARKS] = {
         .xPQd_str = "118283007572348252041497662641464839340443990023878157872114518183864082055188558486523626429506134938019835642867921808626549862657246943882567849034169466415664128690565613010017836467326264783960791797096922689099815412226982282517935875991413922876456283250163709737297832980149585617545180908383167478161561322241773781213826821124065355440505797296048475834454828773724399880345282261554058251829758865802703383461616640435232272994243902556302720447215927180515048546385416270524261788691714616445180354665991274961937861204173426210297713336961276336129967871691737102704710021579229277885445169070980607678135390663202523441385472279251959037887416413032233559308191231841695238519498474549611454349192608658635865167965866837542102101352174226646910022544057415294522001108513120049319752227789675599249375762543047521816372548386928645627290553584832700420209148998215103506057330233115317837900939008603991420882319111102314355710384668677637418644529975892239064598975682314465376820235030977685942264139428718166315044086764823396940171808172809781414543449602905359719349936155240643924287054816039200690861882652109980277167983830790794656220003343022304779029321194167228099379161850687117158086023945084581296328892926410673*i + 16588198888321088518857440814602632189611690501236336304711729860163731230483754708923002677020601727629184340944286277743568028012448409228696778879822870671160856041274717990864385091473351154245205177938297248411177766575069799675376916777721380920282459019365667755231660798513195639278410050313683677027079247312003684898179366228122514498696686641521870815305112729597082353156687289051636263722139435311257007490277361643103246851879357445949643814912790532209546806520005636800598265053347439612886747589824187279616964734408982715488244424005379228853591037652726380754047644186038869239056636720222230945163406373111359629913493402827495658578722003442810634761467271164414196932853661018334590275715460831154401345488006721587118242717244577934904013371008686545663979547815403727317012075158447950271691239538993629909088234702548299747413019778457663088496494194123117467241662075293551926009755338831950370944940517511500563303899212542557067411525772140927793074818843981765099140700411711965445025374091425701457179602995926222423033167608193062107535274390122491189652346616080365447211034482370677684001891173697029918024411757839945729448037346329732904373018565788953431406126340574332123385820655764206476236653593057604",
     }, 
 };
+
+struct benchmark_data {
+    int p_bitsize;
+    float timings[N_REPS];
+    float sum, average, median, variance, stddev;
+};
+
+int comp_times(const void *a, const void *b) {
+    return (*(float *)a) < (*(float *)b) ? -1 : 1;
+}
+
+/*
+ * @brief Calculate all statistics based on 'timings' array of benchmark_data struct
+ */
+void fill_benchmark_data(struct benchmark_data *bd) {
+    qsort(bd->timings, N_REPS, sizeof(float), comp_times);
+
+    if (N_REPS % 2 == 0) {
+        bd->median = (bd->timings[(N_REPS + 1)/2] + bd->timings[N_REPS/2]) / 2.0;
+    } else {
+        bd->median = bd->timings[N_REPS/2];
+    }
+
+    bd->sum = 0.0;
+    for (int i = 0; i < N_REPS; i++) {
+        bd->sum += bd->timings[i];
+    }
+    bd->average = bd->sum / N_REPS;
+
+    bd->variance = 0.0f;
+    for (int i = 0; i < N_REPS; i++) {
+        float x = bd->timings[i] - bd->average;
+        bd->variance += x * x;
+    }
+    bd->variance /= N_REPS;
+    bd->stddev = sqrt(bd->variance);
+}
+
+void run_benchmark(const struct bench_task *bt, struct benchmark_data *data) {
+
+    struct msidh_state alice, bob;
+    msidh_state_init(&alice);
+    msidh_state_init(&bob);
+
+    struct msidh_data params;
+    msidh_data_init(&params);
+        
+    struct msidh_data alice_pk, bob_pk;
+    msidh_data_init(&alice_pk);
+    msidh_data_init(&bob_pk);
+
+    // Copy the params from const "bt_array"
+    params.t = bt->t;
+    params.f = bt->f;
+    fp2_set_str(params.a, bt->a_str);
+    fp2_set_str(params.xP, bt->xP_str);
+    fp2_set_str(params.xQ, bt->xQ_str);
+    fp2_set_str(params.xR, bt->xPQd_str);
+
+    for (int j = 0; j < N_REPS; j++) {
+
+        msidh_state_prepare(&alice, &params, 0);
+        msidh_get_pubkey(&alice, &alice_pk);
+
+        // Calculate time for only one party
+        clock_t tic = clock();
+        msidh_state_prepare(&bob, &params, 1);
+        msidh_key_exchange(&bob, &alice_pk);
+        clock_t toc = clock();
+
+        msidh_get_pubkey(&bob, &bob_pk);
+        msidh_key_exchange(&alice, &bob_pk);
+
+        // Make sure that the computed shared secret is the same for both parties
+        assert(fp2_equal(alice.j_inv, bob.j_inv));
+
+        data->timings[j] = ((double)toc - tic)/CLOCKS_PER_SEC;
+        fprintf(stderr,"[t=%d][%d/%d]: took %.3lf seconds to execute \n", bt->t, j + 1, N_REPS, data->timings[j]); 
+        data->p_bitsize = mpz_sizeinbase(alice.p, 2);
+
+        msidh_state_reset(&alice);
+        msidh_state_reset(&bob);
+    }
+
+    fill_benchmark_data(data);
+
+    msidh_data_clear(&params);
+    msidh_data_clear(&alice_pk);
+    msidh_data_clear(&bob_pk);
+
+    msidh_state_clear(&alice);
+    msidh_state_clear(&bob);
+}

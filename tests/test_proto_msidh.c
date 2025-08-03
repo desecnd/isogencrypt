@@ -15,7 +15,7 @@ point_t PA, QA, PQAd;
 point_t PB, QB, PQBd;
 pprod_t A_deg, B_deg;
 mpz_t p, m;
-unsigned int g_t;
+int g_t, g_f;
 
 void init_test_variables() {
     fp2_init(&A24p);
@@ -236,8 +236,8 @@ void test_msidh_gen_pub_params() {
 void setup_params_t4() {
     // p + 1 = 420 = 4 * 3 * 5 * 7
     g_t = 4;
-    int f = msidh_gen_pub_params(p, A_deg, B_deg, g_t);
-    CHECK(f == 1);
+    g_f = msidh_gen_pub_params(p, A_deg, B_deg, g_t);
+    CHECK(g_f == 1);
 
     // Clear just to be sure
     fpchar_clear_if_set();
@@ -553,7 +553,7 @@ void test_msidh_non_deterministic() {
     point_printx_normalized(PQd, "xPQd");
 
     struct msidh_data md = {
-        .t = g_t, .a = a0, .xP = P->X, .xQ = Q->X, .xR = PQd->X};
+        .t = g_t, .f = g_f, .a = a0, .xP = P->X, .xQ = Q->X, .xR = PQd->X};
 
     msidh_state_prepare(&m1, &md, 0);
     msidh_state_prepare(&m2, &md, 0);
@@ -584,7 +584,7 @@ void test_msidh_monte_carlo() {
     point_printx(PQd, "xPQd");
 
     struct msidh_data md = {
-        .t = g_t, .a = a0, .xP = P->X, .xQ = Q->X, .xR = PQd->X};
+        .t = g_t, .f = g_f, .a = a0, .xP = P->X, .xQ = Q->X, .xR = PQd->X};
 
     struct msidh_data alice_pk, bob_pk;
     msidh_data_init(&alice_pk);
@@ -617,8 +617,8 @@ void test_msidh_monte_carlo() {
 
 void setup_params_t30() {
     g_t = 30;
-    int f = msidh_gen_pub_params(p, A_deg, B_deg, g_t);
-    assert(f > 0);
+    g_f = msidh_gen_pub_params(p, A_deg, B_deg, g_t);
+    assert(g_f > 0);
 
     // Clear just to be sure
     fpchar_clear_if_set();

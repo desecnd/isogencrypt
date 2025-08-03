@@ -16,7 +16,7 @@ enum {
 struct msidh_state {
     gmp_randstate_t randstate;
 
-    unsigned int t;
+    int t, f;
     int is_bob;
 
     mpz_t p;
@@ -42,14 +42,20 @@ struct msidh_state {
 };
 
 struct msidh_data {
-    unsigned int t;
+    int t, f;
     fp2_t a, xP, xQ, xR;
 };
 
 struct msidh_const_data {
-    unsigned int t;
+    int t, f;
     const char *a_str, *xP_str, *xQ_str, *xR_str;
 };
+
+// TODO: From MSIDH paper: 128bit prime: p = 2^2 * l1 ... l571 * 10 - 1
+// So at least 571//2 primes per side is required
+#define MSIDH_TMIN 4
+#define MSIDH_TMAX 600
+#define MSIDH_TMAX_HALF MSIDH_TMAX / 2
 
 void msidh_data_init(struct msidh_data *md);
 
@@ -74,12 +80,17 @@ void msidh_get_pubkey(const struct msidh_state *msidh,
 int sample_quadratic_root_of_unity(mpz_t result, pprod_t modulus);
 
 /*
- * @brief Given security parameter t, generate public params used in MSIDH: p,
+ * @brief Given security parameter t, and cofactor generate public params used in MSIDH: p,
  * A, B, where p = fAB - 1 is prime. Return cofactor f or -1 if something gone
- * wrong. Prime p is always congruent to 3 mod 4 due to the construction of the
+ * wrong. This function searches for the cofactor in range. Prime p is always congruent to 3 mod 4 due to the construction of the
  * prime (4 | A => 4 | ABf)
  */
-int msidh_gen_pub_params(mpz_t p, pprod_t A, pprod_t B, unsigned int t);
+int msidh_gen_pub_params(mpz_t p, pprod_t A, pprod_t B, int t);
+
+/* 
+ * @brief Given security parameter t and cofactor f, calculate public params
+ */
+int msidh_calc_pub_params(mpz_t p, pprod_t A, pprod_t B, int t, int f);
 
 /*
  * @brief Generate MSIDH public key from Alice perspective

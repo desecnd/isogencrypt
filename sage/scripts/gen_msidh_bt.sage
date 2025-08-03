@@ -2,8 +2,9 @@ import argparse
 
 from isogencrypt_sage.utils import print_error_and_exit, print_ok, print_info, print_run
 from isogencrypt_sage.isogeny import sample_torsion_basis_smooth
-from isogencrypt_sage.msidh import MSIDH, MSIDHBenchTask, load_msidh_bench_tasks, store_msidh_bench_tasks
+from isogencrypt_sage.msidh import MSIDH, MSIDHBenchTask, load_msidh_bench_tasks, store_msidh_bench_tasks 
 from sage.all import set_random_seed, GF, EllipticCurve
+from dataclasses import asdict
 
 if __name__ == "__main__":
 
@@ -18,6 +19,7 @@ if __name__ == "__main__":
     parser.add_argument("-i", "--init", type=int, default=10, help="Initial value of t parameter")
     parser.add_argument("-e", "--end", type=int, default=301, help="Ending value of t (excluded)")
     parser.add_argument("-s", "--step", type=int, default=10, help="Step value of t in loop iteration")
+    parser.add_argument("-sk", "--skip", action="store_true", help="Skip verification of the BenchTask parameters") 
     args = parser.parse_args()
 
     bench_tasks = []
@@ -33,10 +35,20 @@ if __name__ == "__main__":
         except FileNotFoundError as e:
             print_error_and_exit(str(e))
 
+        print_run(f"Restoring {len(bench_tasks)} bench tasks from: {args.restore}")
         # Remove the values we already calculated
-        for bt in bench_tasks:
+        for i, bt in enumerate(bench_tasks):
             if bt.t in t_values:
                 t_values.remove(bt.t)
+                if args.skip:
+                    continue
+
+                # run for check of prime number
+                try:
+                    print(f"Testing params of {i + 1}-th BenchTask (t={bt.t}, f={bt.f})")
+                    p, A, B = MSIDH.calc_pub_params(bt.t, bt.f)
+                except ValueError as e:
+                    print_error_and_exit(str(e))
 
         print_ok(f"Correctly restored {len(bench_tasks)} bench tasks from: {args.restore}")
 
@@ -46,7 +58,7 @@ if __name__ == "__main__":
             print_info(f"Running bench task t={t}")
 
             a = 6
-            p, A, B, _ = MSIDH.gen_pub_params(t)
+            p, A, B, f = MSIDH.gen_pub_params(t)
 
             F = GF(p**2, names=('i',), modulus=[1, 0, 1])
             (i,) = F._first_ngens(1)
@@ -60,7 +72,7 @@ if __name__ == "__main__":
             R = P - Q
 
             bt = MSIDHBenchTask(
-                t=t, a=str(a),
+                t=t, f=f, a=str(a),
                 xP=str(P.x()), yP=str(P.y()), 
                 xQ=str(Q.x()), yQ=str(Q.y()),
                 xR=str(R.x()), yR=str(R.y()),
