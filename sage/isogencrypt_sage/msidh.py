@@ -7,10 +7,11 @@ from sage.all import EllipticCurve, Primes, randint, gcd, is_prime, prod, GF
 from isogencrypt_sage.isogeny import sample_quadratic_root_of_unity, sample_torsion_basis_smooth, mont_coef, validate_torsion_basis
 
 class MSIDH:
-    def __init__(self, p: int, A: int, B: int, E0, P = None, Q = None, secret: int | None = None, mask: int | None = None, is_bob: bool = False, mont_model: bool = False):
+    def __init__(self, p: int, A: int, B: int, f: int, E0, P = None, Q = None, secret: int | None = None, mask: int | None = None, is_bob: bool = False, mont_model: bool = False):
         self.p = p
         self.A = A
         self.B = B
+        self.f = f 
         self.is_bob = is_bob
 
         self.E0 = E0
@@ -65,6 +66,25 @@ class MSIDH:
     @property
     def basis(self):
         return (self.P, self.Q)
+    
+    @classmethod
+    def calc_pub_params(cls, t: int, f: int):
+        P = Primes(proof=False)
+        ll = [ P.unrank(2 * i) for i in range((t+1)//2) ]
+        qq = [ P.unrank(2 * i + 1) for i in range(t//2) ]
+        ll[0] = 4
+        assert len(ll) + len(qq) == t
+
+        A = prod(ll)
+        B = prod(qq)
+        AB = A * B
+        assert gcd(A, B) == 1
+
+        p = AB * f - 1
+        if not is_prime(p):
+            raise ValueError("Given cofactor is invalid - number is not prime")
+
+        return p, A, B
 
     @classmethod
     def gen_pub_params(cls, t: int):
@@ -120,6 +140,7 @@ class MSIDH:
 @dataclass
 class MSIDHBenchTask:
     t: int
+    f: int
     a: str
     xP: str
     yP: str
@@ -162,8 +183,8 @@ if __name__ == '__main__':
     E0 = EllipticCurve(F, [0, 6, 0, 1, 0])
     assert E0.is_supersingular()
 
-    Alice = MSIDH(p, A, B, E0, is_bob=False, mont_model=True)
-    Bob = MSIDH(p, A, B, E0, is_bob=True, mont_model=True)
+    Alice = MSIDH(p, A, B, f, E0, is_bob=False, mont_model=True)
+    Bob = MSIDH(p, A, B, f, E0, is_bob=True, mont_model=True)
 
     pubkey_alice = Alice.gen_pubkey(*Bob.basis)
     pubkey_bob = Bob.gen_pubkey(*Alice.basis)
