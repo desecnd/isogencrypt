@@ -12,6 +12,9 @@ typedef struct {
     fp_t b;
 } fp2_elem, *fp2_t;
 
+void fp2_layer_ctx_init();
+void fp2_layer_ctx_clear();
+
 void fp2_init(fp2_t *x);
 
 void fp2_clear(fp2_t *x);

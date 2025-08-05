@@ -1,7 +1,9 @@
 #include "bench_msidh.h"
 #include <stdio.h>
+#include "fp2.h"
 
 int main() {
+    fp2_layer_ctx_init();
 
     printf("# C Benchmark results for MSIDH protocol\n");
     printf("n\tt\tp_bitsize\tavg\tstddev\tn_reps\n");
@@ -29,4 +31,6 @@ int main() {
                     t_values[i]);
         }
     }
+
+    fp2_layer_ctx_init();
 }

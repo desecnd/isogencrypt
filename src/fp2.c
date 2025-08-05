@@ -6,6 +6,27 @@
 
 #include "fp2.h"
 
+static int g_layer_ctx_initialized = 0;
+static fp_t lr1, lr2, lr3;
+
+void fp2_layer_ctx_init() {
+    if (g_layer_ctx_initialized) 
+        return;
+    fp_init(lr1);
+    fp_init(lr2);
+    fp_init(lr3);
+    g_layer_ctx_initialized = 1;
+}
+
+void fp2_layer_ctx_clear() {
+    if (!g_layer_ctx_initialized)
+        return;
+    fp_clear(lr1);
+    fp_clear(lr2);
+    fp_clear(lr3);
+    g_layer_ctx_initialized = 0;
+}
+
 // init: allocate memory and set value to 0 + 0i
 void fp2_init(fp2_t *res) {
     // allocate memory for the fp2 structure
@@ -144,9 +165,6 @@ void fp2_sub_uint(fp2_t res, const fp2_t x, unsigned long int y) {
 void fp2_mul_unsafe(fp2_t res, const fp2_t x, const fp2_t y) {
     assert(res != x && res != y &&
            "fp2_mul cannot be called with res = x or res = y");
-    // add temprary field elements for storing values
-    fp_t t;
-    fp_init(t); // allocate and set to 0
 
     // (a + bi) * (c + di) = [ac - bd] + [ad + bc]i
 
@@ -154,9 +172,9 @@ void fp2_mul_unsafe(fp2_t res, const fp2_t x, const fp2_t y) {
     // res[0] <- a * c
     fp_mul(res->a, x->a, y->a);
     // temp <- b * d
-    fp_mul(t, x->b, y->b);
+    fp_mul(lr1, x->b, y->b);
     // res[0] <- [res0](a * c) - [tmp](b * d)
-    fp_sub(res->a, res->a, t);
+    fp_sub(res->a, res->a, lr1);
 
     // calculate the second variable (real part); ad - bc
     // res[1] <- a * d
@@ -166,10 +184,8 @@ void fp2_mul_unsafe(fp2_t res, const fp2_t x, const fp2_t y) {
     // so no need to set value to 0?
 
     // tmp <- b * c
-    fp_mul(t, x->b, y->a);
-    fp_add(res->b, res->b, t);
-
-    fp_clear(t);
+    fp_mul(lr1, x->b, y->a);
+    fp_add(res->b, res->b, lr1);
 }
 
 void fp2_mul_int(fp2_t r, const fp2_t x, long int y) {
@@ -184,27 +200,18 @@ void fp2_mul_safe(fp2_t x, const fp2_t y) {
     // r = (ac - bd) + (ad + bc)i = e + fi
     // cost: 4m + 2a
 
-    fp_t t0, t1, tc;
-    fp_init(t0);
-    fp_init(t1);
-    fp_init(tc);
-
     // tc is used for storing value c in case
     // it will be overwritten in step: e = ac
     // if fp2_mul is called with r = x = y
-    fp_set(tc, y->a);       // tc = c
-    fp_mul(t0, x->b, y->b); // t0 = bd
-    fp_mul(t1, x->a, y->b); // t1 = ad
+    fp_set(lr1, y->a);           // lr1 = c
+    fp_mul(lr2, x->b, y->b);  // lr2 = bd
+    fp_mul(lr3, x->a, y->b);  // lr3 = ad
 
     fp_mul(x->a, x->a, y->a); // e = ac
-    fp_sub(x->a, x->a, t0);   // e = ac - bd
+    fp_sub(x->a, x->a, lr2);  // e = ac - bd
 
-    fp_mul(x->b, x->b, tc); // f = bc
-    fp_add(x->b, x->b, t1); // f = bc + ad
-
-    fp_clear(t0);
-    fp_clear(t1);
-    fp_clear(tc);
+    fp_mul(x->b, x->b, lr1); // f = bc
+    fp_add(x->b, x->b, lr3); // f = bc + ad
 }
 
 // Calculate inverse of element in Fp^2
@@ -233,27 +240,20 @@ void fp2_inv_safe(fp2_t x) {
     // Calculates the inverse of fp^2 element in a argument-safe manner (i.e.
     // valid when r = x) input: x = a + bi output: r = [a * (a^2 + b^2)^-1] + [b
     // * (a^2 + b^2)^-1]i cost:
+    // 2 registers 
 
     assert(!fp2_is_zero(x) && "Fp^2 inversion does not accept x = 0");
 
-    fp_t t0, t1;
-    fp_init(t0);
-    fp_init(t1);
+    fp_mul(lr1, x->a, x->a); // lr1 = a^2
+    fp_mul(lr2, x->b, x->b); // lr2 = b^2
 
-    fp_mul(t0, x->a, x->a); // t0 = a^2
-    fp_mul(t1, x->b, x->b); // t1 = b^2
+    fp_add(lr1, lr1, lr2); // lr1 = a^2 + b^2
+    fp_inv(lr1, lr1);     // lr1 = (a^2 + b^2)^-1
 
-    fp_add(t0, t0, t1); // t0 = a^2 + b^2
-    fp_inv(t0, t0);     // t0 = (a^2 + b^2)^-1
-
-    fp_mul(x->b, x->b, t0); // x.b = b * (a^2 + b^2)^-1
+    fp_mul(x->b, x->b, lr1); // x.b = b * (a^2 + b^2)^-1
     fp_neg(x->b, x->b);     // x.b = -b * (a^2 + b^2)^-1
 
-    fp_mul(x->a, x->a, t0); // x.a = a * (a^2 + b^2)^-1
-
-    // Clear the allocations
-    fp_clear(t0);
-    fp_clear(t1);
+    fp_mul(x->a, x->a, lr1); // x.a = a * (a^2 + b^2)^-1
 }
 
 /*
