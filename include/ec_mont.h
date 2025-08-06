@@ -5,6 +5,9 @@
 #include "ec_point_xz.h"
 #include "fp2.h"
 
+void ec_layer_ctx_init();
+void ec_layer_ctx_clear();
+
 /*
  * @brief Calculate x-coordinate of the double point x(R) = x([2]P).
  * Function is argument-safe for R = P.
