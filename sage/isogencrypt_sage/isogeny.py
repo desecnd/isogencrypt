@@ -5,7 +5,7 @@ def validate_torsion_basis(P, Q, n: int) -> bool:
     return order_from_multiple(P.weil_pairing(Q, n), n, operation='*') == n
 
 # Select P and Q such that "none" of them lays above the (0, 0) point
-def sample_torsion_basis_smooth(E, r: int, point_above_zero: str = ''):
+def sample_torsion_basis_smooth(E, r: int, point_above_zero: str = '', verify: bool = True):
     """Fast method for finding smooth torsion basis on supersingular elliptic curve
     
     Args:
@@ -13,11 +13,12 @@ def sample_torsion_basis_smooth(E, r: int, point_above_zero: str = ''):
         If value other than any of the 3 values is supplied the checks are ignored
     """
 
-    assert E.is_supersingular()
-
     # Grab characteristic from the base field E is defined over
     p = E.base().characteristic()
-    assert (p + 1)**2 == E.order()
+
+    if verify:
+        assert E.is_supersingular()
+        assert (p + 1)**2 == E.order()
 
     # Point order must divide the E order
     assert (p + 1) % r == 0

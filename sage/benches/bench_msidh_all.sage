@@ -8,7 +8,7 @@ import sys
 import math
 
 # Speed up the calculations
-proof.all("false")
+proof.all(False)
 
 BENCH_TASKS = [
     {
@@ -494,11 +494,11 @@ def run_msidh_exchange(p: int, A: int, B: int, f: int, E, P, Q):
     # This will break the benchmark computations if result is incorrect
     assert jinv_alice == jinv_bob
 
-def prep_environment(bt: MSIDHBenchTask):
+def prep_environment(bt: MSIDHBenchTask, check: bool = False):
     global p, A, B, f, i, E, P, Q
 
     set_random_seed(0)
-    p, A, B, f = MSIDH.gen_pub_params(bt.t)
+    p, A, B, f = MSIDH.gen_pub_params(bt.t, bt.f)
 
     F = GF(p**2, names=('i',), modulus=[1, 0, 1])
     (i,) = F._first_ngens(1)
@@ -506,13 +506,16 @@ def prep_environment(bt: MSIDHBenchTask):
     a = F(bt.a)
     E = EllipticCurve(F, [0, a, 0, 1, 0])
     E.set_order((p+1)**2)
-    assert E.is_supersingular()
+    if check:
+        assert E.is_supersingular()
 
     P = E(F(bt.xP), F(bt.yP))
     Q = E(F(bt.xQ), F(bt.yQ))
     R = E(F(bt.xR), F(bt.yR))
     assert P - Q  == R
-    assert order_from_multiple(P.weil_pairing(Q, p + 1), p + 1, operation='*') == p + 1
+
+    if check:
+        assert order_from_multiple(P.weil_pairing(Q, p + 1), p + 1, operation='*') == p + 1
 
 def run_benchmark():
     global p, A, B, i, E, P, Q
