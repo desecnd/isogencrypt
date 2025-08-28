@@ -68,7 +68,7 @@ def run_benchmark():
                 A_mul = (p + 1)//A
                 B_mul = (p + 1)//B
                 B_basis = (P * B_mul, Q * B_mul)
-                Alice = MSIDH(p, A, B, f, E0=E, P=P * A_mul, Q=Q * A_mul, is_bob=False)
+                Alice = MSIDH(p, A, B, f, E0=E, P=P * A_mul, Q=Q * A_mul, is_bob=False, verify=False)
 
 
                 # Calculate public key information (step 1)
@@ -76,7 +76,7 @@ def run_benchmark():
 
                 # Measure single exchange by one of the parties
                 start = timer()
-                Bob = MSIDH(p, A, B, f, E0=E, P=P * B_mul, Q=Q * B_mul, is_bob=True)
+                Bob = MSIDH(p, A, B, f, E0=E, P=P * B_mul, Q=Q * B_mul, is_bob=True, verify=False)
                 pubkey_bob = Bob.gen_pubkey(*Alice.basis)
                 jinv_bob = Bob.key_exchange(*pubkey_alice)
                 end = timer()
@@ -86,7 +86,7 @@ def run_benchmark():
                 assert jinv_alice == jinv_bob
 
                 time_s = end - start 
-                print(f"[t={bt.t}][{j+1}/{N_REPS}]: Single M-SIDH exchange took {time_s:.3f} seconds to execute", file=sys.stderr)
+                print(f"[t={bt.t}][{j+1}/{N_REPS}]: Single M-SIDH exchange took {time_s:.3f} seconds to execute.", file=sys.stderr)
                 times.append(time_s)
 
             # Make sure that the number of results match
@@ -96,7 +96,6 @@ def run_benchmark():
             times = sorted(times)
             time_sum = sum(times)
             time_avg = time_sum / len(times)
-            time_median = times[N_REPS//2] if N_REPS % 2 else (times[N_REPS//2] + times[(N_REPS + 1)//2])/2
             time_stddev = math.sqrt(sum([ (x - time_avg)**2 for x in times ]) / len(times))
 
             # Flush will send the result immediately to the File / stream

@@ -461,7 +461,7 @@ void run_benchmark(const struct bench_task *bt, struct benchmark_data *data) {
         assert(fp2_equal(alice.j_inv, bob.j_inv));
 
         data->timings[j] = ((double)toc - tic) / CLOCKS_PER_SEC;
-        fprintf(stderr, "[t=%d][%d/%d]: took %.3lf seconds to execute \n",
+        fprintf(stderr, "[t=%d][%d/%d]: Single M-SIDH exchange took %.3lf seconds to execute.\n",
                 bt->t, j + 1, N_REPS, data->timings[j]);
         data->p_bitsize = mpz_sizeinbase(alice.p, 2);
 
