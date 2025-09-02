@@ -3,9 +3,10 @@ import argparse
 from isogencrypt_sage.utils import print_error_and_exit, print_ok, print_info, print_run
 from isogencrypt_sage.isogeny import sample_torsion_basis_smooth
 from isogencrypt_sage.msidh import MSIDH, MSIDHBenchTask, load_msidh_bench_tasks, store_msidh_bench_tasks 
-from sage.all import set_random_seed, GF, EllipticCurve
+from sage.all import set_random_seed, GF, EllipticCurve, proof
 from dataclasses import asdict
 
+proof.all(False)
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(
@@ -59,16 +60,17 @@ if __name__ == "__main__":
 
             a = 6
             p, A, B, f = MSIDH.gen_pub_params(t)
+            print(f"Found {f = }")
 
             F = GF(p**2, names=('i',), modulus=[1, 0, 1])
             (i,) = F._first_ngens(1)
 
             # Montgomery Curve with 'a' as x^2 coefficient
             E = EllipticCurve(F, [0, a, 0, 1, 0])
-            assert E.is_supersingular()
+            # assert E.is_supersingular()
 
             set_random_seed(args.seed)
-            P, Q = sample_torsion_basis_smooth(E, p + 1, 'Q')
+            P, Q = sample_torsion_basis_smooth(E, p + 1, 'Q', verify=False)
             R = P - Q
 
             bt = MSIDHBenchTask(

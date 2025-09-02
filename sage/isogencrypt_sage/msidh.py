@@ -7,7 +7,8 @@ from sage.all import EllipticCurve, Primes, randint, gcd, is_prime, prod, GF
 from isogencrypt_sage.isogeny import sample_quadratic_root_of_unity, sample_torsion_basis_smooth, mont_coef, validate_torsion_basis
 
 class MSIDH:
-    def __init__(self, p: int, A: int, B: int, f: int, E0, P = None, Q = None, secret: int | None = None, mask: int | None = None, is_bob: bool = False, mont_model: bool = False):
+    def __init__(self, p: int, A: int, B: int, f: int, E0, P = None, Q = None, secret: int | None = None, 
+            mask: int | None = None, is_bob: bool = False, mont_model: bool = False, verify: bool = True):
         self.p = p
         self.A = A
         self.B = B
@@ -20,9 +21,11 @@ class MSIDH:
         self.secret = secret
         self.mask = mask
         self.mont_model = mont_model
+        self.verify = verify
 
         # Characteristic of the starting Curve must match
-        assert E0.base().characteristic() == p
+        if self.verify:
+            assert E0.base().characteristic() == p
 
         if is_bob:
             self.name = "Bob"
@@ -34,7 +37,7 @@ class MSIDH:
             # print(f"{self.name}: Sampling Torsion Basis (P, Q)...")
             point_above_zero = 'Q' if mont_model and not is_bob else ''
             self.P, self.Q = sample_torsion_basis_smooth(self.E0, self.A, point_above_zero)
-        else:
+        elif self.verify:
             assert self.P.curve() == self.E0
             assert self.Q.curve() == self.E0
             assert validate_torsion_basis(self.P, self.Q, self.A)
@@ -49,7 +52,7 @@ class MSIDH:
         if self.secret is None:
             # print(f"{self.name}: Generating secret...")
             self.secret = randint(0, self.A)
-        else:
+        elif self.verify:
             assert self.secret in range(self.A)
 
         self.phi_ker = self.P + self.secret * self.Q
@@ -87,7 +90,7 @@ class MSIDH:
         return p, A, B
 
     @classmethod
-    def gen_pub_params(cls, t: int):
+    def gen_pub_params(cls, t: int, f: int | None = None):
         # Number of primes to multiply  ~ t/2 bit classical and ~t/4 quantum security
         P = Primes(proof=False)
         ll = [ P.unrank(2 * i) for i in range((t+1)//2) ]
@@ -100,19 +103,21 @@ class MSIDH:
         AB = A * B
         assert gcd(A, B) == 1
 
-        for f in range(1000):
-            p = f * AB - 1
-            if is_prime(p):
-                break
-        else:
-            raise ValueError("Cannot find cofactor for p")
+        if not f:
+            for f in range(1000):
+                p = f * AB - 1
+                if is_prime(p):
+                    break
+            else:
+                raise ValueError("Cannot find cofactor for p")
 
         return p, A, B, f
 
     def gen_pubkey(self, PB, QB) -> tuple:
-        assert PB.curve() == self.E0
-        assert QB.curve() == self.E0
-        assert validate_torsion_basis(PB, QB, self.B)
+        if self.verify:
+            assert PB.curve() == self.E0
+            assert QB.curve() == self.E0
+            assert validate_torsion_basis(PB, QB, self.B)
 
         # Apply masking
         PB = self.mask * self.phi(PB)
@@ -120,10 +125,11 @@ class MSIDH:
         return (self.E, PB, QB)
 
     def key_exchange(self, EB, BPA, BQA):
-        assert BPA.curve() == EB
-        assert BQA.curve() == EB 
-        # Weil pairing property of the curve
-        assert BPA.weil_pairing(BQA, self.A) == self.P.weil_pairing(self.Q, self.A) ** self.B # type: ignore
+        if self.verify:
+            assert BPA.curve() == EB
+            assert BQA.curve() == EB 
+            # Weil pairing property of the curve
+            assert BPA.weil_pairing(BQA, self.A) == self.P.weil_pairing(self.Q, self.A) ** self.B # type: ignore
 
         self.tau_ker = BPA + BQA * self.secret 
         self.tau_ker.set_order(self.A)
