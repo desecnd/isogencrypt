@@ -2,7 +2,7 @@
 
 C library for isogeny-based cryptographic research. 
 
-**Isogencrypt** is developed as a part of the master's thesis: _"Efficient Implementation of the Post-quantum Isogeny-based Cryptography"_ at Adam Mickiewicz University in Poznan. It is also a final project for the "R&D Project" course. Large part of the research was conducted under _Study@Research_ grant from the "IDUB" program.
+**Isogencrypt** is developed as a part of the master's thesis: _"Post-quantum cryptography protocols based on isogenies"_ at Adam Mickiewicz University in Poznan. Large part of the research was conducted under _Study@Research_ grant from the "IDUB" program.
 
 
 > [!WARNING]  
@@ -164,13 +164,13 @@ $ sage ./sage/scripts/conv_msidh_bt.sage ./assets/bench_tasks/bt_msidh.json
 
 Isogencrypt is designed as a **research** library, with its main objective being more efficient than SageMath in terms of writing proof of concepts and experimenting with different parameters.   
 
-This approach requires usage of flexible GMP-like implementation for the field operations and takes away the possibility of using compile-time optimizations. For this reason, it is always possible to write slightly more optimized code by "freezing" parameters coefficients and substituting bottom layer of field arithmetic with static constant-time operations - which may be added in the future.
+This approach requires usage of flexible GMP-like implementation for the field operations and takes away the possibility of using compile-time optimizations. Hence, it is always possible to write slightly more optimized code by "freezing" parameters coefficients and substituting bottom layer of field arithmetic with static constant-time operations - which may be added in the future.
 
 In terms of the efficiency, **Isogencrypt** uses _Montgomery X-only Arithmetic_, which is based on operating only on `x` coordinate of points on Elliptic Curves (discarding the `y` coordinate to speed up the calculations without loosing important information).
 
 Additionally it uses **projective coordinates** to avoid finite field inversions - both for points coordinates and curve coefficients. Minor optimizations regarding form of curve constants (`(A24p : C24) = (a + 2)/4`) are also present.
 
-Most of the used algorithms can be found in the publications from isogeny-based cryptography field, for example:
+Most of the used algorithms can be found in the publications from isogeny-based cryptography field, i.a.:
 
 - https://eprint.iacr.org/2011/506.pdf
 - https://eprint.iacr.org/2017/1198.pdf
