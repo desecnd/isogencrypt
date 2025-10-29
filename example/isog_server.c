@@ -15,15 +15,7 @@
 #include <openssl/sha.h>
 
 #include "sock_msidh.h"
-
-#define BUFFER_SIZE 1024
-#define IV_SIZE 32
-
-const char *PREFIX_INFO = "\x1b[34m[.]:\x1b[0m";
-const char *PREFIX_RUN = "\x1b[33m[%]:\x1b[0m";
-
-// Pretty-print for cmdline context
-#define COLCTX(str) "\x1b[36m" str "\x1b[0m"
+#include "isog_util.h"
 
 int main(int argc, char *argv[]) {
     if (argc != 3) {
@@ -101,13 +93,7 @@ int main(int argc, char *argv[]) {
 
     // Derive the shared key using SHA256
     unsigned char shared_key[SHA256_DIGEST_LENGTH];
-    SHA256((unsigned char *)shared_secret, shared_secret_len, shared_key);
-
-    // Free allocated memory for the shared secret
-    free(shared_secret);
-    shared_secret = NULL;
-    shared_secret_len = 0;
-    printf("%s Derived shared key using SHA256.\n", PREFIX_INFO);
+    derive_key(shared_key, &shared_secret, &shared_secret_len); 
 
     printf(COLCTX("--- Begin Encrypted Channel ---\n"));
 
