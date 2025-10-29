@@ -1,8 +1,6 @@
 #pragma once
 
 #include <arpa/inet.h>
-#include <openssl/evp.h>
-#include <openssl/sha.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -253,8 +251,12 @@ int send_msidh_data(int fd, struct msidh_data *md) {
     return 0;
 }
 
+/* 
+ * @brief Perform the M-SIDH handshake, store the decimal representation of the shared secret in `shared_secret` variable. Programmer is responsible for freeing the allocated memory.
+*/
 int msidh_handshake(int fd, int is_server,
-                    unsigned char shared_key[SHA256_DIGEST_LENGTH],
+                    char **shared_secret, 
+                    size_t *shared_secret_len,
                     enum MSIDH_LEVEL level) {
     if ((unsigned)level >= MSIDH_NLEVELS) {
         fprintf(stderr, "Invalid MSIDH level: %u, maximum allowed is: %u\n",
@@ -309,11 +311,9 @@ int msidh_handshake(int fd, int is_server,
     msidh_key_exchange(&msidh, &pk_other);
 
     // Convert obtained j-invariant into SHA256 digest
-    size_t buff_size = fp2_write_size(msidh.j_inv);
-    char *buffer = malloc(buff_size);
-    fp2_write(msidh.j_inv, buffer);
-    SHA256((unsigned char *)buffer, buff_size, shared_key);
-    free(buffer);
+    *shared_secret_len = fp2_write_size(msidh.j_inv);
+    *shared_secret = (char*) malloc(*shared_secret_len);
+    fp2_write(msidh.j_inv, *shared_secret);
 
 exit:
     // Clear all and return
