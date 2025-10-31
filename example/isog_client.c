@@ -14,16 +14,8 @@
 #include <openssl/rand.h>
 #include <openssl/sha.h>
 
+#include "isog_util.h"
 #include "sock_msidh.h"
-
-#define IV_SIZE 32
-#define BUFFER_SIZE 1024
-
-const char *PREFIX_INFO = "\x1b[34m[.]:\x1b[0m";
-const char *PREFIX_RUN = "\x1b[33m[%]:\x1b[0m";
-
-// Pretty-print for cmdline context
-#define COLCTX(str) "\x1b[36m" str "\x1b[0m"
 
 int main(int argc, char *argv[]) {
     if (argc != 3) {
@@ -76,21 +68,30 @@ int main(int argc, char *argv[]) {
     printf("%s Sent IV to server.\n", PREFIX_INFO);
     printf("%s Isogeny Handshake...\n", PREFIX_RUN);
 
-    // Run MSIDH handshake with specified level
-    unsigned char shared_key[SHA256_DIGEST_LENGTH];
-    int status = msidh_handshake(sock_fd, 0, shared_key, MSIDH_T150);
+    // Run M-SIDH handshake with specified level
+    // Shared secret can have variable length (coefficient)
+    char *shared_secret = NULL;
+    size_t shared_secret_len = 0;
+    int status = msidh_handshake(sock_fd, 0, &shared_secret, &shared_secret_len, MSIDH_T150);
     if (status < 0) {
         fprintf(stderr, "MSIDH handshake returned with errors.\n");
         close(sock_fd);
         exit(1);
     }
-
     printf("%s Handshake Completed.\n", PREFIX_INFO);
+
+    // Derive the shared key using SHA256
+    unsigned char encryption_key[SHA256_DIGEST_LENGTH];
+    if (derive_key(encryption_key, &shared_secret, &shared_secret_len) < 0) {
+        perror("derive key");
+        exit(1);
+    }
+
     printf(COLCTX("--- Begin Encrypted Channel ---\n"));
 
     // Initialize the AES-CTR encryption context
     EVP_CIPHER_CTX *enc_ctx = EVP_CIPHER_CTX_new();
-    EVP_EncryptInit_ex(enc_ctx, EVP_aes_256_ctr(), NULL, shared_key, iv);
+    EVP_EncryptInit_ex(enc_ctx, EVP_aes_256_ctr(), NULL, encryption_key, iv);
 
     // User input
     char input[BUFFER_SIZE];
