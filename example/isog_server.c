@@ -92,19 +92,23 @@ int main(int argc, char *argv[]) {
     printf("%s Handshake Completed.\n", PREFIX_INFO);
 
     // Derive the shared key using SHA256
-    unsigned char shared_key[SHA256_DIGEST_LENGTH];
-    derive_key(shared_key, &shared_secret, &shared_secret_len); 
+    unsigned char encryption_key[SHA256_DIGEST_LENGTH];
+    if (derive_key(encryption_key, &shared_secret, &shared_secret_len) < 0) {
+        perror("derive key");
+        exit(1);
+    }
 
     printf(COLCTX("--- Begin Encrypted Channel ---\n"));
 
     // Initialize the AES-CTR decryption context
     EVP_CIPHER_CTX *dec_ctx = EVP_CIPHER_CTX_new();
-    EVP_DecryptInit_ex(dec_ctx, EVP_aes_256_ctr(), NULL, shared_key, iv);
+    EVP_DecryptInit_ex(dec_ctx, EVP_aes_256_ctr(), NULL, encryption_key, iv);
 
     // Encrypted input comming from client
     char enc_input[BUFFER_SIZE];
     // Decrypted client plaintext
     char buffer[BUFFER_SIZE];
+
 
     while (1) {
         printf(COLCTX("B> "));
