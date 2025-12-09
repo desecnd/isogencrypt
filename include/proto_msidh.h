@@ -98,7 +98,7 @@ int msidh_calc_pub_params(mpz_t p, pprod_t A, pprod_t B, int t, int f);
  */
 void _msidh_gen_pubkey_alice(fp2_t A24p_alice, fp2_t C24_alice,
                              struct tors_basis *PQ_alice,
-                             struct tors_basis *PQ_bob, const fp2_t A24p_base,
+                             struct tors_basis *PQ_bob, const pprod_t A_deg, const fp2_t A24p_base,
                              const fp2_t C24_base, const mpz_t secret,
                              const mpz_t mask);
 // void msidh_gen_pubkey(fp2_t A24p_alice, fp2_t C24_alice, struct tors_basis*
@@ -111,4 +111,4 @@ void _msidh_gen_pubkey_alice(fp2_t A24p_alice, fp2_t C24_alice,
  */
 void _msidh_key_exchange_alice(fp2_t j_inv, fp2_t A24p_final, fp2_t C24_final,
                                const fp2_t A24p_bob, const fp2_t C24_bob,
-                               struct tors_basis *BPQA, const mpz_t A_sec);
+                               struct tors_basis *BPQA, const pprod_t A, const mpz_t A_sec);

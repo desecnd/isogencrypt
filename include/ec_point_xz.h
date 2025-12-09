@@ -2,6 +2,10 @@
 
 #include "fp2.h"
 
+struct elliptic_curve {
+    fp2_t A, C;
+};
+
 /*
  * @brief Transform (A : C) = (a : 1) into (A' : C') = (a + 2 : 4) suitable for
  * xDBL. Function is argument safe for A24p = A and C24 = C.

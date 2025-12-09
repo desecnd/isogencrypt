@@ -219,14 +219,11 @@ void msidh_key_exchange(struct msidh_state *msidh,
     point_set_fp2_x(msidh->PQ_self.P, pk_other->xP);
     point_set_fp2_x(msidh->PQ_self.Q, pk_other->xQ);
     point_set_fp2_x(msidh->PQ_self.PQd, pk_other->xR);
-    // Order should not change from previous iteration
 
-    if (msidh->is_bob) {
-        assert(0 == mpz_cmp(msidh->PQ_self.n->value, msidh->B->value));
-        // pprod_set(msidh->PQ_self.n, msidh->B);
-    } else {
-        assert(0 == mpz_cmp(msidh->PQ_self.n->value, msidh->A->value));
-    }
+    pprod_t *deg_self = msidh->is_bob ? &msidh->B : &msidh->A;
+
+    // Order should not change from previous iteration
+    assert(0 == mpz_cmp(msidh->PQ_self.n, (*deg_self)->value));
 
     // Reconstruct the Elliptic Curve given by pk_other
     fp2_set(A24p_other, pk_other->a);
@@ -235,7 +232,7 @@ void msidh_key_exchange(struct msidh_state *msidh,
 
     // Run the key exchange
     _msidh_key_exchange_alice(msidh->j_inv, A24p_final, C24_final, A24p_other,
-                              C24_other, &msidh->PQ_self, msidh->secret);
+                              C24_other, &msidh->PQ_self, *deg_self, msidh->secret);
 
     fp2_clear(&A24p_final);
     fp2_clear(&C24_final);
@@ -315,28 +312,26 @@ void msidh_state_prepare(struct msidh_state *msidh,
     point_set_fp2_x(PQ.P, params->xP);
     point_set_fp2_x(PQ.Q, params->xQ);
     point_set_fp2_x(PQ.PQd, params->xR);
-    mpz_add_ui(PQ.n->value, msidh->p, 1);
+    mpz_add_ui(PQ.n, msidh->p, 1);
 
-    if (is_bob) {
-        tors_basis_get_subgroup(&msidh->PQ_self, msidh->B, &PQ,
-                                msidh->A24p_start, msidh->C24_start);
-        tors_basis_get_subgroup(&msidh->PQ_pubkey, msidh->A, &PQ,
-                                msidh->A24p_start, msidh->C24_start);
-        // Generate random secret s in range [0, msidh->B)
-        mpz_urandomm(msidh->secret, msidh->randstate, msidh->B->value);
-        sample_quadratic_root_of_unity(mask, msidh->A);
-    } else {
-        tors_basis_get_subgroup(&msidh->PQ_self, msidh->A, &PQ,
-                                msidh->A24p_start, msidh->C24_start);
-        tors_basis_get_subgroup(&msidh->PQ_pubkey, msidh->B, &PQ,
-                                msidh->A24p_start, msidh->C24_start);
-        // Generate random secret s in range [0, msidh->B)
-        mpz_urandomm(msidh->secret, msidh->randstate, msidh->A->value);
-        sample_quadratic_root_of_unity(mask, msidh->B);
-    }
+    pprod_t *deg_self  = is_bob ? &msidh->B : &msidh->A;
+    pprod_t *deg_other = is_bob ? &msidh->A : &msidh->B;
 
+    // Generate my torsion basis
+    tors_basis_get_subgroup(&msidh->PQ_self, (*deg_self)->value, &PQ,
+                            msidh->A24p_start, msidh->C24_start);
+
+    // Generate other torsion basis
+    tors_basis_get_subgroup(&msidh->PQ_pubkey, (*deg_other)->value, &PQ,
+                            msidh->A24p_start, msidh->C24_start);
+
+    // Generate random secret s in range [0, B)
+    mpz_urandomm(msidh->secret, msidh->randstate, (*deg_other)->value);
+    sample_quadratic_root_of_unity(mask, *deg_other);
+
+    // Run the pubkey generation
     _msidh_gen_pubkey_alice(msidh->A24p_pubkey, msidh->C24_pubkey,
-                            &msidh->PQ_self, &msidh->PQ_pubkey,
+                            &msidh->PQ_self, &msidh->PQ_pubkey, *deg_self, 
                             msidh->A24p_start, msidh->C24_start, msidh->secret,
                             mask);
 
@@ -356,7 +351,7 @@ void msidh_state_prepare(struct msidh_state *msidh,
  */
 void _msidh_gen_pubkey_alice(fp2_t A24p_alice, fp2_t C24_alice,
                              struct tors_basis *PQ_alice,
-                             struct tors_basis *PQ_bob, const fp2_t A24p_base,
+                             struct tors_basis *PQ_bob, const pprod_t A_deg, const fp2_t A24p_base,
                              const fp2_t C24_base, const mpz_t secret,
                              const mpz_t mask) {
     // P, Q is a torsion basis for deg
@@ -371,7 +366,7 @@ void _msidh_gen_pubkey_alice(fp2_t A24p_alice, fp2_t C24_alice,
     point_t push_points[] = {PQ_bob->P, PQ_bob->Q, PQ_bob->PQd, NULL, NULL};
 
     ISOG_chain(A24p_alice, C24_alice, A24p_base, C24_base, PQ_alice->P,
-               PQ_alice->n, push_points);
+               A_deg, push_points);
 
     // Mask the Bob torsion basis using quadratic root - alpha.
     // mpz_t alpha;
@@ -393,7 +388,7 @@ void _msidh_gen_pubkey_alice(fp2_t A24p_alice, fp2_t C24_alice,
 // TODO: Note that BPQA get destroyed
 void _msidh_key_exchange_alice(fp2_t j_inv, fp2_t A24p_final, fp2_t C24_final,
                                const fp2_t A24p_bob, const fp2_t C24_bob,
-                               struct tors_basis *BPQA, const mpz_t A_sec) {
+                               struct tors_basis *BPQA, const pprod_t A_deg, const mpz_t A_sec) {
 
     // 1. Calculate the kernel of the Alice isogeny
     // PA = PA + [s]QA
@@ -401,7 +396,7 @@ void _msidh_key_exchange_alice(fp2_t j_inv, fp2_t A24p_final, fp2_t C24_final,
 
     point_t push_points[] = {NULL, NULL};
 
-    ISOG_chain(A24p_final, C24_final, A24p_bob, C24_bob, BPQA->P, BPQA->n,
+    ISOG_chain(A24p_final, C24_final, A24p_bob, C24_bob, BPQA->P, A_deg,
                push_points);
 
     fp2_t A, C;

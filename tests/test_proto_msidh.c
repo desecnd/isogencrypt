@@ -292,17 +292,16 @@ void test_msidh_internals() {
     point_printx(PQd, "xPQd");
 
     struct tors_basis PQ = {.P = P, .Q = Q, .PQd = PQd};
-    pprod_init(&PQ.n);
+    mpz_init(PQ.n);
 
     // n = p + 1
-    // TODO: WARNING! not a valid pprod type! We just use it
-    mpz_set(PQ.n->value, p);
-    mpz_add_ui(PQ.n->value, PQ.n->value, 1);
+    mpz_add_ui(PQ.n, p, 1);
 
     // Constuct Alice Basis (PA, QA) = [n//A](P, Q).
     struct tors_basis PQA = {.P = PA, .Q = QA, .PQd = PQAd};
-    pprod_init(&PQA.n);
-    tors_basis_get_subgroup(&PQA, A_deg, &PQ, A24p, C24);
+    mpz_init(PQA.n);
+
+    tors_basis_get_subgroup(&PQA, A_deg->value, &PQ, A24p, C24);
 
     point_printx_normalized(PA, "xPA");
     point_printx_normalized(QA, "xQA");
@@ -310,8 +309,9 @@ void test_msidh_internals() {
 
     // Constuct Bob Basis (PB, QB) = [n//B](P, Q)
     struct tors_basis PQB = {.P = PB, .Q = QB, .PQd = PQBd};
-    pprod_init(&PQB.n);
-    tors_basis_get_subgroup(&PQB, B_deg, &PQ, A24p, C24);
+    mpz_init(PQB.n);
+
+    tors_basis_get_subgroup(&PQB, B_deg->value, &PQ, A24p, C24);
 
     point_printx_normalized(PB, "xPB");
     point_printx_normalized(QB, "xQB");
@@ -346,7 +346,7 @@ void test_msidh_internals() {
     gmp_printf("b_sec: %Zd\n", b_sec);
     gmp_printf("b_mask: %Zd\n", b_mask);
 
-    _msidh_gen_pubkey_alice(A24p_alice, C24_alice, &PQA, &PQB, A24p, C24, a_sec,
+    _msidh_gen_pubkey_alice(A24p_alice, C24_alice, &PQA, &PQB, A_deg, A24p, C24, a_sec,
                             a_mask);
 
     // aφ(E)(24p): 271*i + 111
@@ -367,7 +367,7 @@ void test_msidh_internals() {
     CHECK(!mpz_cmp_ui(PQBd->X->a, 90) && !mpz_cmp_ui(PQBd->X->b, 239));
 
     _msidh_key_exchange_alice(j_inv, A24p_final, C24_final, A24p_alice,
-                              C24_alice, &PQB, b_sec);
+                              C24_alice, &PQB, B_deg, b_sec);
     fp2_div_unsafe(aE_final, A24p_final, C24_final);
 
     // aτ(φ(E))(24p): 356*i + 219
@@ -389,10 +389,10 @@ void test_msidh_internals() {
     gmp_printf("b_mask: %Zd\n", b_mask);
 
     // Recalculate the PQA and PQB bases
-    tors_basis_get_subgroup(&PQA, A_deg, &PQ, A24p, C24);
-    tors_basis_get_subgroup(&PQB, B_deg, &PQ, A24p, C24);
+    tors_basis_get_subgroup(&PQA, A_deg->value, &PQ, A24p, C24);
+    tors_basis_get_subgroup(&PQB, B_deg->value, &PQ, A24p, C24);
 
-    _msidh_gen_pubkey_alice(A24p_alice, C24_alice, &PQA, &PQB, A24p, C24, a_sec,
+    _msidh_gen_pubkey_alice(A24p_alice, C24_alice, &PQA, &PQB, A_deg, A24p, C24, a_sec,
                             a_mask);
 
     // aφ(E)(24p): 408*i + 332
@@ -413,7 +413,7 @@ void test_msidh_internals() {
     CHECK(!mpz_cmp_ui(PQBd->X->a, 181) && !mpz_cmp_ui(PQBd->X->b, 127));
 
     _msidh_key_exchange_alice(j_inv, A24p_final, C24_final, A24p_alice,
-                              C24_alice, &PQB, b_sec);
+                              C24_alice, &PQB, B_deg, b_sec);
     fp2_div_unsafe(aE_final, A24p_final, C24_final);
 
     // aτ(φ(E))(24p): 204*i + 395
@@ -435,10 +435,10 @@ void test_msidh_internals() {
     gmp_printf("b_mask: %Zd\n", b_mask);
 
     // Recalculate the PQA and PQB bases
-    tors_basis_get_subgroup(&PQA, A_deg, &PQ, A24p, C24);
-    tors_basis_get_subgroup(&PQB, B_deg, &PQ, A24p, C24);
+    tors_basis_get_subgroup(&PQA, A_deg->value, &PQ, A24p, C24);
+    tors_basis_get_subgroup(&PQB, B_deg->value, &PQ, A24p, C24);
 
-    _msidh_gen_pubkey_alice(A24p_alice, C24_alice, &PQA, &PQB, A24p, C24, a_sec,
+    _msidh_gen_pubkey_alice(A24p_alice, C24_alice, &PQA, &PQB, A_deg, A24p, C24, a_sec,
                             a_mask);
 
     // aφ(E)(24p): 109*i + 386
@@ -459,7 +459,7 @@ void test_msidh_internals() {
     CHECK(!mpz_cmp_ui(PQBd->X->a, 66) && !mpz_cmp_ui(PQBd->X->b, 323));
 
     _msidh_key_exchange_alice(j_inv, A24p_final, C24_final, A24p_alice,
-                              C24_alice, &PQB, b_sec);
+                              C24_alice, &PQB, B_deg, b_sec);
     fp2_div_unsafe(aE_final, A24p_final, C24_final);
 
     // aτ(φ(E))(24p): 244*i + 279
@@ -481,10 +481,10 @@ void test_msidh_internals() {
     gmp_printf("b_mask: %Zd\n", b_mask);
 
     // Recalculate the PQA and PQB bases
-    tors_basis_get_subgroup(&PQA, A_deg, &PQ, A24p, C24);
-    tors_basis_get_subgroup(&PQB, B_deg, &PQ, A24p, C24);
+    tors_basis_get_subgroup(&PQA, A_deg->value, &PQ, A24p, C24);
+    tors_basis_get_subgroup(&PQB, B_deg->value, &PQ, A24p, C24);
 
-    _msidh_gen_pubkey_alice(A24p_alice, C24_alice, &PQA, &PQB, A24p, C24, a_sec,
+    _msidh_gen_pubkey_alice(A24p_alice, C24_alice, &PQA, &PQB, A_deg, A24p, C24, a_sec,
                             a_mask);
 
     // aφ(E)(24p): 16*i + 353
@@ -505,7 +505,7 @@ void test_msidh_internals() {
     CHECK(!mpz_cmp_ui(PQBd->X->a, 244) && !mpz_cmp_ui(PQBd->X->b, 330));
 
     _msidh_key_exchange_alice(j_inv, A24p_final, C24_final, A24p_alice,
-                              C24_alice, &PQB, b_sec);
+                              C24_alice, &PQB, B_deg, b_sec);
     fp2_div_unsafe(aE_final, A24p_final, C24_final);
 
     // aτ(φ(E))(24p): 302
@@ -531,9 +531,9 @@ void test_msidh_internals() {
     mpz_clear(a_mask);
     mpz_clear(b_mask);
 
-    pprod_clear(&PQ.n);
-    pprod_clear(&PQA.n);
-    pprod_clear(&PQB.n);
+    mpz_clear(PQ.n);
+    mpz_clear(PQA.n);
+    mpz_clear(PQB.n);
 }
 
 void test_msidh_non_deterministic() {
@@ -652,13 +652,13 @@ void test_msidh_internals_large() {
     // Setup Torsion basis
     struct tors_basis PQ = {.P = P, .Q = Q, .PQd = PQd};
 
-    pprod_init(&PQ.n);
-    mpz_add_ui(PQ.n->value, p, 1);
+    mpz_init(PQ.n);
+    mpz_add_ui(PQ.n, p, 1);
 
     // Constuct Alice Basis (PA, QA) = [n//A](P, Q).
     struct tors_basis PQA = {.P = PA, .Q = QA, .PQd = PQAd};
-    pprod_init(&PQA.n);
-    tors_basis_get_subgroup(&PQA, A_deg, &PQ, A24p, C24);
+    mpz_init(PQA.n);
+    tors_basis_get_subgroup(&PQA, A_deg->value, &PQ, A24p, C24);
 
     point_printx_normalized(PA, "xPA");
     point_printx_normalized(QA, "xQA");
@@ -676,8 +676,8 @@ void test_msidh_internals_large() {
 
     // Constuct Bob Basis (PB, QB) = [n//B](P, Q)
     struct tors_basis PQB = {.P = PB, .Q = QB, .PQd = PQBd};
-    pprod_init(&PQB.n);
-    tors_basis_get_subgroup(&PQB, B_deg, &PQ, A24p, C24);
+    mpz_init(PQB.n);
+    tors_basis_get_subgroup(&PQB, B_deg->value, &PQ, A24p, C24);
 
     point_printx_normalized(PB, "xPB");
     point_printx_normalized(QB, "xQB");
@@ -722,7 +722,7 @@ void test_msidh_internals_large() {
     fp_print(b_sec, "B_sec");
     fp_print(b_mask, "B_mask");
 
-    _msidh_gen_pubkey_alice(A24p_alice, C24_alice, &PQA, &PQB, A24p, C24, a_sec,
+    _msidh_gen_pubkey_alice(A24p_alice, C24_alice, &PQA, &PQB, A_deg, A24p, C24, a_sec,
                             a_mask);
 
     // aφ(E)(24p)
@@ -751,7 +751,7 @@ void test_msidh_internals_large() {
                  "47299240837639061178684012620848485232866182686"));
 
     _msidh_key_exchange_alice(j_inv, A24p_final, C24_final, A24p_alice,
-                              C24_alice, &PQB, b_sec);
+                              C24_alice, &PQB, B_deg, b_sec);
     fp2_div_unsafe(aE_final, A24p_final, C24_final);
 
     // aτ(φ(E))(24p)
@@ -768,8 +768,8 @@ void test_msidh_internals_large() {
 
     // Testcase 2 -----
     // Reset the second testscase
-    tors_basis_get_subgroup(&PQA, A_deg, &PQ, A24p, C24);
-    tors_basis_get_subgroup(&PQB, B_deg, &PQ, A24p, C24);
+    tors_basis_get_subgroup(&PQA, A_deg->value, &PQ, A24p, C24);
+    tors_basis_get_subgroup(&PQB, B_deg->value, &PQ, A24p, C24);
 
     mpz_set_str(a_sec, "102959793904566459067664", 10);
     mpz_set_str(a_mask, "234614427428290727103469", 10);
@@ -780,7 +780,7 @@ void test_msidh_internals_large() {
     fp_print(b_sec, "B_sec");
     fp_print(b_mask, "B_mask");
 
-    _msidh_gen_pubkey_alice(A24p_alice, C24_alice, &PQA, &PQB, A24p, C24, a_sec,
+    _msidh_gen_pubkey_alice(A24p_alice, C24_alice, &PQA, &PQB, A_deg, A24p, C24, a_sec,
                             a_mask);
 
     // aφ(E)(24p)
@@ -809,7 +809,7 @@ void test_msidh_internals_large() {
                  "11702887079976981107716609038554493137279265981"));
 
     _msidh_key_exchange_alice(j_inv, A24p_final, C24_final, A24p_alice,
-                              C24_alice, &PQB, b_sec);
+                              C24_alice, &PQB, B_deg, b_sec);
     fp2_div_unsafe(aE_final, A24p_final, C24_final);
 
     // aτ(φ(E))(24p)
@@ -839,9 +839,9 @@ void test_msidh_internals_large() {
     mpz_clear(a_mask);
     mpz_clear(b_mask);
 
-    pprod_clear(&PQ.n);
-    pprod_clear(&PQA.n);
-    pprod_clear(&PQB.n);
+    mpz_clear(PQ.n);
+    mpz_clear(PQA.n);
+    mpz_clear(PQB.n);
 }
 
 int main() {
