@@ -36,3 +36,9 @@ xK: 34*i + 99
 xP: 8*i + 137
 aφ(K): 49*i
 xφ(P): 114*i + 68
+---: test_ISOG_chain_trivial()
+XK: 0
+ZK: 0
+xP: 8*i + 137
+aφ(K): 6
+xφ(P): 8*i + 137

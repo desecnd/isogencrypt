@@ -3,6 +3,7 @@
 #include <string.h>
 
 #include "ec_mont.h"
+#include "fp2.h"
 #include "isog_mont.h"
 
 void criss_cross(fp2_t lsum, fp2_t rdiff, const fp2_t x, const fp2_t y,
@@ -338,6 +339,18 @@ void ISOG2e(fp2_t A24p, fp2_t C24, const fp2_t A24p_init, const fp2_t C24_init,
 void ISOG_chain(fp2_t A24p, fp2_t C24, const fp2_t A24p_init,
                 const fp2_t C24_init, const point_t K, pprod_t isog_degree,
                 point_t *push_points) {
+    
+    // We received a trivial point of order one: K = E(0)
+    if (fp2_is_zero(K->Z) || isog_degree->n_primes == 0) {
+        // In both cases 
+        assert(fp2_is_zero(K->Z));
+        assert(isog_degree->n_primes == 0);
+
+        // Copy to destination, push_points remain the same 
+        fp2_set(A24p, A24p_init);
+        fp2_set(C24, C24_init);
+        return;
+    }
 
     fp2_t A24p_next, C24_next;
     fp2_init(&A24p_next);

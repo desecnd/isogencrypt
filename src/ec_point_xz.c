@@ -90,7 +90,9 @@ int point_equal_str_x(point_t P, const char *str) {
     return equal;
 }
 
-int point_is_normalized(point_t P) { return fp2_equal_uint(P->Z, 1); }
+inline int point_is_normalized(point_t P) { 
+    return fp2_equal_uint(P->Z, 1); 
+}
 
 // Normalize: P = (X : Z) -> (X' : 1) with X' = X/Z
 void point_normalize_coords(point_t P) {

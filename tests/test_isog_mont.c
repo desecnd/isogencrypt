@@ -1,6 +1,7 @@
 #include <gmp.h>
 #include <stdio.h>
 
+#include "ec_point_xz.h"
 #include "fp.h"
 #include "fp2.h"
 #include "isog_mont.h"
@@ -400,6 +401,48 @@ void test_ISOG_chain() {
     pprod_clear(&deg);
 }
 
+/*
+ @brief Test trivial degree-one isogeny, with K = E(0)
+*/
+void test_ISOG_chain_trivial() {
+    // K = (0 : 1 : 0) = E(0)
+    fp2_set_uint(K->X, 0);
+    fp2_set_uint(K->Z, 0);
+    fp2_print(K->X, "XK");
+    fp2_print(K->Z, "ZK");
+
+    // deg = 1, n_primes = 0, primes = NULL
+    pprod_t deg;
+    pprod_init(&deg);
+
+    fp2_t E_a, E_A, E_C;
+    fp2_init(&E_a); fp2_init(&E_A); fp2_init(&E_C);
+
+    point_set_str_x(P, "8*i + 137");
+    point_printx(P, "xP");
+
+    point_t push_points[3] = {P, NULL, NULL};
+
+    // K is a trivial point, should not modifiy curve coeffs nor push_points
+    ISOG_chain(E_A, E_C, A24p, C24, K, deg, push_points);
+
+    CHECK(fp2_equal(E_A, A24p));
+    CHECK(fp2_equal(E_C, C24));
+
+    // Convert from xDBL to normalized form
+    A_from_A24p(E_A, E_C, E_A, E_C);
+    fp2_div_unsafe(E_a, E_A, E_C);
+
+    fp2_print(E_a, "aφ(K)");
+    CHECK(fp2_equal_uint(E_a, 6));
+
+    point_printx_normalized(P, "xφ(P)");
+    CHECK(point_equal_str_x(P, "8*i + 137"));
+
+    pprod_clear(&deg);
+    fp2_clear(&E_a); fp2_clear(&E_A); fp2_clear(&E_C);
+}
+
 int main() {
     init_test_variables();
 
@@ -418,6 +461,7 @@ int main() {
     TEST_RUN(test_ISOG_chain_odd());
     TEST_RUN(test_xISOG2_and_aISOG2());
     TEST_RUN(test_ISOG_chain());
+    TEST_RUN(test_ISOG_chain_trivial());
 
     clear_test_variables();
 
