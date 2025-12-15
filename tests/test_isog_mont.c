@@ -384,6 +384,10 @@ void test_ISOG_chain() {
 
     // Return in 24p form
     ISOG_chain(A24p_, C24_, A24p, C24, K, deg, push_points);
+
+    // Make sure that push_points is cleared in the end
+    CHECK(push_points[1] == NULL && push_points[2] == NULL);
+
     A_from_A24p(A_, C_, A24p_, C24_);
     fp2_div_unsafe(a_, A_, C_);
 
@@ -425,6 +429,9 @@ void test_ISOG_chain_trivial() {
 
     // K is a trivial point, should not modifiy curve coeffs nor push_points
     ISOG_chain(E_A, E_C, A24p, C24, K, deg, push_points);
+
+    // Make sure that push_points is cleared in the end
+    CHECK(push_points[1] == NULL && push_points[2] == NULL);
 
     CHECK(fp2_equal(E_A, A24p));
     CHECK(fp2_equal(E_C, C24));
