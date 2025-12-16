@@ -1,11 +1,31 @@
 #/usr/bin/sage
-from sage.all import EllipticCurve, factor, order_from_multiple, Primes, prod, gcd, is_prime, GF,  randint, set_random_seed
+from sage.all import EllipticCurve, Primes, prod, gcd, is_prime, GF,  randint, set_random_seed
 from isogencrypt_sage.isogeny import sample_torsion_basis_smooth, validate_torsion_basis, mont_isog
 from sage.schemes.elliptic_curves.ell_point import EllipticCurvePoint_finite_field as Point 
 
 class TerSIDH:
 
     MAX_DIGIT = 2
+
+    @staticmethod
+    def ter2int(digits: list[int]) -> int:
+        """Convert ternary digits to integer type
+
+        Raises: 
+            ValueError: Invalid digits were found
+        """
+        return int(''.join(str(d) for d in digits), base=3)
+
+    @staticmethod
+    def int2ter(s: int, t: int) -> list[int]:
+        digits = []
+        for i in range(t):
+            digits.append(s % 3)
+            s //= 3
+        if s > 0:
+            raise ValueError(f"Cannot hold given value in {t = } ternary digits.")
+        return digits[::-1]
+
 
     @classmethod
     def gen_pub_params(cls, t: int) -> tuple[int, int, int, int, list[int], list[int]]:
@@ -41,10 +61,21 @@ class TerSIDH:
         return p, A_deg, B_deg, f, A_primes, B_primes
 
     @classmethod
-    def generate_kernel_coeffs(cls, secret: list[int], primes: list[int]) -> tuple[int, int, int, int]:
+    def generate_kernel_coeffs(cls, secret: int | list[int], primes: list[int]) -> tuple[int, int, int, int]:
+        if isinstance(secret, int):
+            secret = cls.int2ter(secret, len(primes))
+
+        if not isinstance(secret, list):
+            raise ValueError(f"Incorrect secret type {type(secret)}: list or int allowed.")
+
+        if len(secret) != len(primes):
+            raise ValueError(f"Length of the secret ({len(secret)} does not match size of prime list ({len(primes)})")
+
         cP, nP = 1, 1
         cQ, nQ = 1, 1
-        for digit, p in zip(secret, primes):
+
+        # interpret secret as 
+        for digit, p in zip(secret[::-1], primes):
             if digit == 0:
                 nP *= p
                 cQ *= p
@@ -56,16 +87,18 @@ class TerSIDH:
                 cP *= p
                 cQ *= p
             else:
-                raise ValueError("Wrong Digit Value")
+                raise ValueError(f"Wrong Digit Value: {digit}.")
 
         return cP, nP, cQ, nQ
 
-    @property
-    def is_alice(self) -> bool:
-        return not self.is_bob
 
-    def __init__(self, t: int, a, P = None, Q = None, secret: list[int] | str | None = None, mask: int | None = None, is_bob: bool = False, precalc_public_key: bool = False):
-        """Initialize TerSIDH interface. All variables are defines from Alice perspective."""
+    def __init__(self, t: int, a, P = None, Q = None, secret: int | list[int] | None = None, is_bob: bool = False, precalc_public_key: bool = False):
+        """Initialize TerSIDH interface. All variables are defines from Alice perspective.
+
+        Params:
+            secret: Ternary secret represented as integer, ternary-string or list of digits (last list element is the first digit).
+        
+        """
 
         p, A_deg, B_deg, f, A_primes, B_primes = self.gen_pub_params(t)
 
@@ -73,7 +106,7 @@ class TerSIDH:
         A_primes, B_primes = (B_primes, A_primes) if is_bob else (A_primes, B_primes)
 
         F = GF(p**2, names=('i',), modulus=[1, 0, 1])
-        (i,) = F._first_ngens(1)
+        i, = F._first_ngens(1)
         n = p + 1 
 
         # Montgomery Curve Model with coeff a near x^2
@@ -101,28 +134,26 @@ class TerSIDH:
             assert PA * (A_deg // 2) != E0(0, 0)
             assert QA * (A_deg // 2) != E0(0, 0)
 
-        # Generate point Masking information
-        if mask is None:
-            while mask := randint(1, B_deg):
-                if gcd(mask, B_deg) == 1:
-                    break
-
         # Generate Ternary Secret
         if secret is None:
-            secret = [ randint(0, self.MAX_DIGIT) for _ in range(t) ] 
-        else:
-            if isinstance(secret, str):
-                secret = [ int(x) for x in secret ]
-            elif not isinstance(secret, list):
-                raise ValueError("Incorrect secret type")
-
+            secret_digits = [ randint(0, self.MAX_DIGIT) for _ in range(t) ] 
+            secret = self.ter2int(secret_digits)
+        elif isinstance(secret, list):
             assert all(x in range(0, self.MAX_DIGIT + 1) for x in secret)
             assert len(secret) == t
+            secret_digits = secret
+            secret = self.ter2int(secret_digits)
+        elif isinstance(secret, int):
+            secret_digits = self.int2ter(secret, t)
+        else:
+            raise ValueError("Incorrect secret type")
+
+        self.secret: int = secret
+        self.secret_digits: list[int] = secret_digits
 
         self.cP, self.nP, self.cQ, self.nQ = self.generate_kernel_coeffs(secret, A_primes)
         self.is_bob = is_bob
         self.secret = secret
-        self.mask = mask
         self.A_deg = A_deg
         self.P, self.Q = P, Q
         self.E0 = E0
@@ -132,6 +163,14 @@ class TerSIDH:
 
         if precalc_public_key:
             self.prepare_public_key()
+    
+    @property
+    def is_alice(self) -> bool:
+        return not self.is_bob
+
+    @property
+    def kernel_points(self) -> tuple[Point, Point]:
+        return (self.PA * self.cP, self.QA * self.cQ)
 
     @property
     def start_basis(self) -> tuple[object, Point, Point]:
@@ -158,9 +197,11 @@ class TerSIDH:
         phi_Q = mont_isog(KQ)
         EQ = phi_Q.codomain()
 
+        self.phi = phi_Q * phi_P
+
         self.E_pub = EQ
-        self.P_pub = self.mask * phi_Q(phi_P(self.PB))
-        self.Q_pub = self.mask * phi_Q(phi_P(self.QB))
+        self.P_pub = self.phi(self.PB)
+        self.Q_pub = self.phi(self.QB)
         # precalculated above
         return self.public_key
 
@@ -183,7 +224,7 @@ class TerSIDH:
         
 if __name__ == "__main__":
     set_random_seed(0)
-    t = 30
+    t = 20 
     a = 6
     print("Init Alice")
     alice = TerSIDH(t, a)
