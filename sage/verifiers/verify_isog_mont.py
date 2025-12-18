@@ -1,6 +1,6 @@
 #!/usr/bin/sage -python
 
-from sage.all import EllipticCurve, GF, prod
+from sage.all import EllipticCurve, GF
 from isogencrypt_sage.isogeny import mont_coef, mont_isog, _mont_coef_2, _mont_coef_odd
 
 class TestP431:
@@ -317,6 +317,29 @@ class TestP139:
         print(f"aφ(K): {A}")
         print(f"xφ(P): {P.x()}")
 
+    @classmethod
+    def test_ISOG_chain_trivial(cls):
+        print("---: test_ISOG_chain_trivial()")
+        cls.load_globals()
+
+        K = E(0)
+        print(f"XK: {K[0]}")
+        print(f"ZK: {K[0]}")
+
+        phi = E.isogeny(K)
+        assert phi.degree() == 1
+        assert phi.codomain() == E
+
+        P0 = E(8*i + 137, 51*i + 35)
+        print("xP:", P0.x())
+        Q0 = phi(P0)
+
+        a_coeff = phi.codomain().a_invariants()[1]
+        print(f"aφ(K): {a_coeff}")
+        print(f"xφ(P): {Q0.x()}")
+
+
+
 def main():
     # SIDH-like prime: 
     TestP431.setup_class()
@@ -330,6 +353,7 @@ def main():
     TestP139.test_ISOG_chain_odd()
     TestP139.test_xISOG2_and_aISOG2()
     TestP139.test_ISOG_chain()
+    TestP139.test_ISOG_chain_trivial()
 
 if __name__ == '__main__':
     main()

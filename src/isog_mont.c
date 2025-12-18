@@ -3,6 +3,7 @@
 #include <string.h>
 
 #include "ec_mont.h"
+#include "fp2.h"
 #include "isog_mont.h"
 
 void criss_cross(fp2_t lsum, fp2_t rdiff, const fp2_t x, const fp2_t y,
@@ -338,6 +339,18 @@ void ISOG2e(fp2_t A24p, fp2_t C24, const fp2_t A24p_init, const fp2_t C24_init,
 void ISOG_chain(fp2_t A24p, fp2_t C24, const fp2_t A24p_init,
                 const fp2_t C24_init, const point_t K, pprod_t isog_degree,
                 point_t *push_points) {
+    
+    // We received a trivial point of order one: K = E(0)
+    if (fp2_is_zero(K->Z) || isog_degree->n_primes == 0) {
+        // In both cases 
+        assert(fp2_is_zero(K->Z));
+        assert(isog_degree->n_primes == 0);
+
+        // Copy to destination, push_points remain the same 
+        fp2_set(A24p, A24p_init);
+        fp2_set(C24, C24_init);
+        return;
+    }
 
     fp2_t A24p_next, C24_next;
     fp2_init(&A24p_next);
@@ -355,13 +368,13 @@ void ISOG_chain(fp2_t A24p, fp2_t C24, const fp2_t A24p_init,
     point_set(K0, K);
 
     // Push K0 into the push_points list, as first occured "NULL"
-    point_t *pp = push_points;
-    while (*pp != NULL)
-        pp++;
+    point_t *pp_last = push_points;
+    while (*pp_last != NULL)
+        pp_last++;
     // Make sure that push_points end with 2x NULL
-    assert(*pp == NULL && *(pp + 1) == NULL);
+    assert(*pp_last == NULL && *(pp_last + 1) == NULL);
     // Replace the first NULL with K0
-    *pp = K0;
+    *pp_last = K0;
 
     // TODO: optimize: calculate MAX out of degree->div and allocate space
     // maybe store it inside pprod structure?
@@ -430,6 +443,9 @@ void ISOG_chain(fp2_t A24p, fp2_t C24, const fp2_t A24p_init,
             point_set(*pp, Q);
         }
     }
+
+    // If using ISOG_chain multiple times we must clear this kernel point to make sure it is NULL
+    *pp_last = NULL;
 
     assert(fp2_is_zero(K0->Z) &&
            "Kernel of the isogeny should end-up as E(0) - E0->Z = 0");

@@ -260,10 +260,10 @@ void fp2_inv_safe(fp2_t x) {
  * @brief Output fp2 element to the stdout in format: "name: a*i + b"
  */
 void fp2_print(fp2_t x, const char *name) {
-    if (fp_is_zero(x->a)) {
-        gmp_printf("%s: %Zd*i\n", name, x->b);
-    } else if (fp_is_zero(x->b)) {
+    if (fp_is_zero(x->b)) {
         gmp_printf("%s: %Zd\n", name, x->a);
+    } else if (fp_is_zero(x->a)) {
+        gmp_printf("%s: %Zd*i\n", name, x->b);
     } else {
         gmp_printf("%s: %Zd*i + %Zd\n", name, x->b, x->a);
     }

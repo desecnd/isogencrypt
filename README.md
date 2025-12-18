@@ -1,39 +1,56 @@
-# Isogencrypt
+# _isogencrypt_
 
 C library for isogeny-based cryptographic research. 
 
-**Isogencrypt** is developed as a part of the master's thesis: _"Post-quantum cryptography protocols based on isogenies"_ at Adam Mickiewicz University in Poznan. Large part of the research was conducted under _Study@Research_ grant from the "IDUB" program.
+Project **_isogencrypt_** was developed as a part of the master's thesis: _"Post-quantum cryptography protocols based on isogenies"_ at Adam Mickiewicz University in Poznan. Large part of the research was conducted under _Study@Research_ grant from the "IDUB" program.
 
 
 > [!WARNING]  
-> _Isogencrypt_ is a cryptographic research library for testing speed and efficiency of a low-level isogeny algorithms implementation. It is an uncertified, not production-ready cryptographic software and at this state - should not be used as a mature software security component.
+> _isogencrypt_ is a cryptographic research library for testing speed and efficiency of a low-level isogeny-based algorithms implementations. It is an uncertified, not production-ready cryptographic software and at this state - **should not be used as a mature software security component**.
 
-## 🔗 1. Dependencies
+## 🔒 1.  Cryptographic Overview 
 
-### 1.1 GMP
+_isogencrypt_ was designed as a research-oriented library. It aims to provide low-level and faster equivalent to the SageMath's elliptic curve interface, especially the part often used in isogeny-based cryptographic constructions. Currently, the library implements following key-exchange protocols:
 
-Isogencrypt C core is based on [GMP](https://gmplib.org/) - *The GNU Multiple Precision Arithmetic Library* - this is the only dependency required to **use** the library code. On Debian Linux systems it its included in `libgmp-dev` package and can be installed with `apt`. For guidance how to install GMP from source, refer to the [GMP installation docs](https://gmplib.org/manual/Installing-GMP).
+* **M-SIDH Protocol** from [M-SIDH and MD-SIDH: countering SIDH attacks by masking information](https://ia.cr/2023/013) by Tako Boris Fouotsa, Tomoki Moriya and Christophe Petit.
+* **TerSIDH Protocol** from [New SIDH Countermeasures for a More Efficient Key Exchange](https://ia.cr/2023/791) by Andrea Basso and Tako Boris Fouotsa.
+
+Finite field arithmetic is built on top of multi-precision integer `mpz` type from [GMP library](https://gmplib.org/), which allows to conduct experiments with arbitrary-length parameters. This bottom layer can be later replaced with the fixed-size integer arithmetic to further increase the speedup, without modifying the interface of the upper layers.
+
+Elliptic curve and isogeny algorithms are implemented using _Montgomery_ $x$-_only Arithmetic_, representing point coordinate $x$ in projective form $x = (X : Z)$ and curve coefficients in projective _xDBL_ form: $(a + 2)/4 = (A_{24+}: C_{24})$. Some of the used algorithms are can be found in following publications:
+
+* [Towards quantum-resistant cryptosystems from supersingular elliptic curve isogenies](https://ia.cr/2011/506) by Luca De Feo, David Jao, and Jérôme Plût.
+* [Montgomery curves and their arithmetic: The case of large characteristic fields](https://ia.cr/2017/212) by Craig Costello and Benjamin Smith.
+* [A simple and compact algorithm for SIDH with arbitrary degree isogenies](https://ia.cr/2017/504) by Craig Costello and Huseyin Hisil. 
+* [Computing isogenies between Montgomery curves using the action of (0,0)](https://ia.cr/2017/1198) by Joost Renes.
+
+
+## 🔗 2. Dependencies
+
+### 2.1 GMP
+
+_isogencrypt_ C core is based on [GMP](https://gmplib.org/) - *The GNU Multiple Precision Arithmetic Library* - this is the only dependency required to **use** the library code. On Debian Linux systems it its included in `libgmp-dev` package and can be installed with `apt`. For guidance how to install GMP from source, refer to the [GMP installation docs](https://gmplib.org/manual/Installing-GMP).
 
 ```bash
 # Install GMP package with include data and shared lib
 sudo apt install libgmp-dev
 ```
 
-### 1.2 OpenSSL
+### 2.2 OpenSSL
 
-Isogencrypt library core **does not use** anything from OpenSSL, but the included `example` demo depends on `openssl` AES and SHA256 implementation. To successfully compile example demo target, OpenSSL `libssl-dev` library is required to be present on the system.
+_isogencrypt_ core library does not use anything from OpenSSL, but the included `example` demo depends on `openssl` AES and HKDF implementation. To successfully compile example demo target, OpenSSL `libssl-dev` library is required to be present on the system.
 
 ```bash
 # Install OpenSSL package with the include data and shared lib
 sudo apt install libssl-dev
 ```
 
-### 1.3 SageMath
+### 2.3 SageMath
 
-This dependency is **not required** to successfully run any of the available isogencrypt C code. However, the repository contains auxiliary SageMath package (`isogencrypt_sage`) which was used to produce static assets, benchmarks and verification data. Refer to [SageMath Section](#3-sagemath-package) for more information.
+This dependency is **not required** to successfully run any of the available _isogencrypt_ C code. However, the repository contains auxiliary SageMath package (`isogencrypt_sage`) which was used to produce static assets, benchmarks and verification data. Refer to [SageMath Section](#3-sagemath-package) for more information.
 
 
-## 🚀 2. Quickstart 
+## 🚀 3. Quickstart 
 
 Currently 3 main executable `Makefile` targets are supported: `example`, `tests` and `benches` (grouped together under common and default `all` target). Additionally 2 automated integration targets are available: `run-tests` and `run-diffs`.
 
@@ -42,7 +59,7 @@ Currently 3 main executable `Makefile` targets are supported: `example`, `tests`
 $ make
 ```
 
-### 🧪 2.1 Tests
+### 🧪 3.1 Tests
 
 Correctness of the implementation is tested in a 2 distinct ways: 
 
@@ -73,14 +90,16 @@ Each of the `run-tests` pass creates `.out` files, that store the output from la
 # Compare the outputs from Unit Tests with output given by SageMath 'verify' scripts
 $ make run-diffs
 Check diff: test_ec_mont.diff (PASSED)
+Check diff: test_isog_mont.diff (PASSED)
 Check diff: test_proto_msidh.diff (PASSED)
+Check diff: test_proto_tersidh.diff (PASSED)
 ```
 
 Diffs are stored inside `build/out/diffs` for troubleshooting if needed. 
 
-### 📊 2.2 Benches
+### 📊 3.2 Benches
 
-Main purpose of **Isogencrypt** is to test the efficiency of low-level implementation of the isogeny-based cryptographic protocols. For this purpose `bench` executable targets are created (found in `benches` directory). Each benchmark code is required to print a **valid** `.tsv` data on the `stdout` during computation (`stderr` can be used for diagnostic information).  Benchmark targets can be compiled with `make benches` target. 
+Main purpose of **isogencrypt** is to test the efficiency of low-level implementation of the isogeny-based cryptographic protocols. For this purpose `bench` executable targets are created (found in `benches` directory). Each benchmark code is required to print a **valid** `.tsv` data on the `stdout` during computation (`stderr` can be used for diagnostic information).  Benchmark targets can be compiled with `make benches` target. 
 
 ```bash
 # Compile the benchmark executables in `benches` directory
@@ -100,9 +119,9 @@ $ ./build/benches/bench_proto_msidh > results.tsv
 
 Generated static benchmark data is stored in `assets` directory. Additional benchmarks can be generated with `sage` scripts, refer to [SageMath Package](#3-sagemath-package) for more.
 
-### 🔐 2.3 Example
+### 🔐 3.3 Example
 
-In order to see possible integration and future deployment of the protocols inside **Isogencrypt**, a proof-of-concept demo of the **MSIDH Handshake** (see: [Cryptographic Details](#4-cryptographic-details)) is available in `example` folder. Inside 2 executables (`isog_server` and `isog_client`) are located, which allow `isog_client` to send encrypted data over the network using socket interface to `isog_server` which will print the decrypted messages. 
+In order to see possible integration and future deployment of the protocols inside **isogencrypt**, a proof-of-concept demo of the **M-SIDH Handshake** (see: [Cryptographic Overview](#-1--cryptographic-overview)) is available in `example` folder. Inside 2 executables (`isog_server` and `isog_client`) are located, which allow `isog_client` to send encrypted data over the network using socket interface to `isog_server` which will print the decrypted messages. 
 
 ```bash
 # Compile 'isog_client' and 'isog_server' 
@@ -123,14 +142,14 @@ Short recording shows the example usage of the executables*:
 
 *Video uses aliases for calling `isog_server` and `isog_client` on localhost port 9999. "Mallory" executes the `tcpdump` tool to show plaintext content of exchanged tcp traffic going from alice to bob (only one-way).
 
-## 3. SageMath Package
+## 4. SageMath Package
 
 Detailed specification of the `isogencrypt_sage` python package, can be found in [sage](./sage/README.md) directory. Below is a short summary of what was done in order to generate the available static assets.
 
 > [!NOTE]
 > SageMath is built on top of Python, but it is not fully compatible - there are many ways to launch sage code with python and python code with sage, but each can have its own weird quirks. For simplicity the recommended setup is to add `./sage` to `PYTHONPATH` to allow importing `isogencrypt_sage` in every called `.sage` script and run scripts with `sage -python`. Refer to package README for more details. 
 
-### 3.1 Generate Test Vectors 
+### 4.1 Generate Test Vectors 
 
 Test vectors located in `assets` directory were created using:
 
@@ -149,7 +168,7 @@ $ sage -python ./sage/verifiers/verify_isog_mont.py > ./assets/test_vectors/test
 $ sage -python ./sage/verifiers/verify_proto_msidh.py  > ./assets/test_vectors/test_proto_msidh.out
 ```
 
-### 3.2 Generate Benchmark Tasks
+### 4.2 Generate Benchmark Tasks
 
 Benchmark tasks for MSIDH in `.json` format and were created using:
 
@@ -160,21 +179,3 @@ $ sage ./sage/scripts/gen_msidh_bt.sage -o ./assets/bench_tasks/bt_msidh.json -i
 $ sage ./sage/scripts/conv_msidh_bt.sage ./assets/bench_tasks/bt_msidh.json
 ```
 
-## 4. Cryptographic Details 
-
-Isogencrypt is designed as a **research** library, with its main objective being more efficient than SageMath in terms of writing proof of concepts and experimenting with different parameters.   
-
-This approach requires usage of flexible GMP-like implementation for the field operations and takes away the possibility of using compile-time optimizations. Hence, it is always possible to write slightly more optimized code by "freezing" parameters coefficients and substituting bottom layer of field arithmetic with static constant-time operations - which may be added in the future.
-
-In terms of the efficiency, **Isogencrypt** uses _Montgomery X-only Arithmetic_, which is based on operating only on `x` coordinate of points on Elliptic Curves (discarding the `y` coordinate to speed up the calculations without loosing important information).
-
-Additionally it uses **projective coordinates** to avoid finite field inversions - both for points coordinates and curve coefficients. Minor optimizations regarding form of curve constants (`(A24p : C24) = (a + 2)/4`) are also present.
-
-Most of the used algorithms can be found in the publications from isogeny-based cryptography field, i.a.:
-
-- https://eprint.iacr.org/2011/506.pdf
-- https://eprint.iacr.org/2017/1198.pdf
-- https://eprint.iacr.org/2017/212.pdf
-- https://eprint.iacr.org/2017/504.pdf 
-
-Currently the library implements only [MSIDH](https://eprint.iacr.org/2023/013.pdf) key-exchange protocol. There is an ongoing effort of implementing [terSIDH](https://eprint.iacr.org/2023/791.pdf), however it is still in progress.
