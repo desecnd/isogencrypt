@@ -15,9 +15,9 @@ _isogencrypt_ was designed as a research-oriented library. It aims to provide lo
 * **M-SIDH Protocol** from [M-SIDH and MD-SIDH: countering SIDH attacks by masking information](https://ia.cr/2023/013) by Tako Boris Fouotsa, Tomoki Moriya and Christophe Petit.
 * **TerSIDH Protocol** from [New SIDH Countermeasures for a More Efficient Key Exchange](https://ia.cr/2023/791) by Andrea Basso and Tako Boris Fouotsa.
 
-Finite field arithmetic is built on top of multi-precision integer `mpz` type from [GMP library](https://gmplib.org/), which allows to conduct experiments with aribtrary-length parameters. This bottom layer can be later replaced with the fixed-size integer arithmetic to further increase the speedup, without modifying the interface of the upper layers.
+Finite field arithmetic is built on top of multi-precision integer `mpz` type from [GMP library](https://gmplib.org/), which allows to conduct experiments with arbitrary-length parameters. This bottom layer can be later replaced with the fixed-size integer arithmetic to further increase the speedup, without modifying the interface of the upper layers.
 
-Elliptic curve and isogeny algorithms are implemented using _Montgomery $x$-only Arithmetic_, representing point coordinate $x$ in projective form $x = (X : Z)$ and curve coefficients in projective _xDBL_ form: $(a + 2)/4 = (A_{24+}: C_{24})$. Some of the used algorithms are can be found in following publications:
+Elliptic curve and isogeny algorithms are implemented using _Montgomery_ $x$-_only Arithmetic_, representing point coordinate $x$ in projective form $x = (X : Z)$ and curve coefficients in projective _xDBL_ form: $(a + 2)/4 = (A_{24+}: C_{24})$. Some of the used algorithms are can be found in following publications:
 
 * [Towards quantum-resistant cryptosystems from supersingular elliptic curve isogenies](https://ia.cr/2011/506) by Luca De Feo, David Jao, and Jérôme Plût.
 * [Montgomery curves and their arithmetic: The case of large characteristic fields](https://ia.cr/2017/212) by Craig Costello and Benjamin Smith.
